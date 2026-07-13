@@ -118,6 +118,16 @@ scored = [e for s in mdx.news(megatrend="ai-power") for e in s.entities if e.imp
 **`stock(t).news()` is a stock-centric timeline** — a `StockNews` (the stock's own `impact` /`trend`/
 `relevance`), **not** an entity graph (no `entities[]`). For the full graph of an article, use `news()`.
 
+**Story-collapse (on by default).** The same story is often republished / rewritten across outlets.
+`news()`, `news_search()` and `news_by_tickers()` merge those near-duplicates into a single signal by
+default (cosine-similarity grouping, server-side) so a feed reads one-story-one-row. Pass
+`collapse=False` when you want the raw, un-deduped stream — e.g. to measure coverage volume:
+
+```python
+merged = mdx.news(megatrend="ai-power").to_list()                 # deduped (default)
+raw    = mdx.news(megatrend="ai-power", collapse=False).to_list() # every republication
+```
+
 ## Metering & errors
 
 Every call carries `X-Credits-Charged` / `X-RateLimit-*`; check your balance any time (free, unmetered):

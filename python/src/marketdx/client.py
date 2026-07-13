@@ -54,6 +54,7 @@ class MarketDX:
         megatrend: NodeRef = None,
         gics: Optional[str] = None,
         include: str = "entities,impact",
+        collapse: Optional[bool] = None,
         impact: Optional[enums.ImpactType] = None,
         direction: Optional[enums.Direction] = None,
         aspect: Optional[Union[enums.Aspect, str]] = None,
@@ -67,9 +68,14 @@ class MarketDX:
         limit: int = 50,
         max_items: Optional[int] = None,
     ) -> "Page":
-        """News signals, one :class:`~marketdx.models.Signal` per event. Auto-paginated."""
+        """News signals, one :class:`~marketdx.models.Signal` per event. Auto-paginated.
+
+        Near-duplicate stories (one story republished / rewritten across outlets) are merged
+        into a single signal by default. Pass ``collapse=False`` for the raw, un-deduped feed.
+        """
         params = {
             "megatrend": self._resolve(megatrend), "gics": gics, "include": include,
+            "collapse": collapse,
             "impact": impact, "direction": direction, "aspect": aspect, "news_type": news_type,
             "country": country, "lang": lang, "order_by": order_by, "since": since,
             "from": from_, "to": to,
@@ -79,27 +85,32 @@ class MarketDX:
 
     def news_search(self, q: str, *, entity_type: Optional[enums.EntityType] = None,
                     limit: int = 20, lang: Optional[str] = None,
-                    include: str = "entities,impact", max_items: Optional[int] = None) -> "Page":
+                    include: str = "entities,impact", collapse: Optional[bool] = None,
+                    max_items: Optional[int] = None) -> "Page":
         """Semantic (vector) search — news matched by MEANING. Relevance-ranked top-K.
 
         Unlike the ``news()`` feed, search supports an ``entity_type`` filter (keeps only
         articles with a related entity of that type — stock/forex/crypto/commodity/private/
-        public_off_coverage), applied server-side.
+        public_off_coverage), applied server-side. Near-duplicate stories are merged by default;
+        pass ``collapse=False`` for the raw hits.
         """
         return self._page("/v1/news/search", "results", Signal.from_dict,
-                          {"q": q, "lang": lang, "include": include, "entity_type": entity_type},
+                          {"q": q, "lang": lang, "include": include, "entity_type": entity_type,
+                           "collapse": collapse},
                           columns=SIGNAL_COLUMNS, max_items=max_items)
 
     def news_by_tickers(self, ticker: Union[str, List[str]], *, direction: Optional[enums.Direction] = None,
                         aspect: Optional[Union[enums.Aspect, str]] = None,
                         impact: Optional[enums.ImpactType] = None, include: str = "entities,impact",
+                        collapse: Optional[bool] = None,
                         lang: Optional[str] = None, limit: int = 50, max_items: Optional[int] = None) -> "Page":
         """News for one or more tickers — the article + that ticker's **direct AND indirect**
         impact. Use this to query by a specific ticker (incl. commodities like ``GOLD.COMM``),
-        which the ``news()`` feed does not filter by. ``ticker`` accepts ``NVDA.US`` or a list."""
+        which the ``news()`` feed does not filter by. ``ticker`` accepts ``NVDA.US`` or a list.
+        Near-duplicate stories are merged by default; pass ``collapse=False`` for the raw feed."""
         return self._page("/v1/news/by-tickers", "results", Signal.from_dict,
                           {"ticker": ticker, "direction": direction, "aspect": aspect,
-                           "impact": impact, "include": include, "lang": lang},
+                           "impact": impact, "include": include, "lang": lang, "collapse": collapse},
                           columns=SIGNAL_COLUMNS, max_items=max_items)
 
     def news_types(self) -> List[Dict[str, Any]]:
