@@ -27,16 +27,31 @@ feature input — **not** a predictive price signal (news is largely priced in b
 | | | |
 |---|---|---|
 | 📊 [**`datasets/`**](datasets/) | **A free sample** of the impact graph — 4,000+ labeled signals, every angle the [playground](https://marketdx.lab.ai/playground) answers. Start here. | ✅ available |
-| 🐍 [**`python/`**](python/) | The official Python SDK — the graph in three lines. | 🔜 soon |
+| 🐍 [**`python/`**](python/) | The official Python SDK — the graph in three lines. **`pip install marketdx`** | ✅ available |
 | 🔌 [**`mcp/`**](mcp/) | MCP server — give your AI agent the financial impact graph. | 🔜 soon |
 
 New here? → **[browse the sample dataset](datasets/)** (no signup), then
 **[try it live](https://marketdx.lab.ai/playground)**.
 
-## Why one repo
+## Quickstart
 
-The dataset proves the quality, the SDK makes it a 3-line integration, the MCP puts it in your agent —
-three faces of **one graph**. Keeping them together means one place to star, watch, and follow the work.
+**See the data** — no signup: [browse the sample dataset](datasets/) or the [live playground](https://marketdx.lab.ai/playground).
+
+**Use it in code** — the official Python SDK:
+
+```bash
+pip install marketdx
+```
+
+```python
+from marketdx import MarketDX
+
+mdx = MarketDX(api_key="…")                 # free key at marketdx.lab.ai
+for s in mdx.news(megatrend="ai-power", impact="indirect"):
+    print(s.title, [(e.name, e.impact.net_direction) for e in s.entities])
+```
+
+Full SDK docs → [`python/`](python/).
 
 ## License
 
