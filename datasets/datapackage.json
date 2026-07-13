@@ -1,0 +1,173 @@
+{
+  "name": "marketdx-impact-signals-sample",
+  "title": "MarketDX — Financial Impact Signals (sample)",
+  "description": "A bounded sample of the MarketDX financial impact graph: richly-labeled news→market impact across stocks, commodities, FX, crypto, and private companies. See README.md and SCHEMA.md. Live API: https://marketdx.lab.ai",
+  "homepage": "https://marketdx.lab.ai",
+  "licenses": [{"name": "CC-BY-4.0", "title": "Creative Commons Attribution 4.0", "path": "https://creativecommons.org/licenses/by/4.0/"}],
+  "keywords": ["finance", "news", "market-impact", "megatrends", "semiconductors", "ai", "commodities", "forex", "crypto", "private-companies", "knowledge-graph"],
+  "resources": [
+    {
+      "name": "impact-signals",
+      "path": "data/impact-signals.csv",
+      "format": "csv", "mediatype": "text/csv", "encoding": "utf-8",
+      "description": "The core. One row per (news event x affected entity x aspect). Every row is a judged impact signal.",
+      "schema": {
+        "fields": [
+          {"name": "published_at", "type": "datetime", "format": "%Y-%m-%dT%H:%M:%S%z", "description": "article publish time (UTC)"},
+          {"name": "title", "type": "string", "description": "news headline"},
+          {"name": "brief_text", "type": "string", "description": "neutral 1-paragraph summary of the article"},
+          {"name": "entity_name", "type": "string", "description": "affected company or asset"},
+          {"name": "entity_ticker", "type": "string", "description": "symbol e.g. NVDA.US / BTC / NATGAS / USDJPY.FOREX; empty for private companies"},
+          {"name": "entity_type", "type": "string", "constraints": {"enum": ["stock", "commodity", "forex", "crypto", "private", "public_off_coverage"]}},
+          {"name": "direction", "type": "string", "description": "the model's read of whether the news helps (pos) or hurts (neg) this entity — the news CONTENT lean, NOT a price forecast", "constraints": {"enum": ["pos", "neg", "ambiguous"]}},
+          {"name": "aspect", "type": "string", "description": "the WHY — the channel the news acts through (empty = directional but channel unclear)", "constraints": {"enum": ["demand", "supply", "pricing", "capital", "competition", "technology", "regulation", "tariff", "geopolitics", "monetary", ""]}},
+          {"name": "reason", "type": "string", "description": "one-line rationale for the impact"},
+          {"name": "relevance", "type": "number", "description": "0-1, how central the entity is to the article"},
+          {"name": "impact", "type": "string", "description": "direct = epicenter, indirect = ripple", "constraints": {"enum": ["direct", "indirect"]}},
+          {"name": "impact_score", "type": "integer", "description": "1-5, how big the news event is market-wide"},
+          {"name": "theme", "type": "string", "description": "DATASET-ONLY provenance (which generator pull produced this row) — NOT an API-native field; exclude it from the SDK .to_df() column-contract. All other columns are API-native.", "constraints": {"enum": ["ai-power", "semiconductors", "commodities", "forex", "crypto", "ai", "digital-finance"]}},
+          {"name": "node_name", "type": "string", "description": "megatrend node of the article epicenter (join -> megatrends.name)"},
+          {"name": "entity_country", "type": "string", "description": "ISO-2 country of the entity"},
+          {"name": "publisher", "type": "string"},
+          {"name": "url", "type": "string", "format": "uri"}
+        ],
+        "foreignKeys": [
+          {"fields": "node_name", "reference": {"resource": "megatrends", "fields": "name"}}
+        ]
+      }
+    },
+    {
+      "name": "private-impact",
+      "path": "data/private-impact.csv",
+      "format": "csv", "mediatype": "text/csv", "encoding": "utf-8",
+      "description": "Beyond tickers: the same schema as impact-signals, filtered to private / off-coverage entities (OpenAI, Anthropic, Ripple, ...).",
+      "schema": {
+        "fields": [
+          {"name": "published_at", "type": "datetime", "format": "%Y-%m-%dT%H:%M:%S%z"},
+          {"name": "title", "type": "string"},
+          {"name": "brief_text", "type": "string"},
+          {"name": "entity_name", "type": "string"},
+          {"name": "entity_ticker", "type": "string", "description": "empty (private companies have no ticker)"},
+          {"name": "entity_type", "type": "string", "constraints": {"enum": ["private", "public_off_coverage"]}},
+          {"name": "direction", "type": "string", "constraints": {"enum": ["pos", "neg", "ambiguous"]}},
+          {"name": "aspect", "type": "string", "constraints": {"enum": ["demand", "supply", "pricing", "capital", "competition", "technology", "regulation", "tariff", "geopolitics", "monetary", ""]}},
+          {"name": "reason", "type": "string"},
+          {"name": "relevance", "type": "number"},
+          {"name": "impact", "type": "string", "constraints": {"enum": ["direct", "indirect"]}},
+          {"name": "impact_score", "type": "integer"},
+          {"name": "theme", "type": "string"},
+          {"name": "node_name", "type": "string", "description": "join -> megatrends.name"},
+          {"name": "entity_country", "type": "string"},
+          {"name": "publisher", "type": "string"},
+          {"name": "url", "type": "string", "format": "uri"}
+        ],
+        "foreignKeys": [
+          {"fields": "node_name", "reference": {"resource": "megatrends", "fields": "name"}}
+        ]
+      }
+    },
+    {
+      "name": "screener",
+      "path": "data/screener.csv",
+      "format": "csv", "mediatype": "text/csv", "encoding": "utf-8",
+      "description": "Curated winner/loser screens — 6 'who is winning on X' patterns, one row per ranked stock.",
+      "schema": {
+        "fields": [
+          {"name": "pattern_label", "type": "string", "description": "the screen in plain words"},
+          {"name": "rank", "type": "integer"},
+          {"name": "symbol", "type": "string", "description": "bare ticker (no exchange suffix)"},
+          {"name": "name", "type": "string"},
+          {"name": "country", "type": "string"},
+          {"name": "net_direction", "type": "string", "constraints": {"enum": ["pos", "neg", "ambiguous"]}},
+          {"name": "news_count", "type": "integer", "description": "articles behind the score"},
+          {"name": "aspects", "type": "string", "description": "pipe-separated aspects seen"},
+          {"name": "top_reason", "type": "string"},
+          {"name": "pos", "type": "integer"},
+          {"name": "neg", "type": "integer"},
+          {"name": "top_relevance", "type": "number"},
+          {"name": "market_cap_usd", "type": "number"},
+          {"name": "pattern", "type": "string", "description": "machine key of the screen"}
+        ]
+      }
+    },
+    {
+      "name": "discover",
+      "path": "data/discover.csv",
+      "format": "csv", "mediatype": "text/csv", "encoding": "utf-8",
+      "description": "Semantic (vector) search: 15 plain-English questions -> the news matched BY MEANING and its impacted entities.",
+      "schema": {
+        "fields": [
+          {"name": "question", "type": "string", "description": "the plain-English question"},
+          {"name": "search_query", "type": "string", "description": "the exact text embedded for the search"},
+          {"name": "rank", "type": "integer"},
+          {"name": "similarity", "type": "number", "description": "cosine similarity, 1 = identical"},
+          {"name": "title", "type": "string"},
+          {"name": "brief_text", "type": "string"},
+          {"name": "entity_name", "type": "string"},
+          {"name": "entity_ticker", "type": "string"},
+          {"name": "entity_type", "type": "string", "constraints": {"enum": ["stock", "commodity", "forex", "crypto", "private", "public_off_coverage"]}},
+          {"name": "direction", "type": "string", "constraints": {"enum": ["pos", "neg", "ambiguous", ""]}},
+          {"name": "aspect", "type": "string"},
+          {"name": "reason", "type": "string"},
+          {"name": "published_at", "type": "datetime", "format": "%Y-%m-%dT%H:%M:%S%z"},
+          {"name": "url", "type": "string", "format": "uri"}
+        ]
+      }
+    },
+    {
+      "name": "relationships",
+      "path": "data/relationships.csv",
+      "format": "csv", "mediatype": "text/csv", "encoding": "utf-8",
+      "description": "News-derived company graph — competitor + peer edges. Edge list.",
+      "schema": {
+        "fields": [
+          {"name": "source", "type": "string", "description": "full ticker e.g. NVDA.US (join -> impact-signals.entity_ticker)"},
+          {"name": "relation", "type": "string", "constraints": {"enum": ["competitor", "peer"]}},
+          {"name": "target_symbol", "type": "string", "description": "target ticker (may be bare or full)"},
+          {"name": "target_name", "type": "string"},
+          {"name": "target_country", "type": "string"},
+          {"name": "weight", "type": "integer", "description": "competitor = shared competition articles; peer = shared trend nodes"}
+        ],
+        "foreignKeys": [
+          {"fields": "source", "reference": {"resource": "impact-signals", "fields": "entity_ticker"}}
+        ]
+      }
+    },
+    {
+      "name": "private-roster",
+      "path": "data/private-roster.csv",
+      "format": "csv", "mediatype": "text/csv", "encoding": "utf-8",
+      "description": "The private / off-coverage universe mapped to trends (coverage breadth).",
+      "schema": {
+        "fields": [
+          {"name": "company", "type": "string"},
+          {"name": "type", "type": "string", "constraints": {"enum": ["private", "public_off_coverage"]}},
+          {"name": "country", "type": "string"},
+          {"name": "theme", "type": "string"},
+          {"name": "megatrend_node", "type": "string", "description": "join -> megatrends.name"},
+          {"name": "exposure", "type": "string", "constraints": {"enum": ["core", "secondary"]}}
+        ],
+        "foreignKeys": [
+          {"fields": "megatrend_node", "reference": {"resource": "megatrends", "fields": "name"}}
+        ]
+      }
+    },
+    {
+      "name": "megatrends",
+      "path": "data/megatrends.csv",
+      "format": "csv", "mediatype": "text/csv", "encoding": "utf-8",
+      "description": "The megatrend taxonomy — the trend tree the signals reference.",
+      "schema": {
+        "fields": [
+          {"name": "node_id", "type": "integer"},
+          {"name": "name", "type": "string"},
+          {"name": "tier", "type": "integer", "description": "1 (family) .. 3 (leaf)"},
+          {"name": "parent_id", "type": "integer"},
+          {"name": "family_id", "type": "integer", "description": "the tier-1 family this node belongs to"},
+          {"name": "layer", "type": "string", "description": "value-chain layer"}
+        ],
+        "primaryKey": "node_id"
+      }
+    }
+  ]
+}

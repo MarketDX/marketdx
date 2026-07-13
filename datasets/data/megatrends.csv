@@ -1,0 +1,336 @@
+node_id,name,tier,parent_id,family_id,layer
+10000000,Artificial Intelligence,1,,10000000,
+10010000,AI Compute & Accelerator Silicon,2,10000000,10000000,infrastructure
+10010100,GPU & Merchant Accelerators,3,10010000,10000000,infrastructure
+10010200,Custom Silicon / ASIC,3,10010000,10000000,infrastructure
+10010300,Inference-Optimized Silicon,3,10010000,10000000,infrastructure
+10010400,HBM & AI Memory,3,10010000,10000000,infrastructure
+10010700,Edge & On-device AI Silicon,3,10010000,10000000,infrastructure
+10020000,AI Networking & Interconnect,2,10000000,10000000,infrastructure
+10020100,Switching & Networking Silicon/Systems,3,10020000,10000000,infrastructure
+10020200,Optical Interconnect & DCI,3,10020000,10000000,infrastructure
+10030000,AI Data Center & Build-out,2,10000000,10000000,infrastructure
+10030100,Colocation & Hyperscale REITs,3,10030000,10000000,infrastructure
+10030200,AI Server OEM & System Integration,3,10030000,10000000,infrastructure
+10030300,"Build-out, Construction & Engineering",3,10030000,10000000,infrastructure
+10040000,AI Power & Cooling,2,10000000,10000000,infrastructure
+10050000,AI Compute Cloud & Neoclouds,2,10000000,10000000,platform
+10060000,Foundation Models & Research Labs,2,10000000,10000000,platform
+10060100,Closed / Frontier Labs,3,10060000,10000000,platform
+10060200,Open-Weight Model Developers,3,10060000,10000000,platform
+10070000,"AI Tooling, Data & MLOps",2,10000000,10000000,platform
+10080000,AI Applications & Copilots,2,10000000,10000000,application
+10090000,Agentic AI & Autonomous Workflows,2,10000000,10000000,application
+12000000,Robotics & Physical AI,1,,12000000,
+12010000,Industrial Automation & Cobots,2,12000000,12000000,application
+12020000,Humanoid Robots,2,12000000,12000000,application
+12030000,Autonomous Vehicles & Robotaxi,2,12000000,12000000,application
+12030100,Robotaxi Operators & Platforms,3,12030000,12000000,application
+12030200,Autonomous Trucking & Delivery,3,12030000,12000000,application
+12040000,Civil Drones & UAV,2,12000000,12000000,application
+12050000,Surgical & Medical Robotics,2,12000000,12000000,application
+12060000,Warehouse & Logistics Robotics,2,12000000,12000000,application
+12070000,Robotics Components & Actuation,2,12000000,12000000,supply_chain
+12070100,Precision Drives & Reducers,3,12070000,12000000,supply_chain
+12070200,Servo Motors & Magnets,3,12070000,12000000,supply_chain
+12070300,Machine Vision & Force/Tactile Sensing,3,12070000,12000000,supply_chain
+12070400,LiDAR & 3D Perception Sensors,3,12070000,12000000,supply_chain
+12080000,Robotics AI & Embodiment Software,2,12000000,12000000,platform
+12090000,Consumer & Home Service Robots,2,12000000,12000000,application
+14000000,Energy Transition & Power Demand,1,,14000000,
+14010000,Nuclear Generation & Utilities,2,14000000,14000000,infrastructure
+14020000,Advanced Nuclear — SMR & Microreactor,2,14000000,14000000,infrastructure
+14030000,Nuclear Fuel Cycle (Uranium & Enrichment),2,14000000,14000000,supply_chain
+14030100,Uranium Mining & Development,3,14030000,14000000,supply_chain
+14030200,Conversion & Enrichment (HALEU),3,14030000,14000000,supply_chain
+14040000,Solar,2,14000000,14000000,infrastructure
+14050000,Wind,2,14000000,14000000,infrastructure
+14060000,Geothermal & Firm Renewables,2,14000000,14000000,infrastructure
+14070000,Energy Storage & Grid Flexibility,2,14000000,14000000,infrastructure
+14080000,"Grid, Transmission & Power Equipment",2,14000000,14000000,infrastructure
+14090000,Firm Power & Transition Fuels,2,14000000,14000000,infrastructure
+14090100,Natural Gas Value Chain,3,14090000,14000000,supply_chain
+14090200,Behind-the-Meter & On-site Power,3,14090000,14000000,infrastructure
+14100000,Hydrogen & Fuel Cells,2,14000000,14000000,infrastructure
+14110000,Hydropower & Pumped Storage,2,14000000,14000000,infrastructure
+16000000,Electrification & Mobility,1,,16000000,
+16010000,Passenger EV OEMs (BEV / PHEV),2,16000000,16000000,application
+16010100,China NEV Leaders,3,16010000,16000000,application
+16010200,Western / Legacy & Pure-play OEMs,3,16010000,16000000,application
+16020000,Commercial & Heavy-Duty Electric Vehicles,2,16000000,16000000,application
+16030000,Charging Infrastructure & Networks,2,16000000,16000000,infrastructure
+16040000,Battery Cells & Pack Manufacturing,2,16000000,16000000,infrastructure
+16040100,Incumbent Li-ion Cell Makers,3,16040000,16000000,infrastructure
+16040200,Next-gen Cells (Solid-state / Silicon-anode),3,16040000,16000000,infrastructure
+16050000,Battery Components & Materials,2,16000000,16000000,supply_chain
+16060000,EV Powertrain & Power Electronics,2,16000000,16000000,infrastructure
+16060100,EV Power Semiconductors (SiC / IGBT),3,16060000,16000000,infrastructure
+16060200,"E-motors, Inverters & Drivetrain",3,16060000,16000000,infrastructure
+16070000,Two-wheeler & Micromobility,2,16000000,16000000,application
+16080000,Battery Recycling & Circularity,2,16000000,16000000,supply_chain
+18000000,Biotech & Genomic Medicine,1,,18000000,
+18010000,"Metabolic, Diabetes & Obesity",2,18000000,18000000,application
+18020000,Oncology Therapeutics,2,18000000,18000000,application
+18020100,Antibody-Drug Conjugates (ADC),3,18020000,18000000,application
+18020200,Immuno-Oncology / Checkpoint,3,18020000,18000000,application
+18020300,Cell Therapy (CAR-T & beyond),3,18020000,18000000,application
+18030000,Gene & Cell Editing,2,18000000,18000000,platform
+18040000,RNA Therapeutics,2,18000000,18000000,platform
+18040100,mRNA Platforms,3,18040000,18000000,platform
+18040200,RNAi / Antisense Oligonucleotides,3,18040000,18000000,platform
+18050000,Neuroscience & Neurodegenerative,2,18000000,18000000,application
+18060000,Rare Disease,2,18000000,18000000,application
+18070000,AI Drug Discovery,2,18000000,18000000,platform
+18080000,"Tools, Diagnostics & CDMO",2,18000000,18000000,supply_chain
+18080100,Life-Science Tools & Sequencing,3,18080000,18000000,supply_chain
+18080200,Diagnostics & Precision Testing,3,18080000,18000000,supply_chain
+18080300,CDMO / Contract Manufacturing,3,18080000,18000000,supply_chain
+18090000,Plasma-Derived & Blood Products,2,18000000,18000000,supply_chain
+18100000,Vaccines (Recombinant & Traditional),2,18000000,18000000,application
+18110000,Autoimmune & Immunology Therapeutics,2,18000000,18000000,application
+18120000,Biosimilars,2,18000000,18000000,application
+18130000,Diabetes Devices (CGM & Insulin Delivery),2,18000000,18000000,supply_chain
+18140000,Antiviral & Infectious-Disease Therapeutics,2,18000000,18000000,application
+18150000,Regenerative Medicine & Tissue Engineering,2,18000000,18000000,application
+18160000,Cardiovascular & Heart-Failure Therapeutics,2,18000000,18000000,application
+20000000,Aging Population,1,,20000000,
+20010000,Senior Care,2,20000000,20000000,service
+20020000,Senior Housing & Healthcare REITs,2,20000000,20000000,infrastructure
+20030000,Medical Devices for the Aging Body,2,20000000,20000000,supply_chain
+20040000,Chronic-Disease Pharma Franchises,2,20000000,20000000,application
+20050000,Hearing / Vision / Dental,2,20000000,20000000,supply_chain
+20050100,Hearing (aids & cochlear implants),3,20050000,20000000,supply_chain
+20050200,Vision & Eye Care,3,20050000,20000000,supply_chain
+20050300,Dental & Clear Aligners,3,20050000,20000000,supply_chain
+20060000,Home Healthcare & Hospice,2,20000000,20000000,service
+20070000,Mobility Aids & Assistive Technology,2,20000000,20000000,supply_chain
+20080000,Retirement Income & Annuities,2,20000000,20000000,platform
+20090000,Dialysis & Renal Care,2,20000000,20000000,application
+20100000,Death Care & Funeral Services,2,20000000,20000000,service
+22000000,Defense & Geopolitical Fragmentation,1,,22000000,
+22010000,Defense Primes — United States,2,22000000,22000000,infrastructure
+22020000,Defense Primes — Europe & Asia,2,22000000,22000000,infrastructure
+22030000,Naval Systems & Shipbuilding,2,22000000,22000000,infrastructure
+22040000,"Missiles, Munitions & Energetics",2,22000000,22000000,supply_chain
+22040100,Missiles & Precision-Guided Munitions,3,22040000,22000000,infrastructure
+22040200,Ammunition & Energetics,3,22040000,22000000,supply_chain
+22050000,Autonomous Systems & Counter-Drone,2,22000000,22000000,platform
+22050100,Loitering Munitions & Combat UAS,3,22050000,22000000,platform
+22050200,Counter-UAS / Counter-Drone,3,22050000,22000000,platform
+22060000,Defense Software & C4ISR,2,22000000,22000000,application
+22070000,Space Defense & Missile Warning,2,22000000,22000000,platform
+22080000,"Defense Electronics, EW & Sensors",2,22000000,22000000,supply_chain
+22090000,Sovereign Supply — Minerals & Reshoring Industrials,2,22000000,22000000,supply_chain
+22090100,Sovereign Critical Minerals & Magnets,3,22090000,22000000,supply_chain
+22090200,Defense Industrial Base — Strategic Materials & Components,3,22090000,22000000,supply_chain
+22100000,Soldier Systems & Protective Equipment,2,22000000,22000000,platform
+24000000,Digital Finance & Tokenization,1,,24000000,
+24010000,Stablecoin Issuers & Distribution,2,24000000,24000000,infrastructure
+24010100,Stablecoin Issuers,3,24010000,24000000,infrastructure
+24010200,Distribution & Revenue-Share Partners,3,24010000,24000000,platform
+24020000,Real-World Asset Tokenization,2,24000000,24000000,infrastructure
+24020100,Tokenized Funds & Treasuries (Asset Managers),3,24020000,24000000,infrastructure
+24020200,Tokenized Equities & Securities Rails,3,24020000,24000000,platform
+24030000,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",2,24000000,24000000,infrastructure
+24040000,Bitcoin / Crypto Treasury & Store-of-Value Proxies,2,24000000,24000000,service
+24040100,Pure Bitcoin-Treasury Vehicles,3,24040000,24000000,service
+24040200,Miner-Treasury Hybrids,3,24040000,24000000,service
+24050000,Payments Modernization & Rails,2,24000000,24000000,platform
+24060000,Digital Banking & Neobanks,2,24000000,24000000,application
+24070000,Digital Wealth & Robo-Advisory,2,24000000,24000000,application
+24080000,Digital Lending & Alt-Credit Platforms,2,24000000,24000000,platform
+26000000,Cybersecurity & Digital Trust,1,,26000000,
+26010000,Identity & Access Management,2,26000000,26000000,platform
+26010100,Workforce & Customer IAM (SSO/MFA),3,26010000,26000000,platform
+26010200,Privileged Access Management (PAM),3,26010000,26000000,platform
+26010300,Identity Governance & Administration (IGA),3,26010000,26000000,platform
+26020000,Cloud & Workload Security,2,26000000,26000000,platform
+26030000,Data Security & Cyber Resilience,2,26000000,26000000,platform
+26030100,Data Security Posture & DLP,3,26030000,26000000,platform
+26030200,Cyber Resilience & Ransomware Recovery,3,26030000,26000000,platform
+26040000,AI Security & Agent Guardrails,2,26000000,26000000,platform
+26050000,Endpoint & Network Security,2,26000000,26000000,infrastructure
+26050100,Endpoint Detection & Response (EDR/XDR),3,26050000,26000000,platform
+26050200,Network Security & SASE,3,26050000,26000000,infrastructure
+26060000,Security Operations (SIEM/SOAR/XDR/MDR),2,26000000,26000000,platform
+26070000,Post-Quantum & Cryptographic Trust,2,26000000,26000000,infrastructure
+28000000,Cloud & Digital Infrastructure,1,,28000000,
+28010000,Hyperscale Cloud (IaaS / PaaS),2,28000000,28000000,platform
+28010100,Mega-cap Hyperscalers,3,28010000,28000000,platform
+28010200,Specialized / Developer & Managed-Hosting Cloud,3,28010000,28000000,platform
+28020000,Horizontal SaaS,2,28000000,28000000,application
+28030000,Vertical SaaS,2,28000000,28000000,application
+28040000,Data Platforms & Analytics,2,28000000,28000000,platform
+28050000,Observability & DevOps,2,28000000,28000000,platform
+28060000,Edge & Content Delivery,2,28000000,28000000,infrastructure
+28070000,API & Integration (iPaaS),2,28000000,28000000,platform
+28080000,"Telecom Towers, Fiber & Colocation",2,28000000,28000000,infrastructure
+28090000,Enterprise Data Storage Systems,2,28000000,28000000,infrastructure
+30000000,Critical Materials & Supply Chain,1,,30000000,
+30010000,Rare Earths & Permanent Magnets,2,30000000,30000000,supply_chain
+30010100,Rare-Earth Mining & Oxide/Concentrate,3,30010000,30000000,mining
+30010200,"Magnets, Metals & Alloys",3,30010000,30000000,products
+30010300,"Separation, Refining & Rare-Earth Metals",3,30010000,30000000,refining
+30010400,Rare-Earth Recycling & Secondary Recovery,3,30010000,30000000,recycling
+30020000,Copper,2,30000000,30000000,supply_chain
+30020100,Copper Mining & Concentrate,3,30020000,30000000,mining
+30020200,Copper Smelting & Refining,3,30020000,30000000,refining
+30020300,Copper Fabrication & Products,3,30020000,30000000,products
+30020400,Copper Recycling & Secondary Metal,3,30020000,30000000,recycling
+30030000,Lithium,2,30000000,30000000,supply_chain
+30030100,Lithium Mining & Brine Extraction,3,30030000,30000000,mining
+30030200,Lithium Refining & Chemicals,3,30030000,30000000,refining
+30030300,Lithium Battery Recycling,3,30030000,30000000,recycling
+30040000,Nickel & Cobalt,2,30000000,30000000,supply_chain
+30040100,Nickel & Cobalt Mining,3,30040000,30000000,mining
+30040200,Nickel & Cobalt Smelting & Refining,3,30040000,30000000,refining
+30040300,Nickel & Cobalt Battery Chemicals & Precursors,3,30040000,30000000,chemicals
+30040400,Nickel & Cobalt Recycling,3,30040000,30000000,recycling
+30050000,Uranium & Nuclear Fuel Cycle,2,30000000,30000000,supply_chain
+30050100,Uranium Mining,3,30050000,30000000,mining
+30050200,"Conversion, Enrichment & Fuel",3,30050000,30000000,enrichment
+30050300,Nuclear Fuel Fabrication & Fuel Technology,3,30050000,30000000,fabrication
+30060000,Precious Metals,2,30000000,30000000,supply_chain
+30060100,Platinum Group Metals (PGM),3,30060000,30000000,pgm
+30060200,Gold,3,30060000,30000000,gold
+30060300,Silver,3,30060000,30000000,silver
+30070000,Semiconductor Materials,2,30000000,30000000,supply_chain
+30070100,Silicon Wafers & Substrates,3,30070000,30000000,silicon-substrates
+30070200,Process Chemicals & Photoresist,3,30070000,30000000,process-chemicals
+30070300,Electronic & Specialty Gases,3,30070000,30000000,electronic-gases
+30070400,Compound-Semi Substrates (GaN/SiC/GaAs),3,30070000,30000000,compound-substrates
+30080000,Specialty Chemicals & Industrial Gases,2,30000000,30000000,supply_chain
+30080100,Industrial Gases,3,30080000,30000000,gases
+30080200,Electronic & Semiconductor Materials,3,30080000,30000000,electronic-materials
+30080300,"Coatings, Adhesives & Sealants",3,30080000,30000000,coatings
+30080400,"Catalysts, Additives & Performance Chemicals",3,30080000,30000000,performance-chem
+30090000,Bulk & Structural Metals (Reshoring),2,30000000,30000000,supply_chain
+30090100,"Iron Ore, Bauxite & Metallurgical Inputs",3,30090000,30000000,mining
+30090200,Primary Steel & Aluminum Smelting,3,30090000,30000000,smelting
+30090300,"Structural Products, Fabrication & Metal Processing",3,30090000,30000000,products
+30090400,Metal Recycling & Scrap Processing,3,30090000,30000000,recycling
+32000000,Climate Adaptation & Water,1,,32000000,
+32010000,Water Utilities & Infrastructure,2,32000000,32000000,infrastructure
+32010100,Regulated Water & Wastewater Utilities,3,32010000,32000000,infrastructure
+32010200,Water Treatment & Flow Technology,3,32010000,32000000,supply_chain
+32010300,"Pipe, Stormwater & Smart Metering",3,32010000,32000000,supply_chain
+32020000,Cooling & Heat Resilience,2,32000000,32000000,supply_chain
+32030000,Climate-Resilient Agriculture & Food,2,32000000,32000000,supply_chain
+32030100,Precision Irrigation & Water-Efficient Systems,3,32030000,32000000,supply_chain
+32030200,"Resilient Crop Inputs (bred seed, nutrients, protection)",3,32030000,32000000,supply_chain
+32030300,Precision-Ag Equipment & Autonomy,3,32030000,32000000,supply_chain
+32040000,Climate Risk Analytics & Insurance,2,32000000,32000000,service
+32040100,Catastrophe & Climate Risk Analytics,3,32040000,32000000,platform
+32040200,Property/Casualty & Reinsurance Underwriting,3,32040000,32000000,service
+32050000,Resilient Buildings & Retrofit,2,32000000,32000000,infrastructure
+32060000,"Drought, Wildfire & Flood Resilience",2,32000000,32000000,infrastructure
+32070000,Waste Management & Circular Economy,2,32000000,32000000,infrastructure
+34000000,Longevity & Life Extension,1,,34000000,
+34010000,Cellular Reprogramming & Rejuvenation,2,34000000,34000000,platform
+34020000,Senolytics & Senescence Modulation,2,34000000,34000000,platform
+34030000,Metabolic Aging & Geroprotectors,2,34000000,34000000,platform
+34040000,NAD+ & Cellular Energetics,2,34000000,34000000,application
+34050000,Longevity Diagnostics & Aging Clocks,2,34000000,34000000,service
+34060000,Longevity Clinics & Healthspan Services,2,34000000,34000000,service
+34070000,GLP-1 Healthspan Proxies,2,34000000,34000000,application
+36000000,Space Economy,1,,36000000,
+36010000,Launch Services & Propulsion,2,36000000,36000000,infrastructure
+36020000,Satellite Connectivity & Direct-to-Device,2,36000000,36000000,service
+36020100,Direct-to-Device (satellite-to-cell),3,36020000,36000000,service
+36020200,"Satellite Broadband, MSS & Ground Equipment",3,36020000,36000000,service
+36030000,Earth Observation & Geospatial Data,2,36000000,36000000,service
+36040000,Satellite & Spacecraft Manufacturing,2,36000000,36000000,infrastructure
+36050000,Lunar & Cislunar Logistics,2,36000000,36000000,infrastructure
+36060000,In-Space Manufacturing & Commercial Stations,2,36000000,36000000,platform
+36070000,Human Spaceflight & Space Tourism,2,36000000,36000000,service
+38000000,Quantum Computing,1,,38000000,
+38010000,Quantum Hardware — Pure-plays,2,38000000,38000000,infrastructure
+38010100,Superconducting Qubits,3,38010000,38000000,infrastructure
+38010200,Trapped-Ion,3,38010000,38000000,infrastructure
+38010300,Quantum Annealing,3,38010000,38000000,infrastructure
+38010400,Photonic & Other Modalities,3,38010000,38000000,infrastructure
+38020000,Quantum Hardware — Hyperscaler / Diversified Embedded,2,38000000,38000000,infrastructure
+38030000,"Quantum Software, Algorithms & Cloud Access",2,38000000,38000000,platform
+38040000,Quantum Networking & QKD,2,38000000,38000000,platform
+38050000,Quantum-Safe / Post-Quantum Cryptography,2,38000000,38000000,application
+38060000,"Cryogenic, Control & Photonic Components",2,38000000,38000000,infrastructure
+40000000,Advanced Air Mobility (eVTOL),1,,40000000,
+40010000,Passenger eVTOL OEMs,2,40000000,40000000,application
+40010100,Piloted Western Air-Taxi OEMs,3,40010000,40000000,application
+40010200,Autonomous / Pilotless eVTOL,3,40010000,40000000,application
+40020000,Hybrid-Electric & Regional Electric Aircraft,2,40000000,40000000,application
+40030000,Cargo & Delivery Drone Systems,2,40000000,40000000,application
+40040000,"AAM Propulsion, Avionics & Supply Chain",2,40000000,40000000,supply_chain
+40050000,Vertiport Infrastructure & Airspace Integration,2,40000000,40000000,infrastructure
+42000000,Synthetic Biology (non-pharma),1,,42000000,
+42010000,Alt-Protein & Precision Fermentation,2,42000000,42000000,application
+42020000,Bio-Based Materials & Industrial Chemicals,2,42000000,42000000,supply_chain
+42030000,Sustainable Aviation Fuel & Bio-Fuels,2,42000000,42000000,application
+42040000,DNA Synthesis & Synbio Platform Tools,2,42000000,42000000,platform
+42050000,Agri-Biotech & Microbial Inputs,2,42000000,42000000,application
+44000000,Fusion Energy,1,,44000000,
+44010000,Fusion Pure-plays (Developers),2,44000000,44000000,application
+44020000,Magnets & HTS Superconductors,2,44000000,44000000,supply_chain
+44030000,Lasers & Pulsed Power (Inertial Confinement),2,44000000,44000000,supply_chain
+44040000,"Vacuum, Cryogenics & Plasma-Facing Components",2,44000000,44000000,supply_chain
+44050000,Utility Off-takers & Grid Integration (Future),2,44000000,44000000,service
+46000000,Brain-Computer Interface,1,,46000000,
+46010000,Invasive BCI Systems,2,46000000,46000000,platform
+46020000,Implantable Neural Electrodes & Sensing Components,2,46000000,46000000,supply_chain
+46030000,Neuromodulation & Closed-Loop Neurostimulation,2,46000000,46000000,application
+46030100,Deep Brain & Spinal Cord Stimulation (incumbents),3,46030000,46000000,application
+46030200,Responsive / Closed-Loop Neural Devices,3,46030000,46000000,application
+46030300,Peripheral & Cranial Nerve Stimulation,3,46030000,46000000,application
+46040000,Non-invasive BCI & Neurotech,2,46000000,46000000,platform
+46050000,Neural Signal Processing & Brain-Mapping Tools,2,46000000,46000000,infrastructure
+48000000,Spatial Computing / AR/VR,1,,48000000,
+48010000,VR / MR Headset OEMs,2,48000000,48000000,platform
+48020000,AI / AR Smart Glasses,2,48000000,48000000,platform
+48030000,XR Silicon & Processors,2,48000000,48000000,infrastructure
+48040000,Optical & Display Components,2,48000000,48000000,supply_chain
+48040100,Micro-Displays (micro-OLED / LCoS / MicroLED),3,48040000,48000000,supply_chain
+48040200,Waveguides & AR Optics,3,48040000,48000000,supply_chain
+48050000,"XR Content, Engines & Platforms",2,48000000,48000000,platform
+48060000,Enterprise AR & Field Service,2,48000000,48000000,application
+48070000,Industrial Metaverse & Digital Twin,2,48000000,48000000,application
+48080000,OLED & Display Materials,2,48000000,48000000,supply_chain
+50000000,Smart City / Autonomous Infrastructure,1,,50000000,
+50010000,Smart Metering & Grid Edge,2,50000000,50000000,infrastructure
+50020000,Connected Fleet & Telematics,2,50000000,50000000,platform
+50030000,"Geospatial, BIM & Urban Digital Twin",2,50000000,50000000,platform
+50040000,Intelligent Traffic & Tolling Systems,2,50000000,50000000,application
+50050000,Smart Buildings & Connected Lighting,2,50000000,50000000,application
+50060000,Urban Public Safety & Surveillance,2,50000000,50000000,application
+52000000,Psychedelic Medicine,1,,52000000,
+52010000,Psilocybin Therapeutics,2,52000000,52000000,application
+52020000,MDMA-Assisted Therapy,2,52000000,52000000,application
+52030000,Ketamine & Esketamine,2,52000000,52000000,application
+52040000,Novel Psychedelic & Next-Gen Pipeline,2,52000000,52000000,application
+54000000,Carbon Removal (DAC),1,,54000000,
+54010000,Direct Air Capture (DAC),2,54000000,54000000,infrastructure
+54020000,Mineralization & Enhanced Weathering,2,54000000,54000000,supply_chain
+54030000,Bio-based Removal (BECCS & Biochar),2,54000000,54000000,infrastructure
+54040000,Ocean-based Removal,2,54000000,54000000,infrastructure
+54050000,Carbon Market Infrastructure,2,54000000,54000000,platform
+56000000,Semiconductors,1,,56000000,
+56010000,Wafer-Fab Equipment & Lithography,2,56000000,56000000,supply_chain
+56010100,Lithography Systems,3,56010000,56000000,supply_chain
+56010200,"Deposition, Etch & Process Tools",3,56010000,56000000,supply_chain
+56010300,Process Control — Metrology & Inspection,3,56010000,56000000,supply_chain
+56020000,Foundry & Contract Fabrication,2,56000000,56000000,infrastructure
+56030000,EDA & Semiconductor IP,2,56000000,56000000,platform
+56040000,"Memory — DRAM, NAND & HBM",2,56000000,56000000,infrastructure
+56050000,"Logic, Compute & Connectivity Processors",2,56000000,56000000,infrastructure
+56060000,"Analog, Power & Discrete",2,56000000,56000000,infrastructure
+56070000,Materials & Specialty Chemicals,2,56000000,56000000,supply_chain
+56080000,Advanced Packaging & Test (OSAT),2,56000000,56000000,supply_chain
+56090000,Interconnect & Passive Components,2,56000000,56000000,supply_chain
+56090100,"Passive Components (MLCC, Capacitors, Inductors)",3,56090000,56000000,supply_chain
+56090200,Printed Circuit Boards (PCB & HDI),3,56090000,56000000,supply_chain
+56090300,PCB Laminates & Substrate Materials (CCL),3,56090000,56000000,supply_chain
+58000000,Aerospace & Aviation,1,,58000000,
+58010000,Aircraft Engines & Propulsion,2,58000000,58000000,supply_chain
+58020000,Airframe OEMs,2,58000000,58000000,infrastructure
+58030000,Aerostructures & Components,2,58000000,58000000,supply_chain
+58040000,Avionics & Aircraft Systems,2,58000000,58000000,supply_chain
+58050000,MRO & Aftermarket Services,2,58000000,58000000,service

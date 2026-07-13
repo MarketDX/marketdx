@@ -1,0 +1,352 @@
+source,relation,target_symbol,target_name,target_country,weight
+NVDA.US,competitor,AMD,Advanced Micro Devices Inc,USA,10
+NVDA.US,competitor,AVGO,Broadcom Inc,USA,5
+NVDA.US,competitor,MSFT,Microsoft Corporation,USA,2
+NVDA.US,competitor,AMZN,Amazon.com Inc,USA,2
+NVDA.US,competitor,MU,Micron Technology Inc,USA,2
+NVDA.US,competitor,2330,Taiwan Semiconductor Manufacturing Co. Ltd.,Taiwan,1
+NVDA.US,competitor,TSLA,Tesla Inc,USA,1
+NVDA.US,competitor,MRVL,Marvell Technology Group Ltd,USA,1
+NVDA.US,competitor,QCOM,Qualcomm Incorporated,USA,1
+NVDA.US,peer,INTC,Intel Corporation,USA,5
+NVDA.US,peer,MRVL,Marvell Technology Group Ltd,USA,5
+NVDA.US,peer,GOOGL,Alphabet Inc Class A,USA,4
+NVDA.US,peer,AMD,Advanced Micro Devices Inc,USA,4
+NVDA.US,peer,MSFT,Microsoft Corporation,USA,3
+NVDA.US,peer,AVGO,Broadcom Inc,USA,3
+NVDA.US,peer,688041,Hygon Information Technology Co. Ltd. A,China,3
+NVDA.US,peer,ALAB,"Astera Labs, Inc.",USA,3
+NVDA.US,peer,9888,Baidu Inc,Hong Kong,3
+NVDA.US,peer,9903,Shanghai Iluvatar Corex,Hong Kong,3
+NVDA.US,peer,1879,"Shanghai Xizhi Technology Co., Ltd.",Hong Kong,3
+NVDA.US,peer,3652,Digital Media Professionals Inc.,Japan,3
+MU.US,competitor,000660,SK Hynix Inc,Korea,4
+MU.US,competitor,NVDA,NVIDIA Corporation,USA,2
+MU.US,competitor,AAPL,Apple Inc.,USA,2
+MU.US,competitor,SNDK,Sandisk Corp,USA,2
+MU.US,competitor,META,Meta Platforms Inc.,USA,1
+MU.US,competitor,005930,Samsung Electronics Co Ltd,Korea,1
+MU.US,peer,005930,Samsung Electronics Co Ltd,Korea,2
+MU.US,peer,000660,SK Hynix Inc,Korea,2
+MU.US,peer,034730,SK Holdings Co Ltd,Korea,2
+MU.US,peer,6531,AP Memory Technology Corp,Taiwan,2
+MU.US,peer,PENG,"Penguin Solutions, Inc.",USA,2
+MU.US,peer,5351,Etron Technology,Taiwan,2
+MU.US,peer,SNDK,Sandisk Corp,USA,1
+MU.US,peer,285A,Kioxia Holdings Corporation,Japan,1
+MU.US,peer,603986,GigaDevice Semiconductor(Beiji,China,1
+MU.US,peer,688008,Montage Technology Co Ltd,China,1
+MU.US,peer,MCHP,Microchip Technology Inc,USA,1
+MU.US,peer,2408,Nanya Technology Corp,Taiwan,1
+AAPL.US,competitor,005930,Samsung Electronics Co Ltd,Korea,6
+AAPL.US,competitor,MU,Micron Technology Inc,USA,2
+AAPL.US,competitor,SPCX,Space Exploration Technologies Corp. Class A Common Stock,USA,1
+AAPL.US,peer,META,Meta Platforms Inc.,USA,2
+AAPL.US,peer,QCOM,Qualcomm Incorporated,USA,2
+AAPL.US,peer,2454,MediaTek Inc,Taiwan,2
+AAPL.US,peer,6758,Sony Group Corporation,Japan,2
+AAPL.US,peer,ALIMR,Immersion SA,France,2
+AAPL.US,peer,GOOGL,Alphabet Inc Class A,USA,1
+AAPL.US,peer,AMZN,Amazon.com Inc,USA,1
+AAPL.US,peer,005930,Samsung Electronics Co Ltd,Korea,1
+AAPL.US,peer,AMD,Advanced Micro Devices Inc,USA,1
+AAPL.US,peer,700,Tencent Holdings Ltd,Hong Kong,1
+AAPL.US,peer,INTC,Intel Corporation,USA,1
+AAPL.US,peer,0J5H,"Himax Technologies, Inc.",UK,1
+MSFT.US,competitor,NVDA,NVIDIA Corporation,USA,2
+MSFT.US,competitor,SPCX,Space Exploration Technologies Corp. Class A Common Stock,USA,1
+MSFT.US,competitor,META,Meta Platforms Inc.,USA,1
+MSFT.US,competitor,CRM,Salesforce.com Inc,USA,1
+MSFT.US,peer,GOOGL,Alphabet Inc Class A,USA,14
+MSFT.US,peer,AMZN,Amazon.com Inc,USA,9
+MSFT.US,peer,CRWD,Crowdstrike Holdings Inc,USA,7
+MSFT.US,peer,ACN,Accenture plc,USA,7
+MSFT.US,peer,700,Tencent Holdings Ltd,Hong Kong,5
+MSFT.US,peer,ORCL,Oracle Corporation,USA,5
+MSFT.US,peer,IBM,International Business Machines,USA,5
+MSFT.US,peer,PANW,Palo Alto Networks Inc,USA,5
+MSFT.US,peer,4716,Oracle Corporation Japan,Japan,5
+MSFT.US,peer,4704,Trend Micro Incorporated,Japan,5
+MSFT.US,peer,064400,LG CNS,Korea,5
+MSFT.US,peer,600756,Inspur Software Co Ltd,China,5
+GOOGL.US,competitor,TSLA,Tesla Inc,USA,3
+GOOGL.US,competitor,SPCX,Space Exploration Technologies Corp. Class A Common Stock,USA,1
+GOOGL.US,competitor,META,Meta Platforms Inc.,USA,1
+GOOGL.US,competitor,VZ,Verizon Communications Inc,USA,1
+GOOGL.US,competitor,UBER,Uber Technologies Inc,USA,1
+GOOGL.US,peer,MSFT,Microsoft Corporation,USA,14
+GOOGL.US,peer,AMZN,Amazon.com Inc,USA,12
+GOOGL.US,peer,ORCL,Oracle Corporation,USA,6
+GOOGL.US,peer,IBM,International Business Machines,USA,6
+GOOGL.US,peer,9888,Baidu Inc,Hong Kong,6
+GOOGL.US,peer,600756,Inspur Software Co Ltd,China,6
+GOOGL.US,peer,700,Tencent Holdings Ltd,Hong Kong,5
+GOOGL.US,peer,CRWD,Crowdstrike Holdings Inc,USA,5
+GOOGL.US,peer,ACN,Accenture plc,USA,5
+GOOGL.US,peer,018260,Samsung SDS Co Ltd,Korea,5
+GOOGL.US,peer,064400,LG CNS,Korea,5
+GOOGL.US,peer,300634,Richinfo Technology Co Ltd Class A,China,5
+META.US,competitor,CRWV,"CoreWeave, Inc. Class A Common Stock",USA,4
+META.US,competitor,NBIS,Nebius Group N.V.,USA,2
+META.US,competitor,GOOGL,Alphabet Inc Class A,USA,1
+META.US,competitor,MSFT,Microsoft Corporation,USA,1
+META.US,competitor,AMZN,Amazon.com Inc,USA,1
+META.US,competitor,MU,Micron Technology Inc,USA,1
+META.US,peer,AAPL,Apple Inc.,USA,2
+META.US,peer,GOOGL,Alphabet Inc Class A,USA,2
+META.US,peer,700,Tencent Holdings Ltd,Hong Kong,2
+META.US,peer,9988,Alibaba Group Holding Ltd,Hong Kong,2
+META.US,peer,603296,HUAQIN TECHNOLOGY LTD A,China,2
+META.US,peer,U,Unity Software Inc,USA,2
+META.US,peer,002241,Goertek Inc,China,2
+META.US,peer,SNAP,Snap Inc,USA,2
+META.US,peer,300058,BlueFocus Communication Group,China,2
+META.US,peer,0020,SenseTime Group Inc Class B,Hong Kong,2
+META.US,peer,4938,Pegatron Corp,Taiwan,2
+META.US,peer,380550,380550,Korea,2
+AMZN.US,competitor,SPCX,Space Exploration Technologies Corp. Class A Common Stock,USA,3
+AMZN.US,competitor,NVDA,NVIDIA Corporation,USA,2
+AMZN.US,competitor,META,Meta Platforms Inc.,USA,1
+AMZN.US,competitor,WMT,Walmart Inc.,USA,1
+AMZN.US,competitor,QCOM,Qualcomm Incorporated,USA,1
+AMZN.US,competitor,T,AT&T Inc.,USA,1
+AMZN.US,competitor,FDX,FedEx Corporation,USA,1
+AMZN.US,competitor,SFM,Sprouts Farmers Market LLC,USA,1
+AMZN.US,peer,GOOGL,Alphabet Inc Class A,USA,12
+AMZN.US,peer,MSFT,Microsoft Corporation,USA,9
+AMZN.US,peer,9988,Alibaba Group Holding Ltd,Hong Kong,5
+AMZN.US,peer,700,Tencent Holdings Ltd,Hong Kong,4
+AMZN.US,peer,IBM,International Business Machines,USA,4
+AMZN.US,peer,9888,Baidu Inc,Hong Kong,4
+AMZN.US,peer,SPCX,Space Exploration Technologies Corp. Class A Common Stock,USA,3
+AMZN.US,peer,ORCL,Oracle Corporation,USA,3
+AMZN.US,peer,079550,LIG Nex1 Co Ltd,Korea,3
+AMZN.US,peer,300053,Zhuhai Orbita Control Eng,China,3
+AMZN.US,peer,NVDA,NVIDIA Corporation,USA,2
+AMZN.US,peer,TSLA,Tesla Inc,USA,2
+AMD.US,competitor,NVDA,NVIDIA Corporation,USA,10
+AMD.US,competitor,INTC,Intel Corporation,USA,3
+AMD.US,peer,NVDA,NVIDIA Corporation,USA,4
+AMD.US,peer,INTC,Intel Corporation,USA,4
+AMD.US,peer,9903,Shanghai Iluvatar Corex,Hong Kong,4
+AMD.US,peer,3652,Digital Media Professionals Inc.,Japan,4
+AMD.US,peer,AVGO,Broadcom Inc,USA,3
+AMD.US,peer,MRVL,Marvell Technology Group Ltd,USA,3
+AMD.US,peer,688256,Cambricon Technologies Corp Ltd,China,3
+AMD.US,peer,688041,Hygon Information Technology Co. Ltd. A,China,3
+AMD.US,peer,300053,Zhuhai Orbita Control Eng,China,3
+AMD.US,peer,2533,Black Sesame Intl Hldg Ltd,Hong Kong,3
+AMD.US,peer,6150,TUL Corporation,Taiwan,3
+AMD.US,peer,GOOGL,Alphabet Inc Class A,USA,2
+QCOM.US,competitor,NVDA,NVIDIA Corporation,USA,1
+QCOM.US,competitor,AMZN,Amazon.com Inc,USA,1
+QCOM.US,competitor,2330,Taiwan Semiconductor Manufacturing Co. Ltd.,Taiwan,1
+QCOM.US,peer,2454,MediaTek Inc,Taiwan,3
+QCOM.US,peer,688608,Bestechnic (Shanghai) Co. Ltd. A,China,3
+QCOM.US,peer,AAPL,Apple Inc.,USA,2
+QCOM.US,peer,GOOGL,Alphabet Inc Class A,USA,2
+QCOM.US,peer,005930,Samsung Electronics Co Ltd,Korea,2
+QCOM.US,peer,AMD,Advanced Micro Devices Inc,USA,2
+QCOM.US,peer,INTC,Intel Corporation,USA,2
+QCOM.US,peer,0J5H,"Himax Technologies, Inc.",UK,2
+QCOM.US,peer,688256,Cambricon Technologies Corp Ltd,China,2
+QCOM.US,peer,1810,Xiaomi Corp,Hong Kong,2
+QCOM.US,peer,STMPA,STMicroelectronics N.V.,France,2
+QCOM.US,peer,9888,Baidu Inc,Hong Kong,2
+SNDK.US,competitor,MU,Micron Technology Inc,USA,2
+SNDK.US,peer,005930,Samsung Electronics Co Ltd,Korea,1
+SNDK.US,peer,MU,Micron Technology Inc,USA,1
+SNDK.US,peer,000660,SK Hynix Inc,Korea,1
+SNDK.US,peer,285A,Kioxia Holdings Corporation,Japan,1
+SNDK.US,peer,603986,GigaDevice Semiconductor(Beiji,China,1
+SNDK.US,peer,MCHP,Microchip Technology Inc,USA,1
+SNDK.US,peer,2408,Nanya Technology Corp,Taiwan,1
+SNDK.US,peer,301308,Shenzhen Longsys Electronics Co. Ltd. A,China,1
+SNDK.US,peer,688525,Biwin Storage Technology Co. Ltd. A,China,1
+SNDK.US,peer,001309,Shenzhen Techwinsemi Technology Co. Ltd.,China,1
+SNDK.US,peer,034730,SK Holdings Co Ltd,Korea,1
+SNDK.US,peer,2344,Winbond Electronics Corp,Taiwan,1
+INTC.US,competitor,2330,Taiwan Semiconductor Manufacturing Co. Ltd.,Taiwan,5
+INTC.US,competitor,AMD,Advanced Micro Devices Inc,USA,3
+INTC.US,peer,NVDA,NVIDIA Corporation,USA,5
+INTC.US,peer,AMD,Advanced Micro Devices Inc,USA,4
+INTC.US,peer,005930,Samsung Electronics Co Ltd,Korea,3
+INTC.US,peer,9903,Shanghai Iluvatar Corex,Hong Kong,3
+INTC.US,peer,6150,TUL Corporation,Taiwan,3
+INTC.US,peer,3652,Digital Media Professionals Inc.,Japan,3
+INTC.US,peer,GOOGL,Alphabet Inc Class A,USA,2
+INTC.US,peer,MSFT,Microsoft Corporation,USA,2
+INTC.US,peer,AMZN,Amazon.com Inc,USA,2
+INTC.US,peer,AVGO,Broadcom Inc,USA,2
+INTC.US,peer,0J5H,"Himax Technologies, Inc.",UK,2
+INTC.US,peer,MRVL,Marvell Technology Group Ltd,USA,2
+MSTR.US,peer,NXTT,Next Technology Holding Inc,USA,3
+MSTR.US,peer,GOOGL,Alphabet Inc Class A,USA,2
+MSTR.US,peer,MSFT,Microsoft Corporation,USA,2
+MSTR.US,peer,ORCL,Oracle Corporation,USA,2
+MSTR.US,peer,PLTR,Palantir Technologies Inc.,USA,2
+MSTR.US,peer,IBM,International Business Machines,USA,2
+MSTR.US,peer,ACN,Accenture plc,USA,2
+MSTR.US,peer,REL,Relx PLC,UK,2
+MSTR.US,peer,6702,Fujitsu Limited,Japan,2
+MSTR.US,peer,CAP,Capgemini SE,France,2
+MSTR.US,peer,018260,Samsung SDS Co Ltd,Korea,2
+MSTR.US,peer,BAH,Booz Allen Hamilton Holding,USA,2
+ORCL.US,competitor,RMNI,Rimini Street Inc,USA,1
+ORCL.US,peer,GOOGL,Alphabet Inc Class A,USA,6
+ORCL.US,peer,MSFT,Microsoft Corporation,USA,5
+ORCL.US,peer,ACN,Accenture plc,USA,5
+ORCL.US,peer,301236,iSoftStone Information Technology (Group) Co. Ltd.,China,5
+ORCL.US,peer,300634,Richinfo Technology Co Ltd Class A,China,5
+ORCL.US,peer,700,Tencent Holdings Ltd,Hong Kong,4
+ORCL.US,peer,6701,NEC Corporation,Japan,4
+ORCL.US,peer,018260,Samsung SDS Co Ltd,Korea,4
+ORCL.US,peer,064400,LG CNS,Korea,4
+ORCL.US,peer,300339,Jiangsu Hoperun Software Co Ltd,China,4
+ORCL.US,peer,688615,INTSIG ORD A (SHH) EQSW Exp:,China,4
+ORCL.US,peer,2718,Mininglamp Technology,Hong Kong,4
+AVGO.US,competitor,NVDA,NVIDIA Corporation,USA,5
+AVGO.US,competitor,005930,Samsung Electronics Co Ltd,Korea,2
+AVGO.US,competitor,MRVL,Marvell Technology Group Ltd,USA,1
+AVGO.US,competitor,2454,MediaTek Inc,Taiwan,1
+AVGO.US,peer,MRVL,Marvell Technology Group Ltd,USA,5
+AVGO.US,peer,6701,NEC Corporation,Japan,5
+AVGO.US,peer,MSFT,Microsoft Corporation,USA,4
+AVGO.US,peer,064400,LG CNS,Korea,4
+AVGO.US,peer,NVDA,NVIDIA Corporation,USA,3
+AVGO.US,peer,GOOGL,Alphabet Inc Class A,USA,3
+AVGO.US,peer,AMD,Advanced Micro Devices Inc,USA,3
+AVGO.US,peer,CSCO,Cisco Systems Inc,USA,3
+AVGO.US,peer,ACN,Accenture plc,USA,3
+AVGO.US,peer,ALAB,"Astera Labs, Inc.",USA,3
+AVGO.US,peer,SMTC,Semtech Corporation,USA,3
+AVGO.US,peer,002049,Unigroup Guoxin Microelectronics Co Ltd,China,3
+SPCX.US,competitor,AMZN,Amazon.com Inc,USA,3
+SPCX.US,competitor,RKLB,Rocket Lab USA Inc.,USA,3
+SPCX.US,competitor,TMUS,T-Mobile US Inc,USA,2
+SPCX.US,competitor,T,AT&T Inc.,USA,2
+SPCX.US,competitor,ASTS,Ast Spacemobile Inc,USA,2
+SPCX.US,competitor,LUNR,Intuitive Machines Inc. ,USA,2
+SPCX.US,competitor,AAPL,Apple Inc.,USA,1
+SPCX.US,competitor,GOOGL,Alphabet Inc Class A,USA,1
+SPCX.US,competitor,MSFT,Microsoft Corporation,USA,1
+SPCX.US,competitor,MS,Morgan Stanley,USA,1
+SPCX.US,competitor,VRTX,Vertex Pharmaceuticals Inc,USA,1
+SPCX.US,competitor,CHTR,Charter Communications Inc,USA,1
+SPCX.US,peer,AMZN,Amazon.com Inc,USA,3
+SPCX.US,peer,BA,The Boeing Company,USA,3
+SPCX.US,peer,9888,Baidu Inc,Hong Kong,3
+SPCX.US,peer,079550,LIG Nex1 Co Ltd,Korea,3
+SPCX.US,peer,0BOE,Boeing Co.,UK,3
+SPCX.US,peer,GOOGL,Alphabet Inc Class A,USA,2
+SPCX.US,peer,MSFT,Microsoft Corporation,USA,2
+SPCX.US,peer,700,Tencent Holdings Ltd,Hong Kong,2
+SPCX.US,peer,PLTR,Palantir Technologies Inc.,USA,2
+SPCX.US,peer,CRM,Salesforce.com Inc,USA,2
+SPCX.US,peer,NOW,ServiceNow Inc,USA,2
+SPCX.US,peer,ACN,Accenture plc,USA,2
+TSLA.US,competitor,002594,BYD Co Ltd Class A,China,5
+TSLA.US,competitor,GOOGL,Alphabet Inc Class A,USA,3
+TSLA.US,competitor,NVDA,NVIDIA Corporation,USA,1
+TSLA.US,competitor,9888,Baidu Inc,Hong Kong,1
+TSLA.US,competitor,LCID,Lucid Group Inc,USA,1
+TSLA.US,peer,2308,Delta Electronics Inc,Taiwan,4
+TSLA.US,peer,9888,Baidu Inc,Hong Kong,4
+TSLA.US,peer,300376,East Group Co Ltd,China,4
+TSLA.US,peer,002843,Bichamp Cutting Technology Hunan Co Ltd,China,4
+TSLA.US,peer,001266,Shanghai Smart Control Co. Ltd.,China,4
+TSLA.US,peer,5309,Sysgration Ltd,Taiwan,4
+TSLA.US,peer,GOOGL,Alphabet Inc Class A,USA,3
+TSLA.US,peer,MHID,Mahindra & Mahindra Limited,UK,3
+TSLA.US,peer,ABBN,ABB Ltd,Switzerland,3
+TSLA.US,peer,IBE1,Iberdrola S.A.,Germany,3
+TSLA.US,peer,DELTA,Delta Electronics (Thailand) Public Company Limited,Thailand,3
+TSLA.US,peer,002594,BYD Co Ltd Class A,China,3
+WDC.US,competitor,STX,Seagate Technology PLC,USA,1
+WDC.US,peer,IBM,International Business Machines,USA,2
+WDC.US,peer,GOOGL,Alphabet Inc Class A,USA,1
+WDC.US,peer,MSFT,Microsoft Corporation,USA,1
+WDC.US,peer,AMZN,Amazon.com Inc,USA,1
+WDC.US,peer,AVGO,Broadcom Inc,USA,1
+WDC.US,peer,DELL,Dell Technologies Inc,USA,1
+WDC.US,peer,STX,Seagate Technology PLC,USA,1
+WDC.US,peer,601138,Foxconn Industrial Internet Co Ltd,China,1
+WDC.US,peer,6501,"Hitachi, Ltd.",Japan,1
+WDC.US,peer,601728,China Telecom Corp Ltd,China,1
+WDC.US,peer,HPE,Hewlett Packard Enterprise Co,USA,1
+WDC.US,peer,0992,Lenovo Group,Hong Kong,1
+ASML.AS,peer,301629,"Sidea Semiconductor Equipment (Shenzhen) Co., Ltd.",China,3
+ASML.AS,peer,ONTO,Onto Innovation Inc,USA,2
+ASML.AS,peer,6951,JEOL Ltd.,Japan,2
+ASML.AS,peer,SMHN,SÜSS MicroTec SE,Germany,2
+ASML.AS,peer,0MQG,Mycronic AB,UK,2
+ASML.AS,peer,AMAT,Applied Materials Inc,USA,1
+ASML.AS,peer,KLAC,KLA Corporation,USA,1
+ASML.AS,peer,8035,Tokyo Electron Ltd.,Japan,1
+ASML.AS,peer,6857,Advantest Corp.,Japan,1
+ASML.AS,peer,ITW,Illinois Tool Works Inc,USA,1
+ASML.AS,peer,COHR,Coherent Inc,USA,1
+ASML.AS,peer,KEYS,Keysight Technologies Inc,USA,1
+AMAT.US,peer,6187,All Ring Tech Co Ltd,Taiwan,3
+AMAT.US,peer,8064,Contrel Technology Co Ltd,Taiwan,3
+AMAT.US,peer,6298,"Y.A.C.HOLDINGS CO.,LTD.",Japan,3
+AMAT.US,peer,KLAC,KLA Corporation,USA,2
+AMAT.US,peer,688120,Hwatsing Technology Co. Ltd. A,China,2
+AMAT.US,peer,7735,"SCREEN Holdings Co., Ltd",Japan,2
+AMAT.US,peer,300567,Wuhan Jingce Electronic Technology Co Ltd,China,2
+AMAT.US,peer,688147,Jiangsu Leadmicro Nano Technology Co. Ltd. A,China,2
+AMAT.US,peer,IFCN,Inficon Holding,Switzerland,2
+AMAT.US,peer,7729,"Tokyo Seimitsu Co., Ltd",Japan,2
+AMAT.US,peer,6754,Anritsu Corporation,Japan,2
+AMAT.US,peer,VECO,Veeco Instruments Inc,USA,2
+LRCX.US,peer,AMAT,Applied Materials Inc,USA,1
+LRCX.US,peer,8035,Tokyo Electron Ltd.,Japan,1
+LRCX.US,peer,6501,"Hitachi, Ltd.",Japan,1
+LRCX.US,peer,002371,NAURA Technology Group Co Ltd,China,1
+LRCX.US,peer,688012,Advanced Micro Fabrication Inc,China,1
+LRCX.US,peer,0XXT,Atlas Copco AB Series A,UK,1
+LRCX.US,peer,ASM,ASM International NV,Netherlands,1
+LRCX.US,peer,6146,Disco Corporation,Japan,1
+LRCX.US,peer,688072,Piotech Inc. A,China,1
+LRCX.US,peer,688082,ACM Research Shanghai Inc,China,1
+LRCX.US,peer,688120,Hwatsing Technology Co. Ltd. A,China,1
+LRCX.US,peer,MKSI,MKS Instruments Inc,USA,1
+DELL.US,competitor,SMCI,Super Micro Computer Inc,USA,1
+DELL.US,competitor,ARW,Arrow Electronics Inc,USA,1
+DELL.US,peer,IBM,International Business Machines,USA,2
+DELL.US,peer,601138,Foxconn Industrial Internet Co Ltd,China,2
+DELL.US,peer,HPE,Hewlett Packard Enterprise Co,USA,2
+DELL.US,peer,0992,Lenovo Group,Hong Kong,2
+DELL.US,peer,6702,Fujitsu Limited,Japan,2
+DELL.US,peer,603019,Dawning Information Industry Co Ltd,China,2
+DELL.US,peer,000977,Inspur Electronic Info Industr,China,2
+DELL.US,peer,SMCI,Super Micro Computer Inc,USA,2
+DELL.US,peer,000938,Unisplendour Corp Ltd,China,2
+DELL.US,peer,000066,China Greatwall Computer Shenzhen Co Ltd,China,2
+DELL.US,peer,2376,Gigabyte Technology Co Ltd,Taiwan,2
+DELL.US,peer,PENG,"Penguin Solutions, Inc.",USA,2
+XOM.US,peer,LTOD,Larsen & Toubro Limited,UK,1
+XOM.US,peer,BRK-B,Berkshire Hathaway Inc,USA,1
+XOM.US,peer,GEV,GE Vernova LLC,USA,1
+XOM.US,peer,SHEL,Shell plc,UK,1
+XOM.US,peer,NEE,Nextera Energy Inc,USA,1
+XOM.US,peer,TTE,TotalEnergies SE,France,1
+XOM.US,peer,IBE1,Iberdrola S.A.,Germany,1
+XOM.US,peer,ENR,Siemens Energy AG,Germany,1
+XOM.US,peer,BP-A,BP p.l.c,UK,1
+XOM.US,peer,ENB,Enbridge Inc,USA,1
+XOM.US,peer,SO,Southern Company,USA,1
+XOM.US,peer,BP,BP PLC,UK,1
+GS.US,competitor,JPM,JPMorgan Chase & Co,USA,2
+KLAC.US,peer,AMAT,Applied Materials Inc,USA,2
+KLAC.US,peer,002916,Shennan Circuits Co Ltd Class A,China,2
+KLAC.US,peer,4062,"IBIDEN CO., LTD.",Japan,2
+KLAC.US,peer,JBL,Jabil Circuit Inc,USA,2
+KLAC.US,peer,301200,Shenzhen Han's CNC Technology Co. Ltd.,China,2
+KLAC.US,peer,300567,Wuhan Jingce Electronic Technology Co Ltd,China,2
+KLAC.US,peer,603773,WG Tech JiangXi Co Ltd,China,2
+KLAC.US,peer,6754,Anritsu Corporation,Japan,2
+KLAC.US,peer,6187,All Ring Tech Co Ltd,Taiwan,2
+KLAC.US,peer,6510,Chunghwa Precision Test Tech Co Ltd,Taiwan,2
+KLAC.US,peer,002957,Shenzhen Colibri Technologies Co Ltd,China,2
+KLAC.US,peer,3167,Ta Liang Technology Co Ltd,Taiwan,2

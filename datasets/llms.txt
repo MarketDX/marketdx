@@ -1,0 +1,67 @@
+# MarketDX — Financial Impact Signals (sample dataset)
+
+> A bounded, richly-labeled sample of the MarketDX financial impact graph: news → market impact across
+> stocks, commodities, FX, crypto, AND private companies. One row per (news event × affected entity ×
+> aspect), where `aspect` is the causal channel (WHY) and `direction` is the model's read of whether the
+> news helps or hurts the entity. It is a research / screening / feature layer — NOT a predictive price
+> signal: `direction` describes the news content, it does not forecast returns (news is largely priced in
+> by the time it's public). Machine-readable schema (types, enums, joins) is in `datapackage.json`
+> (Frictionless standard); human dictionary in `SCHEMA.md`; runnable examples in `examples/loader.py`.
+
+If you were asked to "study this folder": read `datapackage.json` for the exact schema + join keys, then
+run `examples/loader.py` to see every angle materialize. Everything below is reproducible against the live
+API — see "Go live".
+
+## Files (what each answers)
+
+- `data/impact-signals.csv` (4,036 rows): THE CORE. `(event × entity × aspect)`. Slice it many ways:
+  by `entity_type` (asset-class focus: commodity/forex/crypto), by `aspect ∈ {monetary,tariff,geopolitics}`
+  (macro), by `impact=indirect` (ripple), by `entity_type=private` (beyond tickers).
+- `data/impact-signals.jsonl`: same, nested (`entities[] → impact.aspects[]`) + extra aggregate/meta fields.
+- `data/screener.csv` (94): curated "who's winning/losing on X" — 6 patterns, ranked stocks + `top_reason`.
+- `data/discover.csv` (456): semantic search — 15 plain-English `question`s → news matched BY MEANING + entities.
+- `data/relationships.csv` (351): news-derived company graph — `competitor` + `peer` edges with `weight`.
+- `data/private-impact.csv` (297): beyond tickers — impact on non-listed cos (OpenAI, Anthropic, Ripple…).
+- `data/private-roster.csv` (186): the private/off-coverage universe mapped to trends (coverage breadth).
+- `data/megatrends.csv` (335): the trend taxonomy (join target for `node_name` / `megatrend_node`).
+
+## How to read one core row
+
+`published_at, title, brief_text, entity_name, entity_ticker, entity_type, direction, aspect, reason,
+relevance, impact, impact_score, theme, node_name, entity_country, publisher, url`
+→ *"On {published_at}, '{title}' affected {entity_name} ({entity_type}) {direction} via {aspect}, because
+{reason}."* One entity hit through several aspects = several rows.
+
+## Joins (don't guess — these are the keys)
+
+- `impact-signals.node_name` = `private-impact.node_name` = `private-roster.megatrend_node` → `megatrends.name`
+- `relationships.source` (full ticker, e.g. `NVDA.US`) → `impact-signals.entity_ticker`
+- ⚠️ `screener.symbol` and `relationships.target_symbol` are BARE (e.g. `MU`) — not directly equal to
+  `entity_ticker` (`MU.US`); match on the symbol prefix if you need to bridge them.
+
+## Controlled vocabularies (complete — do not infer from samples)
+
+- `entity_type`: stock · commodity · forex · crypto · private · public_off_coverage
+- `direction` / `net_direction`: pos · neg · ambiguous
+- `aspect` (10, + empty): demand · supply · pricing · capital · competition · technology · regulation ·
+  tariff · geopolitics · monetary
+- `impact`: direct (epicenter) · indirect (ripple)
+- `theme`: ai-power · semiconductors · commodities · forex · crypto · ai · digital-finance
+- `relation`: competitor · peer   ·   `exposure`: core · secondary
+- `relevance`, `similarity`, `top_relevance`: 0–1   ·   `impact_score`: 1–5   ·   `published_at`: ISO-8601 UTC
+
+## Caveats (labels are model-generated)
+
+- CSVs are curated: every row is a real impact signal (mentioned-only entities live only in the `.jsonl`).
+- Private companies are MENTIONED far more than they are impact-SCORED — the private-impact file is the
+  scored subset; the roster is the fuller coverage.
+- Impact labels reflect model judgment at publish time and aren't infallible.
+- ⚠️ NOT a price predictor. `direction` is the news's content lean, not a return forecast — do not treat it
+  as a buy/sell signal. Use it to structure/understand the flow, or as one feature among your own data.
+
+## Go live (this sample → the live graph)
+
+Same shapes, live and complete, via the MarketDX Data API:
+`GET https://api.marketdx.lab.ai/v1/news?megatrend=10040000&include=entities,impact&impact=indirect`
+(header `Authorization: Bearer <key>`). Playground (no signup): https://marketdx.lab.ai/playground ·
+Docs & pricing: https://marketdx.lab.ai
