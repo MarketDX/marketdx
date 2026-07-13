@@ -14,14 +14,14 @@ API — see "Go live".
 
 ## Files (what each answers)
 
-- `data/impact-signals.csv` (4,038 rows): THE CORE. `(event × entity × aspect)`. Slice it many ways:
+- `data/impact-signals.csv` (3,573 rows): THE CORE. `(event × entity × aspect)`. Slice it many ways:
   by `entity_type` (asset-class focus: commodity/forex/crypto), by `aspect ∈ {monetary,tariff,geopolitics}`
   (macro), by `impact=indirect` (ripple), by `entity_type=private` (beyond tickers).
 - `data/impact-signals.jsonl`: same, nested (`entities[] → impact.aspects[]`) + extra aggregate/meta fields.
 - `data/screener.csv` (94): curated "who's winning/losing on X" — 6 patterns, ranked stocks + `top_reason`.
-- `data/discover.csv` (456): semantic search — 15 plain-English `question`s → news matched BY MEANING + entities.
+- `data/discover.csv` (378): semantic search — 15 plain-English `question`s → news matched BY MEANING + entities.
 - `data/relationships.csv` (351): news-derived company graph — `competitor` + `peer` edges with `weight`.
-- `data/private-impact.csv` (297): beyond tickers — impact on non-listed cos (OpenAI, Anthropic, Ripple…).
+- `data/private-impact.csv` (296): beyond tickers — impact on non-listed cos (OpenAI, Anthropic, Ripple…).
 - `data/private-roster.csv` (1,031): the private/off-coverage universe mapped to trends (coverage breadth).
 - `data/megatrends.csv` (335): the trend taxonomy (join target for `node_name` / `megatrend_node`).
 

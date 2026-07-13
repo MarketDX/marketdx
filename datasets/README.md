@@ -13,16 +13,16 @@ Graph** — the downloadable twin of our [live playground](https://marketdx.lab.
 
 | file | what | rows |
 |---|---|---|
-| [`data/impact-signals.csv`](data/impact-signals.csv) / [`.jsonl`](data/impact-signals.jsonl) | **the core** — one row per `event × entity × aspect`; **all asset classes** | 4,038 |
+| [`data/impact-signals.csv`](data/impact-signals.csv) / [`.jsonl`](data/impact-signals.jsonl) | **the core** — one row per `event × entity × aspect`; **all asset classes** | 3,573 |
 | [`data/screener.csv`](data/screener.csv) | curated screens — 6 "who the news is helping / hurting on X" patterns (the model's read) | 94 |
-| [`data/discover.csv`](data/discover.csv) | **semantic search** — 15 plain-English questions → impact-labeled hits (incl. private) | 456 |
+| [`data/discover.csv`](data/discover.csv) | **semantic search** — 15 plain-English questions → impact-labeled hits (incl. private) | 378 |
 | [`data/relationships.csv`](data/relationships.csv) | **news-derived** competitor + peer graph (edge list) | 351 |
-| [`data/private-impact.csv`](data/private-impact.csv) / [`.jsonl`](data/private-impact.jsonl) | **beyond tickers** — impact on OpenAI, Anthropic, Stripe… | 297 |
+| [`data/private-impact.csv`](data/private-impact.csv) / [`.jsonl`](data/private-impact.jsonl) | **beyond tickers** — impact on OpenAI, Anthropic, Stripe… | 296 |
 | [`data/private-roster.csv`](data/private-roster.csv) | the private universe mapped to trends | 1,031 |
 | [`data/megatrends.csv`](data/megatrends.csv) | the 335-node trend taxonomy (interpret `node_id`) | 335 |
 
 ```
-2,042 events · 4,038 impact labels · themes: AI-Power · Semiconductors  (+ AI · Digital Finance for private)
+1,801 events · 3,573 impact labels · themes: AI-Power · Semiconductors  (+ AI · Digital Finance for private)
 asset classes: stock · commodity · forex · crypto · private   ·   2026-06-25 → 2026-07-06   ·   CC BY 4.0
 ```
 
@@ -100,7 +100,7 @@ competition-flavoured coverage (`NVDA↔AMD` is the heaviest); peer edges from s
 Two files. [`private-roster.csv`](data/private-roster.csv) maps **1,031 private / off-coverage firms**
 (OpenAI, Anthropic, SpaceX, ByteDance, Stripe…) to the trends they belong to — the *coverage* no
 ticker-keyed feed (Bloomberg / Polygon / Alpha Vantage) can offer at all.
-[`private-impact.csv`](data/private-impact.csv) is the subset we scored per-entity impact on — **297
+[`private-impact.csv`](data/private-impact.csv) is the subset we scored per-entity impact on — **296
 signals** (Ripple Labs · Anthropic · Binance · YMTC · EDF), same `direction · aspect · reason`, ripple
 included. Honest caveat: private companies are **mentioned** far more than they're impact-*scored* (the
 per-entity impact layer is thinner for non-listed names) — every mention is preserved in the `.jsonl`.
@@ -153,6 +153,7 @@ Impact labels are model-generated, so the CSVs are **curated, not raw**:
   rows; they live in the `.jsonl` as nested context so nothing is hidden.
 - **Entity resolution is cleaned** — a company's news no longer drags in its preferred shares, money-market
   funds, ETFs or index lines; ADRs collapse to the home listing (e.g. `HSBC.US → HSBA.LSE`).
+- **Near-duplicate stories collapsed** — republished/rewritten versions of the same story are merged (cosine-clustered, one representative per group), so the feed is concise.
 - **Real publisher, de-aggregated** — `publisher` is the actual outlet (Reuters, Business Wire, The Motley
   Fool …), resolved *through* the host it was republished on (finance.yahoo.com), not the host itself.
 - **Source-vs-subject filtered** — when a research house issues a forecast (*"Goldman cuts its Brent
