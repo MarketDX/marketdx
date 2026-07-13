@@ -78,6 +78,46 @@ df.groupby(["entity_type", "direction"]).size()      # who the news lands on, +/
 df[df.aspect == "tariff"].entity_name.value_counts()  # who the tariff channel touches
 ```
 
+## Filtering — read this before you filter
+
+**Feed filters are EVENT-level, not row-level.** `news(direction=…, aspect=…, news_type=…, country=…)`
+selects **articles** that contain *at least one* matching impact and returns the **whole** article with
+**all** its entities and aspects. So `direction="pos"` can return an article that also moves something `neg`,
+and `aspect="supply"` can return one whose other entities are hit via `monetary`. For exact per-row
+filtering, **post-filter the entities**:
+
+```python
+for s in mdx.news(news_type="commodity_supply", direction="pos"):
+    for e in s.entities:
+        for a in (e.impact.aspects if e.impact else []):
+            if e.type == "commodity" and a.direction == "pos" and a.aspect == "supply":
+                ...   # exact row you asked for
+```
+
+**Two different "direct" axes** (don't conflate):
+- `Signal.impact_type` (`direct`|`indirect`) = the **article's** relation to the **queried node** —
+  epicenter (`direct`) vs ripple (`indirect`). Set by `news(megatrend=…, impact="indirect")`.
+- `Entity.direct` (`True`|`False`) = whether that **entity** is **factually mentioned** in the article
+  (`True`) vs **impact-only / not named** (`False`).
+
+**Query by asset class or ticker** (the feed does *not* filter by `entity_type`/`ticker`):
+
+```python
+mdx.news(news_type="commodity_supply")                 # asset-class on the feed → then post-filter e.type
+mdx.news_search("oil supply shock", entity_type="commodity")  # search DOES support entity_type
+mdx.news_by_tickers("NVDA.US")                          # a covered STOCK's news (direct + indirect)
+mdx.megatrends("ai-power").off_coverage()              # private / off-coverage roster
+```
+
+**Only entities with a *scored* impact** (many are mentioned-only):
+
+```python
+scored = [e for s in mdx.news(megatrend="ai-power") for e in s.entities if e.impact and e.impact.aspects]
+```
+
+**`stock(t).news()` is a stock-centric timeline** — a `StockNews` (the stock's own `impact` /`trend`/
+`relevance`), **not** an entity graph (no `entities[]`). For the full graph of an article, use `news()`.
+
 ## Metering & errors
 
 Every call carries `X-Credits-Charged` / `X-RateLimit-*`; check your balance any time (free, unmetered):

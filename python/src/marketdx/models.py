@@ -22,6 +22,12 @@ SIGNAL_COLUMNS: tuple[str, ...] = (
     "publisher", "url",
 )
 
+# A stock's own impact timeline (one row per article × aspect) — the subject is the stock.
+STOCK_NEWS_COLUMNS: tuple[str, ...] = (
+    "published_at", "title", "trend", "direction", "aspect", "reason",
+    "relevance", "impact_score", "brief_text", "publisher", "url",
+)
+
 
 def _g(d: Dict[str, Any], *keys: str, default: Any = None) -> Any:
     for k in keys:
@@ -160,6 +166,54 @@ class Signal:
                 rows.append({**base, **ent, "direction": None, "aspect": None,
                              "reason": None, "relevance": None})
         return rows
+
+
+@dataclass
+class StockNews:
+    """One article in a stock's OWN impact timeline (from ``stock(...).news()``).
+
+    Here the stock IS the subject — its per-article impact lives in ``impact``
+    (net_direction + aspects), with the article's ``trend`` and ``relevance``.
+    There is no ``entities[]`` (this endpoint is stock-centric); for the full
+    entity graph of an article, use :meth:`MarketDX.news`.
+    """
+
+    title: Optional[str]
+    brief_text: Optional[str]
+    url: Optional[str]
+    publisher: Optional[str]
+    publisher_type: Optional[str]
+    published_at: Optional[str]
+    impact: Optional[Impact]      # the STOCK's own impact for this article
+    relevance: Optional[float]
+    trend: Optional[str]
+    trend_id: Optional[int]
+    impact_score: Optional[int]
+    news_types: List[str]
+    raw: Dict[str, Any] = field(default_factory=dict, repr=False)
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "StockNews":
+        return cls(
+            title=d.get("title"), brief_text=d.get("brief_text"), url=d.get("url"),
+            publisher=d.get("publisher"), publisher_type=d.get("publisher_type"),
+            published_at=_g(d, "article_published_at", "published_at"),
+            impact=Impact.from_dict(d.get("impact")),
+            relevance=d.get("relevance"), trend=d.get("trend"), trend_id=d.get("trend_id"),
+            impact_score=d.get("impact_score"), news_types=list(d.get("news_types") or []), raw=d,
+        )
+
+    def to_rows(self) -> List[Dict[str, Any]]:
+        base = {
+            "published_at": self.published_at, "title": self.title, "trend": self.trend,
+            "relevance": self.relevance, "impact_score": self.impact_score,
+            "brief_text": self.brief_text, "publisher": self.publisher, "url": self.url,
+        }
+        if self.impact and self.impact.aspects:
+            return [{**base, "direction": a.direction, "aspect": a.aspect, "reason": a.reason}
+                    for a in self.impact.aspects]
+        nd = self.impact.net_direction if self.impact else None
+        return [{**base, "direction": nd, "aspect": None, "reason": None}]
 
 
 @dataclass

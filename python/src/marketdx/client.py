@@ -6,7 +6,15 @@ from typing import Any, Dict, List, Optional, Union
 
 from . import enums
 from ._http import Transport
-from .models import Company, MegatrendNode, MemberStock, Signal, SIGNAL_COLUMNS
+from .models import (
+    Company,
+    MegatrendNode,
+    MemberStock,
+    Signal,
+    StockNews,
+    SIGNAL_COLUMNS,
+    STOCK_NEWS_COLUMNS,
+)
 from .pagination import Page
 from .taxonomy import Taxonomy
 
@@ -69,11 +77,29 @@ class MarketDX:
         return self._page("/v1/news", "results", Signal.from_dict, params,
                           columns=SIGNAL_COLUMNS, max_items=max_items)
 
-    def news_search(self, q: str, *, limit: int = 20, lang: Optional[str] = None,
+    def news_search(self, q: str, *, entity_type: Optional[enums.EntityType] = None,
+                    limit: int = 20, lang: Optional[str] = None,
                     include: str = "entities,impact", max_items: Optional[int] = None) -> "Page":
-        """Semantic (vector) search — news matched by MEANING. Relevance-ranked top-K."""
+        """Semantic (vector) search — news matched by MEANING. Relevance-ranked top-K.
+
+        Unlike the ``news()`` feed, search supports an ``entity_type`` filter (keeps only
+        articles with a related entity of that type — stock/forex/crypto/commodity/private/
+        public_off_coverage), applied server-side.
+        """
         return self._page("/v1/news/search", "results", Signal.from_dict,
-                          {"q": q, "lang": lang, "include": include},
+                          {"q": q, "lang": lang, "include": include, "entity_type": entity_type},
+                          columns=SIGNAL_COLUMNS, max_items=max_items)
+
+    def news_by_tickers(self, ticker: Union[str, List[str]], *, direction: Optional[enums.Direction] = None,
+                        aspect: Optional[Union[enums.Aspect, str]] = None,
+                        impact: Optional[enums.ImpactType] = None, include: str = "entities,impact",
+                        lang: Optional[str] = None, limit: int = 50, max_items: Optional[int] = None) -> "Page":
+        """News for one or more tickers — the article + that ticker's **direct AND indirect**
+        impact. Use this to query by a specific ticker (incl. commodities like ``GOLD.COMM``),
+        which the ``news()`` feed does not filter by. ``ticker`` accepts ``NVDA.US`` or a list."""
+        return self._page("/v1/news/by-tickers", "results", Signal.from_dict,
+                          {"ticker": ticker, "direction": direction, "aspect": aspect,
+                           "impact": impact, "include": include, "lang": lang},
                           columns=SIGNAL_COLUMNS, max_items=max_items)
 
     def news_types(self) -> List[Dict[str, Any]]:
@@ -184,13 +210,14 @@ class StockRef:
 
     def news(self, *, direction: Optional[enums.Direction] = None,
              aspect: Optional[Union[enums.Aspect, str]] = None, order_by: Optional[str] = None,
-             since: Optional[str] = None, include: str = "entities,impact",
-             limit: int = 50, max_items: Optional[int] = None) -> "Page":
-        """This stock's per-article impact timeline."""
-        params = {"direction": direction, "aspect": aspect, "order_by": order_by,
-                  "since": since, "include": include}
-        return self._c._page(f"/v1/stocks/{self.ticker}/news", "results", Signal.from_dict,
-                            params, columns=SIGNAL_COLUMNS, max_items=max_items)
+             since: Optional[str] = None, limit: int = 50, max_items: Optional[int] = None) -> "Page":
+        """This stock's OWN impact timeline (:class:`~marketdx.models.StockNews`): each article
+        + the stock's per-article ``impact`` (net_direction + aspects), ``trend``, and
+        ``relevance``. No ``entities[]`` — the stock is the subject; use ``mdx.news()`` for the
+        full entity graph of an article."""
+        params = {"direction": direction, "aspect": aspect, "order_by": order_by, "since": since}
+        return self._c._page(f"/v1/stocks/{self.ticker}/news", "results", StockNews.from_dict,
+                            params, columns=STOCK_NEWS_COLUMNS, max_items=max_items)
 
     def competitors(self, *, max_items: Optional[int] = None) -> "Page":
         """Rivals derived from competition co-occurrence."""

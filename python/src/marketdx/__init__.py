@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 from . import enums
 from .client import GicsRef, MarketDX, MegatrendRef, StockRef
@@ -21,7 +21,7 @@ from .errors import (
     RateLimitError,
     ServerError,
 )
-from .models import Aspect, Company, Entity, Impact, MegatrendNode, MemberStock, Signal
+from .models import Aspect, Company, Entity, Impact, MegatrendNode, MemberStock, Signal, StockNews
 
 __all__ = [
     "MarketDX",
@@ -31,6 +31,7 @@ __all__ = [
     "enums",
     # models
     "Signal",
+    "StockNews",
     "Entity",
     "Impact",
     "Aspect",
