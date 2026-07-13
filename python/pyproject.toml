@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "marketdx"
+version = "0.1.0"
+description = "The MarketDX financial impact graph, in Python — news→market impact (why, who, direction, ripple) across stocks, commodities, FX, crypto, and private companies."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "MarketDX", email = "hello@marketdx.lab.ai" }]
+keywords = ["finance", "news", "market-impact", "megatrends", "impact-graph", "quant", "api", "sdk"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = ["httpx>=0.24"]
+
+[project.optional-dependencies]
+pandas = ["pandas>=1.3"]
+dev = ["pandas>=1.3", "pytest>=7", "mypy>=1.0"]
+
+[project.urls]
+Homepage = "https://marketdx.lab.ai"
+Playground = "https://marketdx.lab.ai/playground"
+Repository = "https://github.com/MarketDX/marketdx"
+"Sample dataset" = "https://github.com/MarketDX/marketdx/tree/main/datasets"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/marketdx"]
