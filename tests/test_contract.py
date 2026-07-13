@@ -96,5 +96,29 @@ def test_sdk_matches_live_enums():
     assert values("exposure") - set(enums.EXPOSURE_VALUES) == {"all"}
 
 
+# ── data CONFORMS to schema (frictionless — catches value-level drift) ────────
+
+def _has_frictionless() -> bool:
+    try:
+        import frictionless  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+@pytest.mark.skipif(not _has_frictionless(), reason="pip install frictionless for data-conformance validation")
+def test_dataset_data_conforms_to_datapackage():
+    """The actual CSV/JSONL rows conform to datapackage.json (types, enums, primaryKey,
+    foreignKeys). This catches VALUE-level drift the enum-SET checks above cannot — e.g. an
+    `impact="feed"`, `net_direction="mixed"`, or `entity_type=""` that isn't in the declared
+    enum. (All three were real findings from tester + dataset-team validation, now fixed.)"""
+    from frictionless import Package
+
+    report = Package(str(ROOT / "datasets" / "datapackage.json")).validate()
+    if not report.valid:
+        errs = report.flatten(["rowNumber", "fieldName", "type", "note"])[:25]
+        raise AssertionError("dataset does not conform to datapackage:\n" + "\n".join(map(str, errs)))
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
