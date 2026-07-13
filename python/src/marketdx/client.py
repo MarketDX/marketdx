@@ -59,6 +59,9 @@ class MarketDX:
         direction: Optional[enums.Direction] = None,
         aspect: Optional[Union[enums.Aspect, str]] = None,
         news_type: Optional[Union[str, List[str]]] = None,
+        entity_type: Optional[enums.EntityType] = None,
+        only_scored: Optional[bool] = None,
+        min_relevance: Optional[float] = None,
         country: Optional[str] = None,
         lang: Optional[str] = None,
         order_by: Optional[str] = None,
@@ -72,11 +75,24 @@ class MarketDX:
 
         Near-duplicate stories (one story republished / rewritten across outlets) are merged
         into a single signal by default. Pass ``collapse=False`` for the raw, un-deduped feed.
+
+        Server-side entity filters (also work under ``megatrend=`` — but not ``impact="indirect"``):
+
+        * ``entity_type`` — keep only articles with a related entity of that type
+          (``stock``/``forex``/``crypto``/``commodity``/``private``/``public_off_coverage``),
+          e.g. ``entity_type="private"`` for stories moving a private company (OpenAI, SpaceX).
+        * ``only_scored`` — keep only articles with >=1 entity carrying a scored (judged) impact,
+          dropping mention-only articles.
+        * ``min_relevance`` — keep only articles with >=1 scored entity whose impact relevance
+          meets this 0-1 floor (implies scored).
+
+        These filter in SQL, so ``page.total`` stays the exact filtered count.
         """
         params = {
             "megatrend": self._resolve(megatrend), "gics": gics, "include": include,
             "collapse": collapse,
             "impact": impact, "direction": direction, "aspect": aspect, "news_type": news_type,
+            "entity_type": entity_type, "only_scored": only_scored, "min_relevance": min_relevance,
             "country": country, "lang": lang, "order_by": order_by, "since": since,
             "from": from_, "to": to,
         }

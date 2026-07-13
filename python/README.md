@@ -53,6 +53,10 @@ for s in mdx.news(megatrend="semiconductors", impact="indirect", max_items=50):
 for c in mdx.megatrends("semiconductors").off_coverage():
     print(c.name, c.type, "→", c.megatrend["node_name"])
 
+# 2b. …or just the NEWS that moves private companies — one server-side filter on the feed
+for s in mdx.news(entity_type="private", only_scored=True):   # also: crypto / commodity / forex / stock
+    print(s.title, [e.name for e in s.entities if e.type == "private"])
+
 # 3. Per-stock impact timeline + its news-derived rivals
 tl    = mdx.stock("NVDA.US").news(aspect="competition")
 peers = mdx.stock("NVDA.US").competitors()
@@ -100,19 +104,31 @@ for s in mdx.news(news_type="commodity_supply", direction="pos"):
 - `Entity.direct` (`True`|`False`) = whether that **entity** is **factually mentioned** in the article
   (`True`) vs **impact-only / not named** (`False`).
 
-**Query by asset class or ticker** (the feed does *not* filter by `entity_type`/`ticker`):
+**Narrow the feed by entity — server-side.** `news()` (and `news_search()`) filter by
+`entity_type` / `only_scored` / `min_relevance` in the API, so `page.total` stays the exact filtered
+count (no wasted paging). These keep the *whole* article — for an exact per-row cut, still post-filter
+the entities as above.
 
 ```python
-mdx.news(news_type="commodity_supply")                 # asset-class on the feed → then post-filter e.type
-mdx.news_search("oil supply shock", entity_type="commodity")  # search DOES support entity_type
+mdx.news(entity_type="commodity")                      # feed → only stories that move a commodity
+mdx.news(entity_type="private")                        # only stories moving a private co (OpenAI, SpaceX)
+mdx.news(only_scored=True)                              # drop mention-only articles (keep judged impact)
+mdx.news(min_relevance=0.8)                             # only a strongly-relevant scored entity
+mdx.news(megatrend="ai-power", entity_type="crypto")   # entity filters compose with megatrend scope
+mdx.news_search("oil supply shock", entity_type="commodity")  # search supports entity_type too
 mdx.news_by_tickers("NVDA.US")                          # a covered STOCK's news (direct + indirect)
 mdx.megatrends("ai-power").off_coverage()              # private / off-coverage roster
 ```
 
-**Only entities with a *scored* impact** (many are mentioned-only):
+> Entity filters do **not** apply to `impact="indirect"` (the ripple feed) — the API returns 400 if you
+> combine them. On `news_by_tickers`, the ticker set already scopes the entities.
+
+**Only entities with a *scored* impact** (many are mentioned-only) — `only_scored=True` narrows to such
+articles server-side; then read the scored entities off each signal:
 
 ```python
-scored = [e for s in mdx.news(megatrend="ai-power") for e in s.entities if e.impact and e.impact.aspects]
+scored = [e for s in mdx.news(megatrend="ai-power", only_scored=True)
+          for e in s.entities if e.impact and e.impact.aspects]
 ```
 
 **`stock(t).news()` is a stock-centric timeline** — a `StockNews` (the stock's own `impact` /`trend`/
