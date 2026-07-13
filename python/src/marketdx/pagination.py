@@ -50,13 +50,13 @@ class Page:
             offset += _PAGE_SIZE
 
     def to_list(self) -> List[Any]:
-        return list(self)
+        # Comprehension iterates via __iter__ only — deliberately NO __len__ on this
+        # class: it's a lazy, network-backed cursor, so len() would either recurse or
+        # silently double-fetch a metered API. Use `.total` (one cheap call) for a count.
+        return [item for item in self]
 
     def first(self) -> Optional[Any]:
         return next(iter(self), None)
-
-    def __len__(self) -> int:
-        return len(self.to_list())
 
     @property
     def total(self) -> Optional[int]:

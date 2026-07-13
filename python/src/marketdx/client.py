@@ -184,9 +184,11 @@ class StockRef:
 
     def news(self, *, direction: Optional[enums.Direction] = None,
              aspect: Optional[Union[enums.Aspect, str]] = None, order_by: Optional[str] = None,
-             since: Optional[str] = None, limit: int = 50, max_items: Optional[int] = None) -> "Page":
+             since: Optional[str] = None, include: str = "entities,impact",
+             limit: int = 50, max_items: Optional[int] = None) -> "Page":
         """This stock's per-article impact timeline."""
-        params = {"direction": direction, "aspect": aspect, "order_by": order_by, "since": since}
+        params = {"direction": direction, "aspect": aspect, "order_by": order_by,
+                  "since": since, "include": include}
         return self._c._page(f"/v1/stocks/{self.ticker}/news", "results", Signal.from_dict,
                             params, columns=SIGNAL_COLUMNS, max_items=max_items)
 
