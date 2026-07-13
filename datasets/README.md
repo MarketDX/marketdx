@@ -7,22 +7,23 @@
 > A **research, screening & feature layer — not a trading signal.** (`direction` is the model's read of who
 > the news *helps or hurts*, not a price forecast — by the time news is public it is largely priced in.)
 
-A **bounded historical sample** (~2 months) of the MarketDX **Financial Impact Graph** — the downloadable
-twin of our [live playground](https://marketdx.lab.ai/playground). One slice, **many angles**.
+A **bounded historical sample** (~2 weeks of impact-ranked events) of the MarketDX **Financial Impact
+Graph** — the downloadable twin of our [live playground](https://marketdx.lab.ai/playground). One slice,
+**many angles**. (A curated demo, not a production feed — see *Data quality* & *Scope*.)
 
 | file | what | rows |
 |---|---|---|
-| [`data/impact-signals.csv`](data/impact-signals.csv) / [`.jsonl`](data/impact-signals.jsonl) | **the core** — one row per `event × entity × aspect`; **all asset classes** | 4,036 |
+| [`data/impact-signals.csv`](data/impact-signals.csv) / [`.jsonl`](data/impact-signals.jsonl) | **the core** — one row per `event × entity × aspect`; **all asset classes** | 4,038 |
 | [`data/screener.csv`](data/screener.csv) | curated screens — 6 "who the news is helping / hurting on X" patterns (the model's read) | 94 |
 | [`data/discover.csv`](data/discover.csv) | **semantic search** — 15 plain-English questions → impact-labeled hits (incl. private) | 456 |
 | [`data/relationships.csv`](data/relationships.csv) | **news-derived** competitor + peer graph (edge list) | 351 |
 | [`data/private-impact.csv`](data/private-impact.csv) / [`.jsonl`](data/private-impact.jsonl) | **beyond tickers** — impact on OpenAI, Anthropic, Stripe… | 297 |
-| [`data/private-roster.csv`](data/private-roster.csv) | the private universe mapped to trends | 186 |
+| [`data/private-roster.csv`](data/private-roster.csv) | the private universe mapped to trends | 1,031 |
 | [`data/megatrends.csv`](data/megatrends.csv) | the 335-node trend taxonomy (interpret `node_id`) | 335 |
 
 ```
-2,042 events · 4,036 impact labels · themes: AI-Power · Semiconductors  (+ AI · Digital Finance for private)
-asset classes: stock · commodity · forex · crypto · private   ·   2026-05-01 → 2026-07-06   ·   CC BY 4.0
+2,042 events · 4,038 impact labels · themes: AI-Power · Semiconductors  (+ AI · Digital Finance for private)
+asset classes: stock · commodity · forex · crypto · private   ·   2026-06-25 → 2026-07-06   ·   CC BY 4.0
 ```
 
 ### What it's for — and what it isn't
@@ -96,7 +97,7 @@ Not hand-curated — 351 edges *emergent* from 100k+ articles. Competitor edges 
 competition-flavoured coverage (`NVDA↔AMD` is the heaviest); peer edges from shared trend membership.
 
 ### 🕵️ Beyond tickers — *private companies as first-class entities*
-Two files. [`private-roster.csv`](data/private-roster.csv) maps **186 private / off-coverage firms**
+Two files. [`private-roster.csv`](data/private-roster.csv) maps **1,031 private / off-coverage firms**
 (OpenAI, Anthropic, SpaceX, ByteDance, Stripe…) to the trends they belong to — the *coverage* no
 ticker-keyed feed (Bloomberg / Polygon / Alpha Vantage) can offer at all.
 [`private-impact.csv`](data/private-impact.csv) is the subset we scored per-entity impact on — **297
@@ -152,15 +153,22 @@ Impact labels are model-generated, so the CSVs are **curated, not raw**:
   rows; they live in the `.jsonl` as nested context so nothing is hidden.
 - **Entity resolution is cleaned** — a company's news no longer drags in its preferred shares, money-market
   funds, ETFs or index lines; ADRs collapse to the home listing (e.g. `HSBC.US → HSBA.LSE`).
+- **Real publisher, de-aggregated** — `publisher` is the actual outlet (Reuters, Business Wire, The Motley
+  Fool …), resolved *through* the host it was republished on (finance.yahoo.com), not the host itself.
 - **Source-vs-subject filtered** — when a research house issues a forecast (*"Goldman cuts its Brent
   target"*), it's the **source**, not an affected company, so it isn't scored as an impacted entity.
+- **Grain** — one row per `(event × entity × aspect)` per `(theme, impact)` lens; `url` recurs across
+  lenses by design (composite key in [`SCHEMA.md`](SCHEMA.md)). `discover.csv` rows are retrieval hits —
+  ~45% have empty impact fields (matched but not scored).
 
 ## Scope & honesty
 
-A **deliberate slice**, not the moat: a handful of themes, ~2 months, impact-ranked (semiconductors is
-capped — there's more). It proves labeling quality on a slice; the live graph is broader, fresher, complete.
-Impact reflects model judgment at publish time and isn't infallible; the private roster's long tail includes
-thinly-described small firms (the signal-weighted files surface the well-covered names first).
+A **curated demo SAMPLE, not a production feed**: ~2 weeks (2026-06-25 → 07-06), a handful of themes,
+impact-ranked (semiconductors is capped — there's more). It proves labeling quality on a slice; the live
+graph is broader, fresher, complete. Labels are model-generated (not infallible), source-diverse but skewed
+to what the window surfaced, and the private roster's long tail includes thinly-described small firms. To
+go production-grade you'd add source dedup, provenance audit, label-agreement sampling and leakage checks —
+this sample is for evaluation (RAG, screening, feature prototyping), not backtesting.
 
 ## License
 

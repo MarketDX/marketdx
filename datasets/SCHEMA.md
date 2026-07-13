@@ -18,15 +18,19 @@ want everything.
 | `aspect` | **the *why*** — the single channel the news acts through: `demand` · `supply` · `pricing` · `capital` · `competition` · `technology` · `regulation` · `tariff` · `geopolitics` · `monetary` (empty = judged directional but channel unclear) |
 | `reason` | one-line explanation of the impact (the model's rationale) |
 | `relevance` | 0–1 — how central this entity is to the article (1 = the article is about it) |
-| `impact` | `direct` = the entity is the article's **epicenter**; `indirect` = it's a **ripple** (affected but not the subject) |
+| `impact` | `direct` = the entity is the article's **epicenter**; `indirect` = it's a **ripple** (affected but not the subject); **empty** = the row came from an asset-class feed (commodity/forex/crypto) that has no epicenter/ripple framing |
 | `impact_score` | 1–5 — how big the news *event* is, market-wide |
 | `theme` | which pull the row came from (`ai-power`, `semiconductors`, `commodities`, `forex`, `crypto`, `ai`, `digital-finance`) |
 | `node_name` | the megatrend node the article's epicenter maps to |
 | `entity_country` | ISO-2 country of the entity |
-| `publisher` · `url` | the outlet and the article link |
+| `publisher` | the real **de-aggregated** outlet (Reuters, Business Wire, The Motley Fool …) — *not* the host it was republished on (finance.yahoo.com) |
+| `url` | the article link |
 
-> An entity hit through **several aspects** appears as several rows (same title + entity, different
-> `aspect`/`direction`/`reason`). The `.jsonl` nests them under one entity with an aggregate `net_direction`.
+> **Grain / primary key** = one row per `(event × entity × aspect)` **per lens**, where a lens =
+> `(theme, impact)`. The same article legitimately recurs across lenses (epicenter of one trend, ripple of
+> another; re-surfaced by an asset feed) — so `url` repeats. The composite key is
+> **`(url, entity_ticker, entity_name, aspect, theme, impact)`**. To collapse to one lens, filter to a
+> single `theme`. The `.jsonl` nests aspects under one entity with an aggregate `net_direction`.
 
 ## `screener.csv` — curated "who's winning / losing on X"
 
@@ -39,6 +43,10 @@ want everything.
 `question` (the plain-English query) · `search_query` (the exact text embedded) · `rank` · `similarity`
 (cosine, 1 = identical) · `title` · `entity_name` · `entity_ticker` · `entity_type` · `direction` ·
 `aspect` · `reason` · `published_at` · `url` · `brief_text` (article summary).
+
+> ⚠️ discover rows are **retrieval hits** — the semantic match is always present, but `direction` /
+> `aspect` / `reason` are **empty on ~45%** of rows (the matched article mentions the entity but the
+> impact layer didn't score it). Downstream code should treat impact fields as optional here.
 
 ## `relationships.csv` — news-derived company graph
 

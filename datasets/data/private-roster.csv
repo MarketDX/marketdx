@@ -1,187 +1,1032 @@
 company,type,country,theme,megatrend_node,exposure
+4DMedical Limited,public_off_coverage,AU,ai,AI Applications & Copilots,core
+"58.com / 58 Group (Beijing Chengshi Wanglin Information Technology Co., Ltd.)",private,CN,ai,AI Applications & Copilots,core
+5C (5C Group),private,CA,ai,Colocation & Hyperscale REITs,core
 AI/R,private,US,ai,Agentic AI & Autonomous Workflows,core
 AI/R Compass UOL,private,BR,ai,AI Applications & Copilots,core
+AICFDPRO,private,GB,ai,AI Applications & Copilots,core
+AIMS Data Centre (Thailand) Ltd.,private,TH,ai,Colocation & Hyperscale REITs,core
+AIMS Data Centre Holding Sdn.,private,MY,ai,Colocation & Hyperscale REITs,core
 AMCAP International Group,private,US,ai,Agentic AI & Autonomous Workflows,core
+ASAPP,private,US,ai,AI Applications & Copilots,core
+Abridge AI Inc.,private,US,ai,AI Applications & Copilots,core
+Accesa IT Systems SRL,private,RO,ai,AI Applications & Copilots,core
+Acxiom,private,US,ai,"AI Tooling, Data & MLOps",core
 Ada Health GmbH,private,DE,ai,AI Applications & Copilots,core
 Aecon Group Inc.,public_off_coverage,CA,ai,"Build-out, Construction & Engineering",core
+Agility Logistics Parks (Agility Public Warehousing Company K.S.C.P.),public_off_coverage,KW,ai,Colocation & Hyperscale REITs,core
+Agnic.ai,private,Unknown,ai,Agentic AI & Autonomous Workflows,core
+Aiforia Technologies Oyj,public_off_coverage,Finland,ai,AI Applications & Copilots,core
+Airia,private,US,ai,Agentic AI & Autonomous Workflows,core
+Aligned,private,IL,ai,AI Applications & Copilots,core
+Alitheon,private,US,ai,AI Applications & Copilots,core
+Allseek,private,,ai,Agentic AI & Autonomous Workflows,core
+AlphaSense,private,US,ai,AI Applications & Copilots,core
 Alphio AI,private,US,ai,Agentic AI & Autonomous Workflows,core
+Ambience Healthcare Inc.,private,US,ai,AI Applications & Copilots,core
+"Anaplan, Inc.",private,US,ai,AI Applications & Copilots,secondary
+Ant Group,private,CN,ai,AI Applications & Copilots,secondary
+Anthropic,private,US,ai,Closed / Frontier Labs,core
+Appen Limited,public_off_coverage,AU,ai,"AI Tooling, Data & MLOps",core
+Applied Research Associates,private,US,ai,AI Applications & Copilots,secondary
+AppliedAI,private,AE,ai,Agentic AI & Autonomous Workflows,core
+Appnigma AI,private,US,ai,Artificial Intelligence,core
+Aristotle International,private,US,ai,AI Applications & Copilots,secondary
+Arobis AI,private,US,ai,AI Applications & Copilots,core
+Artificial Superintelligence Alliance,private,Unknown,ai,"AI Tooling, Data & MLOps",core
+Arya.ai,private,IN,ai,AI Applications & Copilots,core
+Assembly,private,US,ai,AI Applications & Copilots,core
 AssemblyAI,private,US,ai,"AI Tooling, Data & MLOps",core
 Atma Sciences,private,US,ai,AI Applications & Copilots,core
+Augnito,private,IN,ai,AI Applications & Copilots,core
+Automation Anywhere,private,US,ai,Agentic AI & Autonomous Workflows,core
+Avaya LLC,private,US,ai,AI Applications & Copilots,core
+Avenue Code,private,US,ai,Agentic AI & Autonomous Workflows,core
+Axtria Inc.,private,US,ai,AI Applications & Copilots,core
+BDx Data Centers,private,SG,ai,Colocation & Hyperscale REITs,core
+BE Networks,private,US,ai,Switching & Networking Silicon/Systems,core
+BMC Software Inc,private,US,ai,AI Applications & Copilots,secondary
+BUZZ High Performance Computing,private,US,ai,AI Compute Cloud & Neoclouds,core
+Backbone Digital,private,US,ai,AI Compute Cloud & Neoclouds,core
+Bechtel Energy,private,US,ai,"Build-out, Construction & Engineering",secondary
+"Beijing Yingbo Digital Technology Co., Ltd.",private,CN,ai,AI Compute Cloud & Neoclouds,core
+Billions Network,private,Unknown,ai,Agentic AI & Autonomous Workflows,secondary
+Bizoforce,private,US,ai,Agentic AI & Autonomous Workflows,core
+Bloomberg L.P.,private,US,ai,AI Applications & Copilots,core
+Bochang Optoelectronics,public_off_coverage,CN,ai,Optical Interconnect & DCI,core
+"Bola Network Co., Ltd.",private,CN,ai,AI Applications & Copilots,core
+Brevo,private,FR,ai,AI Applications & Copilots,secondary
+Bright Data,private,IL,ai,"AI Tooling, Data & MLOps",core
+Brightfield,private,US,ai,AI Applications & Copilots,core
+Brightfield AI,private,US,ai,Agentic AI & Autonomous Workflows,core
+Brinta,private,UY,ai,AI Applications & Copilots,core
+BrowserAct,private,SG,ai,Agentic AI & Autonomous Workflows,core
 ByteDance,private,CN,ai,AI Applications & Copilots,core
+CKEditor (CKSource),private,PL,ai,AI Applications & Copilots,secondary
+CT Group,private,AU,ai,AI Applications & Copilots,core
+CallRail,private,US,ai,AI Applications & Copilots,core
+Canva,private,AU,ai,AI Applications & Copilots,core
+Capacity,private,US,ai,AI Applications & Copilots,core
+Capital Market Laboratories,private,US,ai,AI Applications & Copilots,secondary
+Caption Health,private,US,ai,AI Applications & Copilots,core
+Carrier Connect Data Solutions Inc.,public_off_coverage,CA,ai,Colocation & Hyperscale REITs,core
+Celestial AI,private,US,ai,Optical Interconnect & DCI,core
 China Railway 11th Bureau Group,private,CN,ai,"Build-out, Construction & Engineering",secondary
+"China Shulian Logistics Information Co., Ltd.",private,CN,ai,AI Applications & Copilots,secondary
+Chindata Group,private,CN,ai,Colocation & Hyperscale REITs,core
+"Chu Hai Bang (Shenzhen) Technology Co., Ltd.",private,CN,ai,AI Applications & Copilots,core
+Chutes,public_off_coverage,US,ai,AI Compute Cloud & Neoclouds,core
+Circana,private,US,ai,"AI Tooling, Data & MLOps",core
+Circeus,private,GB,ai,AI Applications & Copilots,core
+ClarkDietrich Building Systems,private,US,ai,"Build-out, Construction & Engineering",core
 Cloud Capital,private,US,ai,Colocation & Hyperscale REITs,core
+CloudHQ,private,US,ai,Colocation & Hyperscale REITs,core
+Clue (BioWink GmbH),private,DE,ai,AI Applications & Copilots,core
+Codeego,private,FR,ai,AI Applications & Copilots,core
+Cogent Fiber,private,US,ai,Colocation & Hyperscale REITs,core
+Cognigy GmbH,private,DE,ai,Agentic AI & Autonomous Workflows,core
+Cognite,private,NO,ai,"AI Tooling, Data & MLOps",core
+"Cognition AI, Inc.",private,US,ai,Agentic AI & Autonomous Workflows,core
+Cohere Inc,private,CA,ai,Closed / Frontier Labs,core
+Coinsilium Group Limited,public_off_coverage,GB,ai,AI Applications & Copilots,secondary
+Colt Technology Services Group Limited,private,GB,ai,Optical Interconnect & DCI,core
+Compass Datacenters,private,US,ai,Colocation & Hyperscale REITs,core
+"Condon-Johnson & Associates, Inc.",private,US,ai,"Build-out, Construction & Engineering",secondary
 "Confluent, Inc.",public_off_coverage,US,ai,"AI Tooling, Data & MLOps",core
+Conversica,private,US,ai,AI Applications & Copilots,core
 Copli,private,US,ai,Agentic AI & Autonomous Workflows,core
+Core42,private,AE,ai,AI Compute Cloud & Neoclouds,core
+CoreSite,private,US,ai,Colocation & Hyperscale REITs,core
+Corgi Funds,private,US,ai,AI Applications & Copilots,core
+Cornerstone OnDemand,private,US,ai,AI Applications & Copilots,secondary
+Cotiviti,private,US,ai,AI Applications & Copilots,secondary
+"Counterpart Health, Inc.",private,US,ai,AI Applications & Copilots,core
+"CrowdChem, Inc.",private,JP,ai,"AI Tooling, Data & MLOps",core
+Crusoe,private,US,ai,AI Compute Cloud & Neoclouds,core
+Csquare Inc.,private,US,ai,Colocation & Hyperscale REITs,core
 Cursor,private,US,ai,AI Applications & Copilots,core
+Cyndra AI,private,US,ai,Agentic AI & Autonomous Workflows,core
+Cynomi,private,IL,ai,Agentic AI & Autonomous Workflows,core
+CyrusOne,private,US,ai,Colocation & Hyperscale REITs,core
+D S Simon Media,private,US,ai,AI Applications & Copilots,core
+D. E. Shaw Group,private,US,ai,AI Applications & Copilots,core
+DEEPX,private,KR,ai,Edge & On-device AI Silicon,core
+DIAGNOS Inc.,public_off_coverage,CA,ai,AI Applications & Copilots,core
+Darktrace,private,GB,ai,AI Applications & Copilots,core
+"DataRobot, Inc.",private,US,ai,"AI Tooling, Data & MLOps",core
 DataVisor,private,US,ai,AI Applications & Copilots,core
+"Databricks, Inc.",private,US,ai,"AI Tooling, Data & MLOps",core
+Datavant,private,US,ai,"AI Tooling, Data & MLOps",secondary
+"DeepHealth, Inc.",private,US,ai,AI Applications & Copilots,core
 DeepMind,private,GB,ai,Closed / Frontier Labs,core
 DeepSeek,private,CN,ai,Open-Weight Model Developers,core
+Dental Intelligence,private,US,ai,AI Applications & Copilots,secondary
 Diffbot Technologies Corp.,private,US,ai,"AI Tooling, Data & MLOps",core
 Digital Crisis Management,private,US,ai,AI Applications & Copilots,core
+Digital Culture Group,private,US,ai,AI Applications & Copilots,core
+Dilip Buildcon,public_off_coverage,IN,ai,"Build-out, Construction & Engineering",secondary
 Domus Next Inc.,private,US,ai,Agentic AI & Autonomous Workflows,core
+"Dongguan FSG Communication Technology Co., Ltd.",private,CN,ai,Optical Interconnect & DCI,core
+Draka Comteq B.V.,private,NL,ai,Optical Interconnect & DCI,core
+DreamSmart Group (Xingji Meizu),private,CN,ai,AI Applications & Copilots,core
+Drift,private,US,ai,AI Applications & Copilots,core
 "DuckDuckGo, Inc.",private,US,ai,AI Applications & Copilots,core
+"Dun & Bradstreet Holdings, Inc.",public_off_coverage,US,ai,"AI Tooling, Data & MLOps",core
+Duve,private,IL,ai,AI Applications & Copilots,core
+EDC One,private,PT,ai,"Build-out, Construction & Engineering",core
+ESR Group Limited,private,HK,ai,Colocation & Hyperscale REITs,core
 Echelon Data Centres,private,IE,ai,Colocation & Hyperscale REITs,core
+EdgeCore,private,US,ai,Colocation & Hyperscale REITs,core
+Eigen AI,private,,ai,"AI Tooling, Data & MLOps",core
+Ejada Systems,private,SA,ai,AI Applications & Copilots,secondary
+"Electrical Specialists, Inc.",private,US,ai,"Build-out, Construction & Engineering",core
+Embassy Developments Limited,public_off_coverage,IN,ai,"Build-out, Construction & Engineering",core
+Emirates Telecommunications Group,public_off_coverage,AE,ai,Colocation & Hyperscale REITs,core
+Enverus,private,US,ai,AI Applications & Copilots,secondary
 Esker SA,public_off_coverage,FR,ai,AI Applications & Copilots,core
+Esri (Environmental Systems Research Institute),private,US,ai,AI Applications & Copilots,secondary
+Estate Technologies,private,JP,ai,AI Applications & Copilots,core
 Estructura,private,US,ai,AI Applications & Copilots,core
 Etched,private,US,ai,Inference-Optimized Silicon,core
 Evernote,private,US,ai,AI Applications & Copilots,secondary
+Evoque Data Center Solutions,private,US,ai,Colocation & Hyperscale REITs,core
+Exascale Labs,private,US,ai,AI Compute Cloud & Neoclouds,core
 Exiger,private,US,ai,AI Applications & Copilots,core
+ExperienceMINT,private,US,ai,AI Applications & Copilots,core
+Exterro,private,US,ai,AI Applications & Copilots,secondary
+"Faire Wholesale, Inc.",private,US,ai,AI Applications & Copilots,secondary
+Firmus Technologies,private,AU,ai,AI Compute Cloud & Neoclouds,core
+Fit Energy USA,private,US,ai,"Build-out, Construction & Engineering",secondary
+Fleek,private,GB,ai,AI Applications & Copilots,core
 Fluentbe,private,PL,ai,AI Applications & Copilots,core
+Fluidstack,private,US,ai,AI Compute Cloud & Neoclouds,core
 Flywheel Digital,private,US,ai,AI Applications & Copilots,core
+G42,private,AE,ai,AI Compute Cloud & Neoclouds,core
+Gainsight,private,US,ai,AI Applications & Copilots,secondary
+Genesys Cloud Services,private,US,ai,AI Applications & Copilots,core
+Gladia,private,FR,ai,AI Applications & Copilots,core
+Gong.io,private,US,ai,AI Applications & Copilots,core
+Greater Than AB,private,SE,ai,AI Applications & Copilots,core
+Grid Connected Infrastructure,private,US,ai,"Build-out, Construction & Engineering",secondary
+"Groq, Inc.",private,US,ai,Inference-Optimized Silicon,core
 GuideAI Health Corp.,public_off_coverage,CA,ai,AI Applications & Copilots,core
+"Guiji (Beijing) Intelligent Technology Development Co., Ltd. (Silicon Intelligence / 硅基智能 group)",private,CN,ai,AI Applications & Copilots,core
+Gulf Data Hub,private,AE,ai,Colocation & Hyperscale REITs,core
 HCLTech,public_off_coverage,IN,ai,AI Applications & Copilots,core
+HUMAIN,private,SA,ai,AI Data Center & Build-out,core
+Haicker,private,CH,ai,Agentic AI & Autonomous Workflows,core
+Hapax,private,US,ai,"AI Tooling, Data & MLOps",core
+Hazy Ltd.,private,GB,ai,"AI Tooling, Data & MLOps",core
+Heald,private,US,ai,AI Applications & Copilots,core
+"Heimian Optoelectronics Co., Ltd.",private,CN,ai,Optical Interconnect & DCI,core
+Helix Digital Infrastructure,private,US,ai,Colocation & Hyperscale REITs,core
+HelloAgentic,private,US,ai,Agentic AI & Autonomous Workflows,core
+Hellocare.ai,private,US,ai,AI Applications & Copilots,core
+Helsing GmbH,private,DE,ai,AI Applications & Copilots,core
+Hetzner Online,private,DE,ai,AI Compute Cloud & Neoclouds,core
+Hexaware Technologies Limited,public_off_coverage,IN,ai,AI Applications & Copilots,core
 Hi3D,private,,ai,AI Applications & Copilots,core
+HighRadius,private,US,ai,AI Applications & Copilots,core
+Hines,private,US,ai,Colocation & Hyperscale REITs,core
 Hitachi Vantara,private,US,ai,"AI Tooling, Data & MLOps",secondary
+Holistic AI,private,GB,ai,"AI Tooling, Data & MLOps",core
+"Honor Device Co., Ltd.",private,CN,ai,AI Applications & Copilots,core
+"Hop-on, Inc.",public_off_coverage,US,ai,AI Applications & Copilots,secondary
+Hopsworks,private,SE,ai,"AI Tooling, Data & MLOps",core
 Houzz Inc.,private,US,ai,AI Applications & Copilots,secondary
 Huawei,private,CN,ai,AI Compute Cloud & Neoclouds,core
+"Huazhang Data Technology Co., Ltd.",private,CN,ai,"Build-out, Construction & Engineering",core
+Hudson River Trading LLC,private,US,ai,AI Applications & Copilots,core
+"Human Life Foundation Models, Inc.",private,US,ai,Foundation Models & Research Labs,core
+ITC Infotech,private,IN,ai,AI Applications & Copilots,core
+Ibex Medical Analytics,private,IL,ai,AI Applications & Copilots,core
 "Indica Labs, Inc.",private,US,ai,AI Applications & Copilots,core
+Innovid Corp.,public_off_coverage,US,ai,AI Applications & Copilots,secondary
+Insurify,private,US,ai,AI Applications & Copilots,core
 Intercom (Fin),private,US,ai,Agentic AI & Autonomous Workflows,core
+International Holding Company PJSC,public_off_coverage,AE,ai,AI Applications & Copilots,secondary
 Intezer,private,US,ai,AI Applications & Copilots,core
 Ionic Digital,private,US,ai,Colocation & Hyperscale REITs,core
+J.P. Morgan Securities LLC,private,US,ai,AI Applications & Copilots,secondary
+JD Technology Co Ltd,private,CN,ai,AI Applications & Copilots,secondary
+"Jane Street Group, LLC",private,US,ai,AI Applications & Copilots,core
+Jio Platforms Limited,private,IN,ai,AI Applications & Copilots,secondary
+Jiuzhang Asset Management Co Ltd,private,CN,ai,AI Applications & Copilots,core
+K Health,private,US,ai,AI Applications & Copilots,core
 Keppel Ltd,public_off_coverage,Singapore,ai,Colocation & Hyperscale REITs,core
+Khazna Data Centers,private,AE,ai,Colocation & Hyperscale REITs,core
+Kiavi,private,US,ai,AI Applications & Copilots,secondary
 Kickresume,private,SK,ai,AI Applications & Copilots,core
 Kiewit Energy Group,private,US,ai,"Build-out, Construction & Engineering",secondary
 Kilmarnock Enterprises,private,CA,ai,"Build-out, Construction & Engineering",secondary
+Kinaxis Inc.,public_off_coverage,CA,ai,AI Applications & Copilots,core
+Klue,private,CA,ai,AI Applications & Copilots,core
 Komodo Health,private,US,ai,"AI Tooling, Data & MLOps",core
+Kunlunxin,private,CN,ai,Inference-Optimized Silicon,core
+LOXAM SAS,private,FR,ai,"Build-out, Construction & Engineering",core
+Laing O'Rourke,private,GB,ai,"Build-out, Construction & Engineering",core
+Lambda,private,US,ai,AI Compute Cloud & Neoclouds,core
+LangChain,private,US,ai,"AI Tooling, Data & MLOps",core
+Leeways Inc.,private,JP,ai,AI Applications & Copilots,core
+Legora AB (formerly Leya),private,Sweden,ai,AI Applications & Copilots,core
 LexisNexis Risk Solutions,private,US,ai,AI Applications & Copilots,core
+Light AI Inc.,public_off_coverage,CA,ai,AI Applications & Copilots,core
+LinkFox AI,private,CN,ai,AI Applications & Copilots,core
+"Liquid AI, Inc.",private,US,ai,Foundation Models & Research Labs,core
 "Logile, Inc.",private,US,ai,AI Applications & Copilots,core
+Logility,private,US,ai,AI Applications & Copilots,core
 Los Angeles Capital Management LLC,private,US,ai,AI Applications & Copilots,core
+Luffa Technology Network Company Limited,private,GB,ai,AI Applications & Copilots,core
+Lumilens,private,US,ai,Optical Interconnect & DCI,core
+Luna Innovations Incorporated,public_off_coverage,US,ai,Optical Interconnect & DCI,core
+MDaudit,private,US,ai,AI Applications & Copilots,core
+MIM Software Inc,private,US,ai,AI Applications & Copilots,secondary
+MX Technologies Inc.,private,US,ai,AI Applications & Copilots,core
+Macrohard,private,US,ai,Foundation Models & Research Labs,core
+Manus,private,CN,ai,Agentic AI & Autonomous Workflows,core
+Marley Health,private,GB,ai,AI Applications & Copilots,core
 "Mattermost, Inc.",private,US,ai,AI Applications & Copilots,secondary
+McCarthy Building Companies,private,US,ai,"Build-out, Construction & Engineering",core
+Meade,private,US,ai,"Build-out, Construction & Engineering",core
+Meantio,private,US,ai,AI Applications & Copilots,core
 Mesh Optical Technologies,private,US,ai,Optical Interconnect & DCI,core
+Metcalf Builders,private,US,ai,"Build-out, Construction & Engineering",secondary
+Mezzi,private,US,ai,AI Applications & Copilots,core
+Midjourney,private,US,ai,Closed / Frontier Labs,core
+Minitab,private,US,ai,"AI Tooling, Data & MLOps",secondary
+Mission Control AI,private,US,ai,AI Applications & Copilots,core
+Mistral AI,private,FR,ai,Closed / Frontier Labs,core
+Mobilewalla,private,US,ai,"AI Tooling, Data & MLOps",core
 Modular,private,US,ai,"AI Tooling, Data & MLOps",core
+Moffett AI (Shanghai Bi Ren / Moffett),private,CN,ai,Custom Silicon / ASIC,core
+MoonPay,private,US,ai,AI Applications & Copilots,secondary
+Moonshot AI (北京月之暗面科技有限公司),private,CN,ai,AI Applications & Copilots,core
 Moore Threads Technology Co Ltd,public_off_coverage,CN,ai,GPU & Merchant Accelerators,core
-Moveworks,private,US,ai,Agentic AI & Autonomous Workflows,core
+Moveworks,private,US,ai,AI Applications & Copilots,core
+Mphasis Limited,public_off_coverage,IN,ai,AI Applications & Copilots,core
+Multilocal,private,GB,ai,AI Applications & Copilots,core
 NATIVX,private,US,ai,AI Compute Cloud & Neoclouds,core
 NEOPTICS PTE. LTD.,private,SG,ai,Optical Interconnect & DCI,core
+NOTO,private,BG,ai,AI Applications & Copilots,secondary
 NTT DATA Group Corporation,public_off_coverage,JP,ai,AI Applications & Copilots,core
+"Neo4j, Inc.",private,US,ai,"AI Tooling, Data & MLOps",core
+Neuroscale AI,private,US,ai,AI Applications & Copilots,core
 Newark Engineering,private,SG,ai,"Build-out, Construction & Engineering",core
+Nextech3D.ai,public_off_coverage,CA,ai,AI Applications & Copilots,secondary
+Neysa Networks,private,IN,ai,AI Compute Cloud & Neoclouds,core
+Nippon Gateway Infrastructure,private,JP,ai,Colocation & Hyperscale REITs,core
+Nippon Steel Solutions Corporation (NS Solutions),public_off_coverage,JP,ai,AI Applications & Copilots,secondary
+"Nodiac, Inc.",private,US,ai,"Build-out, Construction & Engineering",core
 Nomad Go,private,US,ai,AI Applications & Copilots,core
-OpenAI,private,US,ai,Closed / Frontier Labs,core
+NotCo,private,CL,ai,AI Applications & Copilots,core
+Nous Research,private,US,ai,Open-Weight Model Developers,core
+Novian,private,LT,ai,AI Server OEM & System Integration,secondary
+Nscale,private,GB,ai,AI Compute Cloud & Neoclouds,core
+O-Net Technologies (Group) Limited,public_off_coverage,HK,ai,Optical Interconnect & DCI,core
+OPPO (Guangdong Oppo Mobile Telecommunications Corp.),private,CN,ai,Edge & On-device AI Silicon,secondary
+Omnea,private,GB,ai,AI Applications & Copilots,core
+OneQode Networks,private,AU,ai,AI Compute Cloud & Neoclouds,core
+OpenAI,private,US,ai,AI Applications & Copilots,core
 OpenLight Photonics,private,US,ai,Optical Interconnect & DCI,core
+OpenRouter,private,US,ai,"AI Tooling, Data & MLOps",core
+Optimove,private,IL,ai,AI Applications & Copilots,secondary
 Orascom Construction PLC,public_off_coverage,EG,ai,"Build-out, Construction & Engineering",core
+Orbita,private,US,ai,AI Applications & Copilots,core
+Ornn,private,US,ai,AI Compute Cloud & Neoclouds,core
+Otala.Markets,private,GB,ai,AI Applications & Copilots,core
+Outcomes4Me,private,US,ai,AI Applications & Copilots,core
+Outreach Corp.,private,US,ai,AI Applications & Copilots,core
 Oxylabs,private,LT,ai,"AI Tooling, Data & MLOps",core
+PANIM AI System Limited,private,GB,ai,AI Compute Cloud & Neoclouds,core
+PGIM,private,US,ai,Colocation & Hyperscale REITs,secondary
+PIPA,private,US,ai,AI Applications & Copilots,core
+Particle6,private,,ai,AI Applications & Copilots,core
+"PathAI, Inc.",private,US,ai,AI Applications & Copilots,core
+Payhawk,private,GB,ai,AI Applications & Copilots,core
+PeakMetrics,private,US,ai,AI Applications & Copilots,core
+Pennsylvania Data Center Partners,private,US,ai,Colocation & Hyperscale REITs,core
+Performativ,private,DK,ai,AI Applications & Copilots,core
+"Perplexity AI, Inc.",private,US,ai,AI Applications & Copilots,core
+Persado Inc,private,US,ai,AI Applications & Copilots,core
+Persistent Systems Limited,public_off_coverage,IN,ai,AI Applications & Copilots,core
+Pixocial,private,SG,ai,AI Applications & Copilots,core
+Placer.ai,private,US,ai,AI Applications & Copilots,core
 Power International Holding,private,QA,ai,"Build-out, Construction & Engineering",core
+Precisely,private,US,ai,"AI Tooling, Data & MLOps",secondary
+Presidio,private,US,ai,AI Server OEM & System Integration,core
+Press Ranger,private,US,ai,AI Applications & Copilots,core
+Prior Labs,private,DE,ai,Foundation Models & Research Labs,core
+Pro Medicus Limited,public_off_coverage,AU,ai,AI Applications & Copilots,core
+PsyMetrics,private,US,ai,AI Applications & Copilots,core
+Pura Vida Data Centers,private,,ai,"Build-out, Construction & Engineering",core
+"QAI Co., Ltd.",private,KR,ai,AI Data Center & Build-out,core
 QTS Realty Trust,private,US,ai,Colocation & Hyperscale REITs,core
+Qlik,private,US,ai,AI Applications & Copilots,secondary
 Quality Clouds,private,GB,ai,"AI Tooling, Data & MLOps",core
 QuantRate,private,GB,ai,AI Applications & Copilots,core
+Raiven,private,US,ai,AI Applications & Copilots,secondary
+Rebellions,private,KR,ai,Inference-Optimized Silicon,core
+RecCloud,private,HK,ai,AI Applications & Copilots,core
+Recruitable,private,US,ai,AI Applications & Copilots,core
+"Red Hat, Inc.",private,US,ai,"AI Tooling, Data & MLOps",core
+Refai,private,AU,ai,AI Applications & Copilots,core
 Reflection,private,US,ai,AI Compute Cloud & Neoclouds,core
+Reflexivity,private,US,ai,AI Applications & Copilots,core
+Reservations.ai,private,US,ai,AI Applications & Copilots,core
+Rosendin Electric,private,US,ai,"Build-out, Construction & Engineering",core
+Rosie,private,US,ai,Agentic AI & Autonomous Workflows,core
 SAS Institute,private,US,ai,"AI Tooling, Data & MLOps",core
+"SEPCOIII Electric Power Construction Co., Ltd.",private,CN,ai,"Build-out, Construction & Engineering",core
 SK AX,private,KR,ai,AI Applications & Copilots,core
+SK Broadband,private,KR,ai,Colocation & Hyperscale REITs,secondary
+SPIE Nederland,private,NL,ai,"Build-out, Construction & Engineering",secondary
+STL (Sterlite Technologies),public_off_coverage,IN,ai,Optical Interconnect & DCI,core
+Sakana AI,private,JP,ai,Foundation Models & Research Labs,core
+SalesCloser Technologies Ltd,public_off_coverage,CA,ai,AI Applications & Copilots,core
+Salesloft,private,US,ai,AI Applications & Copilots,core
+Salute Mission Critical,private,US,ai,"Build-out, Construction & Engineering",core
+"SambaNova Systems, Inc.",private,US,ai,Custom Silicon / ASIC,core
+Saturn Cloud,private,US,ai,"AI Tooling, Data & MLOps",core
+Saudi Telecom Company,public_off_coverage,SA,ai,Colocation & Hyperscale REITs,secondary
+Sberbank of Russia,public_off_coverage,RU,ai,Foundation Models & Research Labs,core
+Scaled Cognition,private,US,ai,Foundation Models & Research Labs,core
+Seismic,private,US,ai,AI Applications & Copilots,core
+Sesterce,private,FR,ai,Colocation & Hyperscale REITs,core
+Seven-Eleven AdConnect Inc.,private,JP,ai,AI Applications & Copilots,core
+Shaadi.com (People Group),private,IN,ai,AI Applications & Copilots,core
 Shanghai Minority Asset Management Co.,private,CN,ai,AI Applications & Copilots,core
+Shape Digital,private,SG,ai,AI Applications & Copilots,core
 Sharon AI,private,US,ai,AI Data Center & Build-out,core
+Shein Group Limited,private,SG,ai,AI Applications & Copilots,core
+"Shenyan Intelligence Technology Co., Ltd. (深演智能)",private,CN,ai,AI Applications & Copilots,core
+Shuhe Technology,private,CN,ai,AI Applications & Copilots,secondary
+SierraIG,private,MX,ai,Optical Interconnect & DCI,core
+Silicon Data,private,US,ai,AI Compute Cloud & Neoclouds,core
+Sky Blue Group,private,MY,ai,AI Applications & Copilots,secondary
+Skycore Digital LLC,private,US,ai,Colocation & Hyperscale REITs,core
+Skyral,private,GB,ai,AI Applications & Copilots,secondary
+Slacker,private,US,ai,AI Applications & Copilots,core
+Socure,private,US,ai,AI Applications & Copilots,core
+Source Photonics,private,CN,ai,Optical Interconnect & DCI,core
+Spirent Communications plc,private,GB,ai,AI Networking & Interconnect,core
+StackAdapt,private,CA,ai,AI Applications & Copilots,core
+Start Campus,private,PT,ai,Colocation & Hyperscale REITs,core
+Starwood Digital Ventures,private,,ai,Colocation & Hyperscale REITs,core
+Stat Sniper Inc.,private,US,ai,AI Applications & Copilots,core
+Stream Data Centers,private,US,ai,"Build-out, Construction & Engineering",core
+Suited,private,US,ai,AI Applications & Copilots,core
+Suki AI,private,US,ai,AI Applications & Copilots,core
+SummitIG (Summit Infrastructure Group),private,US,ai,Optical Interconnect & DCI,core
+Swarm Aero,private,US,ai,Agentic AI & Autonomous Workflows,core
+Swiggy Ltd.,public_off_coverage,IN,ai,AI Applications & Copilots,core
+Switch,private,US,ai,Colocation & Hyperscale REITs,core
+Symphony Solutions,private,NL,ai,AI Applications & Copilots,secondary
+Syncron International AB,private,SE,ai,AI Applications & Copilots,secondary
+Synthesia,private,GB,ai,AI Applications & Copilots,core
+Syntiant Corp.,private,US,ai,Edge & On-device AI Silicon,core
+TSK Electronica y Electricidad SA,public_off_coverage,ES,ai,"Build-out, Construction & Engineering",secondary
 Tabs,private,US,ai,AI Applications & Copilots,core
 Tata Communications Limited,public_off_coverage,IN,ai,Colocation & Hyperscale REITs,secondary
 Tata Consultancy Services Limited,public_off_coverage,IN,ai,AI Applications & Copilots,core
 Tech Mahindra Limited,public_off_coverage,IN,ai,AI Applications & Copilots,core
+TechWise Group,private,US,ai,AI Applications & Copilots,secondary
 Tekmara,private,US,ai,Agentic AI & Autonomous Workflows,secondary
+Tenet Fintech Group,public_off_coverage,CA,ai,AI Applications & Copilots,core
+Teraco Data Environments,private,ZA,ai,Colocation & Hyperscale REITs,core
+Theator,private,US,ai,AI Applications & Copilots,core
+"ThoughtSpot, Inc.",private,US,ai,Agentic AI & Autonomous Workflows,core
+"Together AI, Inc.",private,US,ai,AI Compute Cloud & Neoclouds,core
 Topaz Labs,private,US,ai,AI Applications & Copilots,core
+Trio (Shanghai Trio Network Technology / Trio.ai),private,CN,ai,AI Applications & Copilots,core
+TrustEvals,private,IN,ai,"AI Tooling, Data & MLOps",core
+Turner Construction Company,private,US,ai,"Build-out, Construction & Engineering",core
+Ubiquant Investment (明汯投资管理有限公司),private,CN,ai,AI Applications & Copilots,core
+United Innovation Solutions LLC,private,US,ai,AI Applications & Copilots,core
+Unlimitail,private,FR,ai,"AI Tooling, Data & MLOps",core
+Upwave,private,US,ai,AI Applications & Copilots,secondary
+Ushur,private,US,ai,Agentic AI & Autonomous Workflows,core
+VS1 Finance,private,,ai,AI Applications & Copilots,core
+VSORA,private,FR,ai,Inference-Optimized Silicon,core
 Vannoy Construction,private,US,ai,"Build-out, Construction & Engineering",core
+Vector Core Compute,private,US,ai,AI Compute Cloud & Neoclouds,core
+VideoVerse,private,IN,ai,AI Applications & Copilots,core
 Visionary Financial,private,US,ai,AI Applications & Copilots,secondary
+"VistaXM, Inc.",private,US,ai,AI Applications & Copilots,secondary
+Vmake Labs,private,SG,ai,AI Applications & Copilots,core
+Vortexa,private,GB,ai,AI Applications & Copilots,secondary
+"Vultr Holdings, LLC",private,US,ai,AI Compute Cloud & Neoclouds,core
+WSC Sports,private,IL,ai,AI Applications & Copilots,core
+WSP Global Inc.,public_off_coverage,CA,ai,"Build-out, Construction & Engineering",core
+Walsh Construction Company,private,US,ai,"Build-out, Construction & Engineering",core
+Weebet,private,BR,ai,AI Applications & Copilots,secondary
+"Welldoc, Inc.",private,US,ai,AI Applications & Copilots,core
+Willow,private,AU,ai,Agentic AI & Autonomous Workflows,core
+Wise Workman,private,US,ai,AI Applications & Copilots,core
+WorkWhile,private,US,ai,AI Applications & Copilots,core
+World Wide Technology,private,US,ai,AI Server OEM & System Integration,core
+"Wuhan Changjin Photonics Technology Co., Ltd.",public_off_coverage,CN,ai,Optical Interconnect & DCI,core
+Wuhan Zhongke Ruize Photonics Co Ltd,private,CN,ai,Optical Interconnect & DCI,core
+X Corp,private,US,ai,Closed / Frontier Labs,core
+"XConn Technologies Holdings, Ltd.",private,US,ai,Switching & Networking Silicon/Systems,core
 XDuce Corporation,private,US,ai,AI Applications & Copilots,core
+XGen AI,private,US,ai,AI Applications & Copilots,core
+XRPPower,private,GB,ai,AI Applications & Copilots,secondary
+XTX Markets,private,GB,ai,Agentic AI & Autonomous Workflows,core
+"Xinfeiguang Communication Technology Co., Ltd. (新菲光通信技术有限公司)",private,CN,ai,Optical Interconnect & DCI,core
+"YouTube, LLC",private,US,ai,AI Applications & Copilots,core
 ZS Associates,private,US,ai,AI Applications & Copilots,core
 Zawa,private,AU,ai,AI Applications & Copilots,core
+"Zendesk, Inc.",private,US,ai,AI Applications & Copilots,secondary
+Zenerate,private,US,ai,AI Applications & Copilots,core
+Zignal Labs,private,US,ai,AI Applications & Copilots,core
+Zoho Corporation Pvt. Ltd.,private,IN,ai,AI Applications & Copilots,secondary
+Zorronet,private,IL,ai,AI Applications & Copilots,core
+creatorXchange,private,US,ai,AI Applications & Copilots,secondary
+d-Matrix,private,US,ai,Inference-Optimized Silicon,core
+foodpanda,private,SG,ai,AI Applications & Copilots,core
+io Products,private,US,ai,Agentic AI & Autonomous Workflows,core
+uSMART盈立证券集团 (uSMART / Yingli Securities Group),private,HK,ai,AI Applications & Copilots,secondary
 "xFusion Digital Technologies Co., Ltd.",private,CN,ai,AI Server OEM & System Integration,core
+三石园,private,CN,ai,Optical Interconnect & DCI,core
+上海顽岩私募基金管理有限公司,private,CN,ai,AI Applications & Copilots,secondary
+中联云港数据科技股份有限公司,private,CN,ai,Colocation & Hyperscale REITs,core
 云网智算(新疆)科技有限公司,private,CN,ai,AI Compute Cloud & Neoclouds,core
+克拉玛依市云计算产业投资开发有限公司,private,CN,ai,Colocation & Hyperscale REITs,core
+北京康锐联安智算科技有限公司,private,CN,ai,AI Compute Cloud & Neoclouds,core
+"北京身体认知科技有限公司 (Beijing Body Cognition Technology Co., Ltd.)",private,CN,ai,AI Applications & Copilots,core
+博登智能,private,CN,ai,"AI Tooling, Data & MLOps",secondary
+博达数科,private,CN,ai,AI Compute Cloud & Neoclouds,core
+太平科技保险股份有限公司,private,CN,ai,AI Applications & Copilots,secondary
+奥普恩AI,private,CN,ai,AI Applications & Copilots,core
+宁波尚闻科技集团有限公司,private,CN,ai,AI Applications & Copilots,core
+新疆克融云算数字科技有限公司,private,CN,ai,AI Compute Cloud & Neoclouds,core
+杭州永特信息技术有限公司,private,CN,ai,Optical Interconnect & DCI,core
+杭州申昊智算科技有限公司,private,CN,ai,AI Compute Cloud & Neoclouds,core
+浙江曦望智能科技股份有限公司,private,CN,ai,GPU & Merchant Accelerators,core
+砺算科技 (Lisuan Technology),private,CN,ai,GPU & Merchant Accelerators,core
+"蚂蚁保保险代理有限公司 (Ant Bao Insurance Agency Co., Ltd.)",private,CN,ai,AI Applications & Copilots,secondary
+金鼎光学,private,CN,ai,Optical Interconnect & DCI,secondary
+银江科技集团,private,CN,ai,AI Applications & Copilots,secondary
+锤子软件（北京）有限公司,private,CN,ai,AI Applications & Copilots,core
+"长木谷医疗科技股份有限公司 (Longwood Valley Medtech Co., Ltd.)",private,CN,ai,AI Applications & Copilots,core
+阶跃星辰,private,CN,ai,Closed / Frontier Labs,core
+阿勒泰卓渝建筑工程有限责任公司,private,CN,ai,"Build-out, Construction & Engineering",core
+阿里云 (Alibaba Cloud),private,CN,ai,AI Compute Cloud & Neoclouds,core
+黑猫投诉,private,CN,ai,AI Applications & Copilots,core
+ABB India,public_off_coverage,IN,ai-power,AI Power & Cooling,secondary
+Asetek A/S,public_off_coverage,DK,ai-power,AI Power & Cooling,core
+Bitzero,private,US,ai-power,AI Power & Cooling,core
+CoolIT Systems Inc,private,CA,ai-power,AI Power & Cooling,core
+DCX Liquid Cooling Systems,private,PL,ai-power,AI Power & Cooling,core
+Drake Refrigeration,private,US,ai-power,AI Power & Cooling,secondary
+Elgen Manufacturing,private,US,ai-power,AI Power & Cooling,core
+Flexnode,private,US,ai-power,AI Power & Cooling,core
+Harju Elekter,public_off_coverage,EE,ai-power,AI Power & Cooling,secondary
+"Shenzhen Hedar Zhongyuantong Power Technology Co., Ltd.",public_off_coverage,CN,ai-power,AI Power & Cooling,core
+Smardt Chiller Group,private,CA,ai-power,AI Power & Cooling,core
 ThermoKey,private,IT,ai-power,AI Power & Cooling,core
 VoltServer,private,US,ai-power,AI Power & Cooling,core
+XMA Limited,private,GB,ai-power,AI Power & Cooling,secondary
 ZutaCore,private,IL,ai-power,AI Power & Cooling,core
+协鑫智慧能源（苏州）有限公司,private,CN,ai-power,AI Power & Cooling,core
+广东思泉新材料股份有限公司,public_off_coverage,CN,ai-power,AI Power & Cooling,core
+9Pay,private,VN,digital-finance,Payments Modernization & Rails,core
+ADSS (Abu Dhabi Securities),private,AE,digital-finance,Digital Wealth & Robo-Advisory,core
+ADVFN plc,public_off_coverage,GB,digital-finance,Digital Wealth & Robo-Advisory,core
+ANDLAW FZCO,private,AE,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+ANZ Bank New Zealand Limited (澳新银行新西兰分行),private,New Zealand,digital-finance,Payments Modernization & Rails,core
 ANZ Group Holdings Limited,public_off_coverage,AU,digital-finance,Payments Modernization & Rails,secondary
-AS LHV Group,public_off_coverage,Estonia,digital-finance,Digital Banking & Neobanks,core
+AS LHV Group,public_off_coverage,Estonia,digital-finance,Payments Modernization & Rails,core
+ASB Bank Limited,private,NZ,digital-finance,Payments Modernization & Rails,core
+AUS Merchant Services,private,US,digital-finance,Payments Modernization & Rails,core
+AX Coin Bahrain B.S.C. Closed,private,BH,digital-finance,Stablecoin Issuers,core
+Abraxas Capital Management,private,GB,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Acheron Trading,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Acqua Funding,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Aditya Birla Capital,public_off_coverage,India,digital-finance,Digital Wealth & Robo-Advisory,core
+Admirals Group AS,private,EE,digital-finance,Digital Wealth & Robo-Advisory,core
+Advisor360°,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Afreximbank,private,multinational,digital-finance,Payments Modernization & Rails,core
+Airwallex,private,Singapore,digital-finance,Payments Modernization & Rails,core
+Alfa-Bank,private,RU,digital-finance,Payments Modernization & Rails,core
+Allocate,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Alpha Associates,private,CH,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+American Estate & Trust,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 American Perpetuals Exchange,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Anchorage Digital,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Anera Labs,private,GB,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Angel Oak Companies,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Animoca Brands,private,HK,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Ant Fortune (蚂蚁（杭州）基金销售有限公司),private,CN,digital-finance,Digital Wealth & Robo-Advisory,core
+AntChain,private,CN,digital-finance,Real-World Asset Tokenization,core
+Antom,private,SG,digital-finance,Payments Modernization & Rails,core
+Apex Clearing Corporation,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Arc Technologies,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Arrived Homes,private,US,digital-finance,Digital Wealth & Robo-Advisory,secondary
+Asseto,private,HK,digital-finance,Real-World Asset Tokenization,core
+Atom Bank,private,GB,digital-finance,Digital Banking & Neobanks,core
+Aurionpro Solutions,public_off_coverage,IN,digital-finance,Payments Modernization & Rails,core
+Aurum Harbor Global Digital Assets Inc.,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Australian Finance Group,public_off_coverage,AU,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Avant,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
 Azbit,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 BIT Mining Limited,public_off_coverage,CN,digital-finance,Miner-Treasury Hybrids,core
 BITPoint Japan,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+BM Wallet,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 "BOC Consumer Finance Co., Ltd.",private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
-BVNK,private,GB,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+"BOOSTRY Co., Ltd.",private,JP,digital-finance,Tokenized Equities & Securities Rails,core
+BRC Specialty Finance,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+BSTR Holdings,private,US,digital-finance,Pure Bitcoin-Treasury Vehicles,core
+BTCC Exchange,private,HK,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+"BTIG, LLC",private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",secondary
+BVNK,private,GB,digital-finance,Payments Modernization & Rails,core
+Backed Assets (JE) Limited,private,JE,digital-finance,Tokenized Equities & Securities Rails,core
+Backed Finance,private,CH,digital-finance,Tokenized Equities & Securities Rails,core
+Backpack,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Bajaj Finance,public_off_coverage,IN,digital-finance,Digital Lending & Alt-Credit Platforms,core
 Bajaj Finserv,public_off_coverage,IN,digital-finance,Digital Lending & Alt-Credit Platforms,core
 Banqup Group SA/NV,public_off_coverage,Belgium,digital-finance,Payments Modernization & Rails,core
+Banxware,private,DE,digital-finance,Digital Lending & Alt-Credit Platforms,core
+"Beijing Zhongguancun Bank Co., Ltd.",private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Benchmark Capital,private,GB,digital-finance,Digital Wealth & Robo-Advisory,core
 BiFinance,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Biconomy Exchange,private,HK,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Billie,private,DE,digital-finance,Digital Lending & Alt-Credit Platforms,core
 Binance,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Binance Japan,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 BingX,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+BitMart,private,KY,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Bitcoin Standard Treasury Company,private,US,digital-finance,Pure Bitcoin-Treasury Vehicles,core
+Bitfinex,private,HK,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Bitget,private,Seychelles,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Bithumb,private,KR,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Bitnomial,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Bittam Exchange,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Bitwise Asset Management,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+BloFin,private,VG,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 BlockSAFU,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Blockaid,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Blockstream,private,CA,digital-finance,Payments Modernization & Rails,core
+Bonzo Finance Labs,private,,digital-finance,Digital Lending & Alt-Credit Platforms,core
+"Bosera Asset Management Co., Ltd.",private,CN,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+Bottomline,private,US,digital-finance,Payments Modernization & Rails,core
+Braintree,private,US,digital-finance,Payments Modernization & Rails,core
+Bravura Solutions,public_off_coverage,AU,digital-finance,Digital Wealth & Robo-Advisory,core
+Bron,private,KY,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Bybit Fintech Limited,private,AE,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+CER (Crypto Exchange Ranking),private,unknown,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+CFG Merchant Solutions,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+CFI (Credit Financier Invest),private,AE,digital-finance,Digital Wealth & Robo-Advisory,core
+CI Global Asset Management,private,CA,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+CRYL,private,JP,digital-finance,Digital Lending & Alt-Credit Platforms,core
+CSOP Asset Management Limited,private,HK,digital-finance,Tokenized Funds & Treasuries (Asset Managers),secondary
+CZR Exchange,private,KY,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Canaccord Genuity Group Inc.,public_off_coverage,CA,digital-finance,Digital Wealth & Robo-Advisory,core
+Cangshi Fund Sales Co Ltd,private,CN,digital-finance,Digital Wealth & Robo-Advisory,core
 Cantor Fitzgerald,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",secondary
+Capital.com,private,GB,digital-finance,Digital Wealth & Robo-Advisory,core
+Cardiff,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Catchnex,private,CR,digital-finance,Digital Wealth & Robo-Advisory,core
+Celestial Technology Ltd,private,CN,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Centralised Raiffeisen International Services & Payments SRL,private,RO,digital-finance,Payments Modernization & Rails,core
+Cetera,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Chainalysis,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+ChangeNOW,private,Seychelles,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Cheyne Capital Management,private,GB,digital-finance,Real-World Asset Tokenization,secondary
+Chief Securities Limited,private,HK,digital-finance,Digital Wealth & Robo-Advisory,core
+China UnionPay Co Ltd,private,CN,digital-finance,Payments Modernization & Rails,core
 "Chongqing Ant Consumer Finance Co., Ltd.",private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
-Clearstream,private,DE,digital-finance,Real-World Asset Tokenization,core
+Citizens Development Business Finance PLC,public_off_coverage,LK,digital-finance,Digital Lending & Alt-Credit Platforms,core
+"Clayton Homes, Inc.",private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Clearstream,private,DE,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Clip Money Inc.,public_off_coverage,CA,digital-finance,Payments Modernization & Rails,core
+CoinEx,private,HK,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+CoinGecko,private,MY,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 CoinX,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Commonwealth Bank of Australia,public_off_coverage,AU,digital-finance,Digital Wealth & Robo-Advisory,core
+Commonwealth Financial Network,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Compass Funding Solutions,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Computershare Limited,public_off_coverage,AU,digital-finance,Real-World Asset Tokenization,core
+Concurrent,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Connamara Technologies,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+"Connectia Trust, National Association",private,US,digital-finance,Stablecoin Issuers,core
+Corporación CIMEX S.A.,private,CU,digital-finance,Payments Modernization & Rails,core
 Cox Automotive,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Cred,private,IN,digital-finance,Digital Banking & Neobanks,core
+Credible Finance,private,US,digital-finance,Payments Modernization & Rails,core
+Cross River Bank,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
 "CrossCountry Mortgage, LLC",private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Crux Climate,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Crypto.com,private,SG,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 CryptoQuant,private,KR,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Crédit Mutuel Arkea,private,FR,digital-finance,Digital Banking & Neobanks,core
+DCP,private,JP,digital-finance,Payments Modernization & Rails,core
+DFNS,private,FR,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+DTCC,private,US,digital-finance,Real-World Asset Tokenization,secondary
+DZ BANK AG,private,DE,digital-finance,Payments Modernization & Rails,core
+Daiwa Asset Management,private,JP,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+Datachain,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+DekaBank Deutsche Girozentrale,private,DE,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+DeliveryCo,private,GB,digital-finance,Payments Modernization & Rails,core
+"Dongguan Securities Co., Ltd.",private,CN,digital-finance,Digital Wealth & Robo-Advisory,core
 Dunamu Inc.,private,KR,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Dune,private,NO,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Dupoin,private,Unknown,digital-finance,Digital Wealth & Robo-Advisory,core
+DuraMarkets,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Dynasty Financial Partners,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+EDENA Capital Partners,private,SG,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+EDGE Markets,private,US,digital-finance,Payments Modernization & Rails,core
+EDX Markets,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 EQB Inc.,public_off_coverage,Canada,digital-finance,Digital Banking & Neobanks,core
 EX DeFi,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Easy Pay Transfers,private,Malaysia,digital-finance,Payments Modernization & Rails,core
+EchoYield,private,AU,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Eddid Securities and Futures Ltd,private,HK,digital-finance,Digital Wealth & Robo-Advisory,core
+Elavon Inc.,private,US,digital-finance,Payments Modernization & Rails,core
 Elefin Ltd.,private,LC,digital-finance,Digital Wealth & Robo-Advisory,core
 Empower,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Enterprise Fleet Management,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,secondary
+Euroclear Bank SA/NV,private,BE,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Euroclear France,private,FR,digital-finance,Real-World Asset Tokenization,core
+Exness,private,CY,digital-finance,Digital Wealth & Robo-Advisory,core
+FMR LLC,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+FalconX,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Feixiaohao Technology Inc.,private,CN,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Fidelity Digital Assets,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Fidelity Investments,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Findexa Advisory (Pty) Ltd,private,ZA,digital-finance,Digital Wealth & Robo-Advisory,core
+Finicity,private,US,digital-finance,Payments Modernization & Rails,core
+Fintertech,private,JP,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Fireblocks,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+First National Holdings,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+FixedFloat,private,GB,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Flipkart,private,IN,digital-finance,Digital Lending & Alt-Credit Platforms,secondary
 Flow Capital Corp.,public_off_coverage,Canada,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Forthright Securities Ltd (方德證券),private,HK,digital-finance,Digital Wealth & Robo-Advisory,core
+Fortress Investment Group,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Fosun Securities Limited,private,CN,digital-finance,Digital Wealth & Robo-Advisory,core
+Frec,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
 Freedom Finansal Hizmetler,private,TR,digital-finance,Digital Wealth & Robo-Advisory,core
 Futurionex,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+"GF Fund Management Co., Ltd",private,CN,digital-finance,Digital Wealth & Robo-Advisory,core
+GOAT Network,private,Unknown,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Galactic Markets,private,GB,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Girnar Insurance Brokers,private,IN,digital-finance,Digital Wealth & Robo-Advisory,core
 Glassnode,private,CH,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+GoCharting,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Goldman Lampe Private Bank,private,AE,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Goldman Sachs Bank Europe SE,private,DE,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Good Life Companies,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+"Grasshopper Bancorp, Inc.",private,US,digital-finance,Digital Banking & Neobanks,core
+Grayscale Investments,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Grupo Financiero Monex,public_off_coverage,MX,digital-finance,Digital Wealth & Robo-Advisory,core
 Guggenheim Securities,private,US,digital-finance,Real-World Asset Tokenization,core
+HPS Investment Partners,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Hakuhodo Key3 Inc.,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+"Hartford Funds, LLC",private,US,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+HashPack,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+HashPort Group Inc.,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Hashdex,private,BR,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Hello Funding LLC,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+"Henan Jubao Payment Co., Ltd.",private,CN,digital-finance,Payments Modernization & Rails,core
+Hesab,private,US,digital-finance,Payments Modernization & Rails,core
+Hgraph,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Hill.com,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Horizen Labs,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Horizon Kinetics Holding Corporation,public_off_coverage,US,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+"Huafu Securities Co., Ltd.",private,CN,digital-finance,Digital Wealth & Robo-Advisory,core
+Huifu Payment Limited,public_off_coverage,CN,digital-finance,Payments Modernization & Rails,core
+Husher,private,AE,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+ICICI Prudential Asset Management Company Limited,public_off_coverage,IN,digital-finance,Digital Wealth & Robo-Advisory,core
+IDFC First Bank Limited,public_off_coverage,IN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+InComm Payments,private,US,digital-finance,Payments Modernization & Rails,core
+InSoil,private,LT,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Invesco Canada Ltd.,private,CA,digital-finance,Tokenized Funds & Treasuries (Asset Managers),secondary
 Isybank,private,IT,digital-finance,Digital Banking & Neobanks,core
+"JCB Co., Ltd.",private,JP,digital-finance,Payments Modernization & Rails,core
+JOCTBANK Markets,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
 Jialian Payment Co Ltd,private,CN,digital-finance,Payments Modernization & Rails,core
+Jump Crypto,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 "K bank Co., Ltd.",public_off_coverage,KR,digital-finance,Digital Banking & Neobanks,core
+KB Kookmin Bank,private,KR,digital-finance,Payments Modernization & Rails,core
+KBRA (Kroll Bond Rating Agency),private,US,digital-finance,Real-World Asset Tokenization,core
+KOR Protocol,private,GB,digital-finance,Real-World Asset Tokenization,core
+Kayan Project,private,ID,digital-finance,Real-World Asset Tokenization,core
 KelpDAO,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Kogan.com Ltd,public_off_coverage,AU,digital-finance,Digital Lending & Alt-Credit Platforms,secondary
+Korea Exchange (KRX),private,KR,digital-finance,Tokenized Equities & Securities Rails,secondary
+Kotak Mahindra Asset Management Company Limited,private,IN,digital-finance,Digital Wealth & Robo-Advisory,core
 Kotak Mahindra Bank,public_off_coverage,IN,digital-finance,Digital Wealth & Robo-Advisory,core
+Kraken (Payward Inc.),private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Krown Network,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+KuCoin,private,SC,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 LBank,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 LINE NEXT Inc.,private,KR,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+LMAX Group,private,GB,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Landmark Markets,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Ledn,private,CA,digital-finance,Digital Lending & Alt-Credit Platforms,core
+"Liandi Commercial Equipment Co., Ltd. (联迪商用)",private,CN,digital-finance,Payments Modernization & Rails,core
+Liquid Mercury,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Loblaw Companies Limited,public_off_coverage,CA,digital-finance,Digital Banking & Neobanks,secondary
 Longbridge Securities (Hong Kong) Limited,private,HK,digital-finance,Digital Wealth & Robo-Advisory,core
-Malayan Banking Berhad (Maybank),public_off_coverage,MY,digital-finance,Payments Modernization & Rails,secondary
+M-DAQ Global,private,SG,digital-finance,Payments Modernization & Rails,core
+METech,private,VN,digital-finance,Payments Modernization & Rails,core
+MIRROTO,private,,digital-finance,Digital Wealth & Robo-Advisory,core
+"MYbank (Zhejiang E-Commerce Bank Co., Ltd.)",private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Malayan Banking Berhad (Maybank),public_off_coverage,MY,digital-finance,Digital Wealth & Robo-Advisory,secondary
+Mandiri Sekuritas,private,ID,digital-finance,Digital Wealth & Robo-Advisory,core
+MannyPay Global,private,PH,digital-finance,Payments Modernization & Rails,core
+Maple Finance,private,AU,digital-finance,Digital Lending & Alt-Credit Platforms,core
 Market Financial Solutions Ltd,private,GB,digital-finance,Digital Lending & Alt-Credit Platforms,core
 "Mashang Consumer Finance Co., Ltd.",private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Mercado Bitcoin,private,BR,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+MeridianLink Inc,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+MetaComp,private,SG,digital-finance,Payments Modernization & Rails,core
+Milestone Bank,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+MineHub Technologies Inc.,public_off_coverage,CA,digital-finance,Real-World Asset Tokenization,core
+"Minna no Ginko, Ltd.",private,JP,digital-finance,Digital Banking & Neobanks,core
+Mintoak,private,IN,digital-finance,Payments Modernization & Rails,core
+Mirova,private,FR,digital-finance,Tokenized Funds & Treasuries (Asset Managers),secondary
+Mitsubishi UFJ Asset Management,private,JP,digital-finance,Tokenized Funds & Treasuries (Asset Managers),secondary
+"Mizuho Securities Co., Ltd.",private,JP,digital-finance,Digital Wealth & Robo-Advisory,core
+MoMo (M_Service JSC),private,Vietnam,digital-finance,Payments Modernization & Rails,core
+Moneta Markets,private,AU,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",secondary
+Monzo,private,GB,digital-finance,Digital Banking & Neobanks,core
 Moomoo Financial Canada,private,CA,digital-finance,Digital Wealth & Robo-Advisory,core
 Morph,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+MultiBank Group,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+N26,private,DE,digital-finance,Digital Banking & Neobanks,core
+NOT A HOTEL DAO,private,JP,digital-finance,Real-World Asset Tokenization,core
+Naranja X,private,AR,digital-finance,Digital Banking & Neobanks,core
 National Payments Corporation of India,private,IN,digital-finance,Payments Modernization & Rails,core
 Nethermind,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Ninepoint Partners LP,private,CA,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
 Northwestern Mutual Wealth Management Company,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+"NowLake Technology, LLC",private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
 Nuvei Corporation,private,CA,digital-finance,Payments Modernization & Rails,core
+Nykredit Portefølje Administration A/S,private,DK,digital-finance,Digital Wealth & Robo-Advisory,core
+OKX,private,SC,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+One 97 Communications Ltd (Paytm),public_off_coverage,IN,digital-finance,Payments Modernization & Rails,core
+One Inc,private,US,digital-finance,Payments Modernization & Rails,core
 Onyx Odds,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Open Standard,private,US,digital-finance,Stablecoin Issuers,core
+OpenPayd Services Limited,private,GB,digital-finance,Payments Modernization & Rails,core
+Openbucks,private,US,digital-finance,Payments Modernization & Rails,core
+Openpay Group Ltd,public_off_coverage,AU,digital-finance,Digital Lending & Alt-Credit Platforms,core
+P2P.org,private,AE,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+PICC Financial Services Co Ltd,private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+PT Mega Capital Sekuritas,private,ID,digital-finance,Digital Wealth & Robo-Advisory,core
+Panoptes PBC,private,US,digital-finance,Real-World Asset Tokenization,core
+Paradigm,private,US,digital-finance,Digital Finance & Tokenization,core
+PayME (Vietnam),private,VN,digital-finance,Payments Modernization & Rails,core
+PayU,private,NL,digital-finance,Payments Modernization & Rails,core
+Peersyst,private,ES,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Penguin Securities Holdings,private,SG,digital-finance,Digital Wealth & Robo-Advisory,core
+Phantom,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Phemex,private,SG,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 Phillip Securities,private,SG,digital-finance,Digital Wealth & Robo-Advisory,core
-Revolut,private,GB,digital-finance,Payments Modernization & Rails,core
+PhonePe Private Limited,private,IN,digital-finance,Digital Banking & Neobanks,core
+Polskie ePłatności,private,PL,digital-finance,Payments Modernization & Rails,core
+Polymarket,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Portzamparc,private,FR,digital-finance,Digital Wealth & Robo-Advisory,core
+"Potomac Fund Management, Inc.",private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+President's Choice Bank,private,CA,digital-finance,Digital Lending & Alt-Credit Platforms,core
+ProShare Advisors,private,US,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+Progmat,private,JP,digital-finance,Real-World Asset Tokenization,core
+Public,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Purpose Investments Inc.,private,CA,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+Quontic Bank,private,US,digital-finance,Digital Banking & Neobanks,core
+RIKYU,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+RLTYco,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+RYOEX (Ryo Global Markets Limited),private,LC,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Radex Markets,private,SC,digital-finance,Digital Wealth & Robo-Advisory,core
+Ratepay,private,DE,digital-finance,Digital Lending & Alt-Credit Platforms,core
+RealCommissions,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Renren Zu (Guangzhou Yanqu Information Technology Co Ltd),private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Revolut,private,GB,digital-finance,Digital Banking & Neobanks,core
+Ripple Labs Inc.,private,US,digital-finance,Payments Modernization & Rails,core
+Riverty,private,DE,digital-finance,Digital Banking & Neobanks,core
 Rothera,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+SBI Digital Markets,private,JP,digital-finance,Real-World Asset Tokenization,core
+SBI FX Trade,private,JP,digital-finance,Digital Wealth & Robo-Advisory,core
+SBI Funds Management Limited,private,IN,digital-finance,Digital Wealth & Robo-Advisory,secondary
+"SBI Okasan Asset Management Co., Ltd.",private,JP,digital-finance,Tokenized Funds & Treasuries (Asset Managers),secondary
+SBI Shinsei Trust and Banking,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+SBI Solana Global,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 SBI VC Trade,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+SIX Group AG,private,CH,digital-finance,Tokenized Equities & Securities Rails,core
+SQRIL,private,AE,digital-finance,Payments Modernization & Rails,core
+STARTRADER,private,,digital-finance,Digital Wealth & Robo-Advisory,core
+SWIFT (Society for Worldwide Interbank Financial Telecommunication),private,BE,digital-finance,Payments Modernization & Rails,core
+Saber Money,private,SG,digital-finance,Payments Modernization & Rails,core
+ScoreCM,private,AE,digital-finance,Digital Wealth & Robo-Advisory,core
 "Securitize, Inc.",private,US,digital-finance,Real-World Asset Tokenization,core
+Shanghai Huarui Bank,private,CN,digital-finance,Digital Banking & Neobanks,core
+Shanghai Shanglianxin Electronic Payment Services,private,CN,digital-finance,Payments Modernization & Rails,core
+"Shanghai Wanda Microloan Co., Ltd.",private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Shoprite Holdings Ltd,public_off_coverage,ZA,digital-finance,Digital Banking & Neobanks,secondary
+"Siiibo Securities Co., Ltd.",private,JP,digital-finance,Digital Wealth & Robo-Advisory,core
+SimpleSwap,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Simply Wall St,private,AU,digital-finance,Digital Wealth & Robo-Advisory,core
+Sixth Street Partners,private,US,digital-finance,Tokenized Funds & Treasuries (Asset Managers),secondary
+Slash Fintech Limited (Slash Vision Labs),private,JP,digital-finance,Payments Modernization & Rails,core
 Slate Asset Management,private,CA,digital-finance,Tokenized Funds & Treasuries (Asset Managers),secondary
+"Solidus Labs, Inc.",private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Solulu Tech,private,US,digital-finance,Payments Modernization & Rails,core
 Spiko,private,FR,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+Spirit Blockchain Capital Inc.,public_off_coverage,CA,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Starling Bank Limited,private,GB,digital-finance,Digital Banking & Neobanks,core
+Startale Labs / Startale Group,private,SG,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+State Street Investment Management,private,US,digital-finance,Tokenized Funds & Treasuries (Asset Managers),secondary
 Stellar Exchange,private,KR,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+"Stripe, Inc.",private,US,digital-finance,Payments Modernization & Rails,core
+"Sumitomo Mitsui Card Company, Limited",private,JP,digital-finance,Payments Modernization & Rails,core
+Supra,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Synova Global,private,Unknown,digital-finance,Real-World Asset Tokenization,core
+Tabby,private,AE,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Tamara,private,SA,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Tank Payments,private,US,digital-finance,Payments Modernization & Rails,core
+Telegram,private,AE,digital-finance,Payments Modernization & Rails,core
+Tempo,private,US,digital-finance,Payments Modernization & Rails,core
 TenPay Global,private,CN,digital-finance,Payments Modernization & Rails,core
 Tether,private,,digital-finance,Stablecoin Issuers,core
 The Canadian Depository for Securities Limited (CDS),private,CA,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+The Saudi National Bank (SNB),public_off_coverage,SA,digital-finance,Payments Modernization & Rails,core
 The Very Group,private,GB,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Thredd (Global Processing Services),private,GB,digital-finance,Payments Modernization & Rails,core
 Tiger Brokers (NZ) Limited,private,NZ,digital-finance,Digital Wealth & Robo-Advisory,core
+Tink AB,private,SE,digital-finance,Payments Modernization & Rails,core
+Toobit,private,KY,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+TopNod,private,CN,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+"TradeStation Group, Inc.",private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+Treno Scope,private,Singapore,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+TronBid,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+USAA,private,US,digital-finance,Digital Banking & Neobanks,core
+"UnionPay International Co., Ltd.",private,CN,digital-finance,Payments Modernization & Rails,core
+Uphold Worldwide,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 VALR,private,ZA,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Vantage Markets,private,AU,digital-finance,Digital Wealth & Robo-Advisory,core
+Vatee,private,VU,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Verifone,private,US,digital-finance,Payments Modernization & Rails,core
+ViaBTC Group,private,CN,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Virtune,private,SE,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Vista Credit Partners,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+Vocalink,private,GB,digital-finance,Payments Modernization & Rails,core
 Votorantim S.A.,private,BR,digital-finance,Digital Lending & Alt-Credit Platforms,secondary
+Wallex,private,SG,digital-finance,Payments Modernization & Rails,core
 Westpac Banking Corporation,public_off_coverage,AU,digital-finance,Payments Modernization & Rails,core
+WhiteBIT,private,LT,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Wintermute,private,GB,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Wirex,private,GB,digital-finance,Digital Banking & Neobanks,core
+Woodforest Acceptance Solutions,private,US,digital-finance,Payments Modernization & Rails,core
 World Liberty Financial,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Worldpay,private,US,digital-finance,Payments Modernization & Rails,core
+"Wuxi Xishang Bank Co., Ltd.",private,CN,digital-finance,Digital Banking & Neobanks,core
+XM (Trading Point Group),private,CY,digital-finance,Digital Wealth & Robo-Advisory,core
+XMTP Labs,private,US,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 XT.com,private,SC,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+XTransfer Limited,private,CN,digital-finance,Payments Modernization & Rails,core
+Xoala,private,,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+Yellow Stone Finance Group Ltd,private,GB,digital-finance,Digital Wealth & Robo-Advisory,core
+Yillion Bank Co Ltd,private,CN,digital-finance,Digital Banking & Neobanks,core
+Yorkville America,private,US,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
 ZEN.COM,private,LT,digital-finance,Payments Modernization & Rails,core
+ZYNLO Bank,private,US,digital-finance,Digital Banking & Neobanks,core
+Zeal Capital Market (ZFX),private,GB,digital-finance,Digital Wealth & Robo-Advisory,core
 Zentro,private,AE,digital-finance,Payments Modernization & Rails,core
+Zerodha Broking Ltd.,private,IN,digital-finance,Digital Wealth & Robo-Advisory,core
+Zerohash,private,US,digital-finance,Stablecoin Issuers & Distribution,core
+Zip Co Limited,public_off_coverage,AU,digital-finance,Digital Lending & Alt-Credit Platforms,core
 au Coincheck Digital Assets,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+bitFlyer,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
 bitbank,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+dtcpay,private,SG,digital-finance,Payments Modernization & Rails,core
+dub,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+"e-net Co., Ltd. (イーネット株式会社)",private,JP,digital-finance,Payments Modernization & Rails,core
+easyMarkets,private,CY,digital-finance,Digital Wealth & Robo-Advisory,core
+finmid,private,DE,digital-finance,Digital Lending & Alt-Credit Platforms,core
+goeasy Ltd.,public_off_coverage,CA,digital-finance,Digital Lending & Alt-Credit Platforms,core
+i80 Group,private,US,digital-finance,Digital Lending & Alt-Credit Platforms,core
+iCapital,private,US,digital-finance,Digital Wealth & Robo-Advisory,core
+iFinex Inc.,private,HK,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+iFood,private,BR,digital-finance,Digital Lending & Alt-Credit Platforms,secondary
+nGRND Inc.,private,VG,digital-finance,Real-World Asset Tokenization,core
+"tZERO Group, Inc.",private,US,digital-finance,Tokenized Equities & Securities Rails,core
+xWIN Consulting,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+オーケーコイン・ジャパン株式会社,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+ソラナ財団,private,CH,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+デジタルアセットマーケッツ,private,JP,digital-finance,"Crypto Exchanges, Custody & Digital-Asset Infrastructure",core
+ドコモSMTBネット銀行,public_off_coverage,JP,digital-finance,Digital Banking & Neobanks,core
+上海晓途网络科技有限公司 (Xinfei Technology),private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+合同会社暗号屋,private,JP,digital-finance,Payments Modernization & Rails,core
+和讯信息科技有限公司,private,CN,digital-finance,Digital Wealth & Robo-Advisory,core
+嘉实基金管理有限公司,private,CN,digital-finance,Digital Wealth & Robo-Advisory,core
+四川省唯品富邦消费金融有限公司,private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+大阪デジタルエクスチェンジ株式会社,private,JP,digital-finance,Tokenized Equities & Securities Rails,core
+天津金城银行,private,CN,digital-finance,Digital Banking & Neobanks,core
+安徽新安银行股份有限公司,private,CN,digital-finance,Digital Banking & Neobanks,core
+富国基金管理有限公司,private,CN,digital-finance,Tokenized Funds & Treasuries (Asset Managers),secondary
+"平安证券股份有限公司 (Ping An Securities Co., Ltd.)",private,CN,digital-finance,Digital Wealth & Robo-Advisory,core
+广州市汇聚支付电子科技有限公司,private,CN,digital-finance,Payments Modernization & Rails,core
+广州快手小额贷款有限公司,private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+开源证券股份有限公司,public_off_coverage,CN,digital-finance,Digital Wealth & Robo-Advisory,core
+开联通支付服务有限公司,private,CN,digital-finance,Payments Modernization & Rails,core
+微众银行,private,CN,digital-finance,Digital Banking & Neobanks,core
+招银理财有限责任公司,private,CN,digital-finance,Digital Wealth & Robo-Advisory,core
+"楽天証券株式会社 (Rakuten Securities, Inc.)",private,JP,digital-finance,Digital Wealth & Robo-Advisory,core
+"湖南长银五八消费金融股份有限公司 (Hunan Changyin 58 Consumer Finance Co., Ltd.)",private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+盛宝银行集团 (Saxo Bank Group),private,Denmark,digital-finance,Digital Wealth & Robo-Advisory,core
+美兴中国 / MicroCred China (南充美兴小额贷款 / 美兴小额贷款（四川）),private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+蓝海银行 (Blue Ocean Bank),private,CN,digital-finance,Digital Banking & Neobanks,core
+"财付通网络金融小额贷款有限公司 (Tenpay Network Financial Micro-loan Co., Ltd.)",private,CN,digital-finance,Digital Lending & Alt-Credit Platforms,core
+重庆富民银行股份有限公司,private,CN,digital-finance,Digital Banking & Neobanks,core
+"野村アセットマネジメント株式会社 (Nomura Asset Management Co., Ltd.)",private,JP,digital-finance,Tokenized Funds & Treasuries (Asset Managers),core
+Allegro DVT,private,FR,semiconductors,EDA & Semiconductor IP,core
 Ampere Computing,private,US,semiconductors,"Logic, Compute & Connectivity Processors",core
+Anteryon International B.V.,private,NL,semiconductors,Lithography Systems,core
+BATOP GmbH,private,DE,semiconductors,"Analog, Power & Discrete",core
+Bakman Technologies,private,US,semiconductors,Process Control — Metrology & Inspection,core
 Beijing E-Town Semiconductor Technology Co Ltd,public_off_coverage,CN,semiconductors,"Deposition, Etch & Process Tools",core
+CEA-Leti,private,FR,semiconductors,EDA & Semiconductor IP,core
+CG Semi Private Limited,private,IN,semiconductors,Advanced Packaging & Test (OSAT),core
 ChangXin Memory Technologies,private,CN,semiconductors,"Memory — DRAM, NAND & HBM",core
+China Electric Equipment Group Co Ltd,private,CN,semiconductors,"Analog, Power & Discrete",secondary
+China Electronics Corporation (CEC),private,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
 Chongqing Polycomp International Corp,public_off_coverage,CN,semiconductors,PCB Laminates & Substrate Materials (CCL),core
 DapuStor,private,CN,semiconductors,"Logic, Compute & Connectivity Processors",secondary
 Empower Semiconductor,private,US,semiconductors,"Analog, Power & Discrete",core
+Epiluvac AB,private,Sweden,semiconductors,"Deposition, Etch & Process Tools",core
+Esa NanoTech,private,IT,semiconductors,"Passive Components (MLCC, Capacitors, Inductors)",core
+Excelitas Technologies Corp.,private,US,semiconductors,Wafer-Fab Equipment & Lithography,core
 "Guangdong Olead Advanced Materials Co., Ltd.",public_off_coverage,CN,semiconductors,Materials & Specialty Chemicals,core
 Guangdong Weirong Electronics Technology,private,CN,semiconductors,"Passive Components (MLCC, Capacitors, Inductors)",core
+HPQ Silicon,public_off_coverage,CA,semiconductors,Materials & Specialty Chemicals,core
+HiSilicon (Huawei Technologies),private,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
+I-Pulse Inc.,private,US,semiconductors,"Analog, Power & Discrete",core
+Insight Product Co.,private,US,semiconductors,Process Control — Metrology & Inspection,core
+"Jiangxi Zhihao Electronics Technology Co., Ltd.",private,CN,semiconductors,Printed Circuit Boards (PCB & HDI),core
+"Longchen Technology Co., Ltd.",private,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
+"Longxin Intelligent Co., Ltd.",public_off_coverage,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
+"Microtech Instruments, Inc.",private,US,semiconductors,Process Control — Metrology & Inspection,core
+"Mitsui Chemicals ICT Materia, Inc.",private,JP,semiconductors,Materials & Specialty Chemicals,core
+Mlink Technology Inc.,private,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
+Nexperia,private,NL,semiconductors,"Analog, Power & Discrete",core
+Noze Inc.,private,CA,semiconductors,"Analog, Power & Discrete",core
+Nuvia Inc.,private,US,semiconductors,EDA & Semiconductor IP,core
+"Ookuma Diamond Device Co., Ltd.",private,JP,semiconductors,"Analog, Power & Discrete",core
+"Pingtouge (T-Head) Semiconductor Co., Ltd.",private,CN,semiconductors,EDA & Semiconductor IP,core
+QuantumDiamonds,private,DE,semiconductors,Process Control — Metrology & Inspection,core
+Rapidus Corporation,private,JP,semiconductors,Foundry & Contract Fabrication,core
+Real Intent,private,US,semiconductors,EDA & Semiconductor IP,core
 Runchip Micro (Nanjing),private,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
 "SK Nexilis Co., Ltd.",private,KR,semiconductors,PCB Laminates & Substrate Materials (CCL),secondary
 "SMIC North Integrated Circuit Manufacturing (Beijing) Co., Ltd.",private,CN,semiconductors,Foundry & Contract Fabrication,core
+Shanghai Aojian Microelectronics,private,CN,semiconductors,"Analog, Power & Discrete",core
+"Shanghai Daoyi Semiconductor Materials Co., Ltd.",private,CN,semiconductors,Materials & Specialty Chemicals,core
+Shanghai Inlay Link Inc.,public_off_coverage,CN,semiconductors,Interconnect & Passive Components,core
 Shenzhen Qiangda Circuit,public_off_coverage,CN,semiconductors,Printed Circuit Boards (PCB & HDI),core
+SiEngine Technology,private,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
+Silex Microsystems,public_off_coverage,SE,semiconductors,Foundry & Contract Fabrication,core
 Siliconware Precision Industries (SPIL),public_off_coverage,TW,semiconductors,Advanced Packaging & Test (OSAT),core
+SmartNanotubes Technologies GmbH,private,DE,semiconductors,"Analog, Power & Discrete",core
+Solidigm,private,US,semiconductors,"Memory — DRAM, NAND & HBM",core
+Syensqo SA,public_off_coverage,BE,semiconductors,Materials & Specialty Chemicals,secondary
+"Taihu Jinzhang Technology Co., Ltd.",private,CN,semiconductors,PCB Laminates & Substrate Materials (CCL),secondary
+Teledyne e2v Semiconductors SAS,private,FR,semiconductors,"Analog, Power & Discrete",core
+TeraVil Ltd,private,LT,semiconductors,"Analog, Power & Discrete",core
+Terafab,private,US,semiconductors,Foundry & Contract Fabrication,core
+Thorlabs,private,US,semiconductors,Process Control — Metrology & Inspection,core
+Toshiba Corporation,public_off_coverage,JP,semiconductors,"Analog, Power & Discrete",core
 Vimicro / Infotmic (Yingfangwei),public_off_coverage,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
+Wooptix,private,ES,semiconductors,Process Control — Metrology & Inspection,core
 Xiamen Hengkun New Materials Technology,public_off_coverage,CN,semiconductors,Materials & Specialty Chemicals,core
 Yangtze Memory Technologies Co. (YMTC),private,CN,semiconductors,"Memory — DRAM, NAND & HBM",core
-Yucheng Holdings Limited,private,HK,semiconductors,"Analog, Power & Discrete",core
+Yazaki Corporation,private,JP,semiconductors,Interconnect & Passive Components,secondary
+Yucheng Holdings Limited,private,HK,semiconductors,"Logic, Compute & Connectivity Processors",core
+Yungu Technology (Shenzhen) Co Ltd,public_off_coverage,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
+ZenSemi,private,CN,semiconductors,"Analog, Power & Discrete",core
 Zhuhai Huafa Technology Industry Group,private,CN,semiconductors,Advanced Packaging & Test (OSAT),core
+上海华力微电子,private,CN,semiconductors,Foundry & Contract Fabrication,core
+上海富驰高科技股份有限公司,private,CN,semiconductors,Interconnect & Passive Components,secondary
+北京康特电子股份有限公司,private,CN,semiconductors,"Passive Components (MLCC, Capacitors, Inductors)",core
+博通港刻科技有限公司,private,CN,semiconductors,Wafer-Fab Equipment & Lithography,core
+合肥沛顿存储科技有限公司,private,CN,semiconductors,Advanced Packaging & Test (OSAT),core
+宸芯科技股份有限公司,public_off_coverage,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
+广州市艾佛光通科技有限公司,private,CN,semiconductors,"Analog, Power & Discrete",core
+广微集成,private,CN,semiconductors,"Analog, Power & Discrete",core
+惠丰钻石股份有限公司,public_off_coverage,CN,semiconductors,Materials & Specialty Chemicals,core
+戴斯光电,private,CN,semiconductors,Lithography Systems,secondary
+新乡市慧联电子科技有限公司,private,CN,semiconductors,Printed Circuit Boards (PCB & HDI),core
+新余木林森电子,private,CN,semiconductors,Printed Circuit Boards (PCB & HDI),core
+无锡尚积半导体科技,private,CN,semiconductors,"Deposition, Etch & Process Tools",core
+昆山日月同芯半导体有限公司,private,CN,semiconductors,Advanced Packaging & Test (OSAT),core
 智测科技（广东）有限公司,private,CN,semiconductors,Process Control — Metrology & Inspection,core
+沛顿科技（深圳）有限公司,private,CN,semiconductors,Advanced Packaging & Test (OSAT),core
+泰和电路科技（珠海）有限公司,private,CN,semiconductors,Printed Circuit Boards (PCB & HDI),core
+灿芯半导体(上海)股份有限公司,public_off_coverage,CN,semiconductors,EDA & Semiconductor IP,core
+琥珀新材（德福科技全资子公司）,private,CN,semiconductors,PCB Laminates & Substrate Materials (CCL),core
+苏州市新广益电子股份有限公司,public_off_coverage,CN,semiconductors,PCB Laminates & Substrate Materials (CCL),core
+行云集成电路,private,CN,semiconductors,"Logic, Compute & Connectivity Processors",core
+金胜电子,private,CN,semiconductors,"Memory — DRAM, NAND & HBM",core
+"陕西华达科技股份有限公司 (Shaanxi Huada Technology Co., Ltd.)",public_off_coverage,CN,semiconductors,Interconnect & Passive Components,core
+香港晟霖港刻科技有限公司,private,HK,semiconductors,Wafer-Fab Equipment & Lithography,core

@@ -14,7 +14,7 @@ API — see "Go live".
 
 ## Files (what each answers)
 
-- `data/impact-signals.csv` (4,036 rows): THE CORE. `(event × entity × aspect)`. Slice it many ways:
+- `data/impact-signals.csv` (4,038 rows): THE CORE. `(event × entity × aspect)`. Slice it many ways:
   by `entity_type` (asset-class focus: commodity/forex/crypto), by `aspect ∈ {monetary,tariff,geopolitics}`
   (macro), by `impact=indirect` (ripple), by `entity_type=private` (beyond tickers).
 - `data/impact-signals.jsonl`: same, nested (`entities[] → impact.aspects[]`) + extra aggregate/meta fields.
@@ -22,7 +22,7 @@ API — see "Go live".
 - `data/discover.csv` (456): semantic search — 15 plain-English `question`s → news matched BY MEANING + entities.
 - `data/relationships.csv` (351): news-derived company graph — `competitor` + `peer` edges with `weight`.
 - `data/private-impact.csv` (297): beyond tickers — impact on non-listed cos (OpenAI, Anthropic, Ripple…).
-- `data/private-roster.csv` (186): the private/off-coverage universe mapped to trends (coverage breadth).
+- `data/private-roster.csv` (1,031): the private/off-coverage universe mapped to trends (coverage breadth).
 - `data/megatrends.csv` (335): the trend taxonomy (join target for `node_name` / `megatrend_node`).
 
 ## How to read one core row
@@ -31,6 +31,12 @@ API — see "Go live".
 relevance, impact, impact_score, theme, node_name, entity_country, publisher, url`
 → *"On {published_at}, '{title}' affected {entity_name} ({entity_type}) {direction} via {aspect}, because
 {reason}."* One entity hit through several aspects = several rows.
+
+Grain / primary key = one row per (event × entity × aspect) PER LENS, lens = (theme, impact). The same
+article recurs across lenses (epicenter of one trend, ripple of another; re-surfaced by an asset feed) so
+`url` repeats — composite key = (url, entity_ticker, entity_name, aspect, theme, impact). Filter to one
+`theme` to collapse to a single lens. `publisher` = the real de-aggregated outlet (not the host, e.g. not
+"Yahoo Finance"). `impact` is empty on asset-feed rows.
 
 ## Joins (don't guess — these are the keys)
 
@@ -45,7 +51,7 @@ relevance, impact, impact_score, theme, node_name, entity_country, publisher, ur
 - `direction` / `net_direction`: pos · neg · ambiguous
 - `aspect` (10, + empty): demand · supply · pricing · capital · competition · technology · regulation ·
   tariff · geopolitics · monetary
-- `impact`: direct (epicenter) · indirect (ripple)
+- `impact`: direct (epicenter) · indirect (ripple) · empty (asset-class feed row — no epicenter/ripple framing)
 - `theme`: ai-power · semiconductors · commodities · forex · crypto · ai · digital-finance
 - `relation`: competitor · peer   ·   `exposure`: core · secondary
 - `relevance`, `similarity`, `top_relevance`: 0–1   ·   `impact_score`: 1–5   ·   `published_at`: ISO-8601 UTC
@@ -56,6 +62,8 @@ relevance, impact, impact_score, theme, node_name, entity_country, publisher, ur
 - Private companies are MENTIONED far more than they are impact-SCORED — the private-impact file is the
   scored subset; the roster is the fuller coverage.
 - Impact labels reflect model judgment at publish time and aren't infallible.
+- `discover.csv` rows are retrieval hits — `direction`/`aspect`/`reason` are empty on ~45% (matched but not impact-scored).
+- Curated SAMPLE (not production): window ≈ 2 weeks of impact-ranked events (2026-06-25 → 07-06), model-generated labels.
 - ⚠️ NOT a price predictor. `direction` is the news's content lean, not a return forecast — do not treat it
   as a buy/sell signal. Use it to structure/understand the flow, or as one feature among your own data.
 
