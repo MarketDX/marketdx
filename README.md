@@ -22,6 +22,23 @@ event, across many dimensions** — 10 causal channels (demand · supply · regu
 can't see. It's a layer for **understanding and structuring** the news flow — a research, screening and
 feature input — **not** a predictive price signal (news is largely priced in by the time it's public).
 
+## What a signal looks like
+
+One headline → every entity it touches, each labeled with the **lean** (+/−) and the **why**. Take
+*"AI-driven memory shortage forces Apple, Samsung, Microsoft… to raise device prices"*:
+
+| entity | | lean | why (aspect) |
+|--------|---|:---:|---|
+| Apple | stock | **−** | pricing — chip costs squeeze margins |
+| Microsoft | stock | **−** | pricing |
+| Nintendo | stock | **−** | pricing |
+| Samsung | stock | **+** | demand — it *makes* the memory |
+
+Same event, opposite outcomes — because the **why** is labeled, not just a sentiment score. And it spans
+**five asset classes including private companies** (OpenAI, Anthropic, …) that ticker feeds structurally
+can't see, plus the **ripple** into non-obvious names.
+<sub>↑ a real row from the free [sample dataset](datasets/) — no signup needed.</sub>
+
 ## What's here
 
 | | | |
@@ -52,6 +69,9 @@ for s in mdx.news(megatrend="ai-power", impact="indirect"):
 ```
 
 Full SDK docs → [`python/`](python/).
+
+**Free to explore** — the [sample dataset](datasets/) and [playground](https://marketdx.lab.ai/playground)
+need no signup, and the API has a free tier. Paid plans unlock full & live coverage — see [pricing](https://marketdx.lab.ai).
 
 ## License
 
