@@ -74,9 +74,10 @@ for s in mdx.news_search("chip export controls to China", limit=5):
     print(round(s.similarity, 2), s.scored, s.title)   # how-strongly-matched + does-it-move-an-entity
 
 # 6. Brief in ONE call — pulse timeseries + top stories + winners/losers + heatmap + assets.
-#    Scope by theme, market, news-type, impact-channel, or any mix (>=1 scope).
+#    Scope by theme, market, news-type, impact-channel, GICS sector, or any mix (>=1 scope).
 brief = mdx.theme("ai-power").summary(window="qtd")            # theme brief (== brief(megatrend="ai-power"))
 brief = mdx.brief(news_type="commodity_supply", country="JP", window="90d")  # "commodity news, in Japan"
+brief = mdx.brief(gics="2550", country=["GB","DE","FR","IT","ES","NL"])      # "European retail pulse" (sector x region)
 print(brief["pulse"]["story_count"], brief["pulse"]["net_direction"])
 print([w["ticker"] for w in brief["winners"]], "vs", [l["ticker"] for l in brief["losers"]])
 print([a["name"] for a in brief["top_assets"]])          # commodity / forex / crypto the theme moves
