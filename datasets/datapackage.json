@@ -111,6 +111,8 @@
           {"name": "aspect", "type": "string"},
           {"name": "reason", "type": "string"},
           {"name": "published_at", "type": "datetime", "format": "%Y-%m-%dT%H:%M:%S%z"},
+          {"name": "publisher", "type": "string", "description": "the real de-aggregated outlet (Reuters, Business Wire, …) — not the republishing host it appeared on"},
+          {"name": "publisher_type", "type": "string", "description": "outlet category — e.g. newswire, media, research, aggregator, exchange, official"},
           {"name": "url", "type": "string", "format": "uri"}
         ]
       }
