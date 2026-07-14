@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "marketdx"
-version = "0.5.0"
+version = "0.5.1"
 description = "The MarketDX financial impact graph, in Python — news→market impact (why, who, direction, ripple) across stocks, commodities, FX, crypto, and private companies."
 readme = "README.md"
 requires-python = ">=3.9"

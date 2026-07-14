@@ -19,10 +19,13 @@
 pip install marketdx          # add [pandas] for .to_df():  pip install "marketdx[pandas]"
 ```
 
+**An API key is required.** Create a free one at **https://marketdx.lab.ai** (sign in → *API keys*), then
+pass it to the client (keep it out of source control — read it from an env var / secret in real apps):
+
 ```python
 from marketdx import MarketDX
 
-mdx = MarketDX(api_key="avn_live_…")                     # get a key at marketdx.lab.ai
+mdx = MarketDX(api_key="avn_live_…")                     # your key from https://marketdx.lab.ai
 for s in mdx.news(megatrend="ai-power", impact="indirect"):
     print(s.title, [(e.name, e.impact.net_direction) for e in s.entities])
 ```
@@ -32,7 +35,8 @@ That's the whole graph: every news event, every affected entity, labeled with **
 across five asset classes, **including private companies** ticker feeds can't see.
 
 > **No key yet?** Explore everything with zero signup in the [playground](https://marketdx.lab.ai/playground),
-> then grab a free key at [marketdx.lab.ai](https://marketdx.lab.ai).
+> then grab a free key at **[https://marketdx.lab.ai](https://marketdx.lab.ai)**. Every request is
+> authenticated with your key (`Authorization: Bearer <key>`) and metered in credits.
 
 ## Why the SDK (not just `requests`)
 
