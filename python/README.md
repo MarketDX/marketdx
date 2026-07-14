@@ -152,6 +152,11 @@ scored = [e for s in mdx.news(megatrend="ai-power", only_scored=True)
   policy / commodity story that names no covered company (e.g. "China bans helium exports") legitimately
   returns `entities == []`. It means *no entity resolved*, not a dropped/failed enrich.
 
+**Provenance.** A scored `impact` ships its evidence, not just a label: `aspect`+`direction`+`relevance`
+(the judgment), `reason` (why), `Entity.direct` (named vs affected-only), and `impact.label_version` — the
+labeling-scheme version (currently `"1.0"`), a per-label stamp that bumps when the model/prompt/taxonomy
+changes so you can detect and re-evaluate shifts. Audit or gate on it: `e.impact.label_version`.
+
 **`stock(t).news()` is a stock-centric timeline** — a `StockNews` (the stock's own `impact` /`trend`/
 `relevance`), **not** an entity graph (no `entities[]`). For the full graph of an article, use `news()`.
 

@@ -58,6 +58,7 @@ class Impact:
     net_direction: Optional[str]
     relevance: Optional[float]
     aspects: List[Aspect]
+    label_version: Optional[str] = None   # provenance: which labeling-scheme version produced this ("1.0")
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
 
     @classmethod
@@ -68,6 +69,7 @@ class Impact:
             d.get("net_direction"),
             d.get("relevance"),
             [Aspect.from_dict(a) for a in (d.get("aspects") or [])],
+            label_version=d.get("label_version"),
             raw=d,
         )
 
