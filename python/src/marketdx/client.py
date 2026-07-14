@@ -217,8 +217,9 @@ class MarketDX:
         ``megatrend`` takes a node id/slug/name (or a list); ``news_type`` (see :meth:`news_types`),
         ``country`` (ISO-2), ``aspect`` and ``gics`` each take one value or a list. ``gics`` is a GICS
         code **prefix** at any depth — sector ``"25"``, industry-group ``"2550"``, industry
-        ``"255010"``, or sub-industry ``"25501010"``. ``country`` is the company's *listing/exchange*
-        country, not domicile. ``window``/``interval``/``from_``/``to``/``lang`` are as ``summary()``.
+        ``"255010"``, or sub-industry ``"25501010"`` (browse codes with :meth:`gics`). ``country`` is
+        the company's *listing/exchange* country, not domicile. ``window``/``interval``/``from_``/
+        ``to``/``lang`` are as ``summary()``.
         """
         mt = [self._resolve(m) for m in megatrend] if isinstance(megatrend, list) else self._resolve(megatrend)
         params = {"megatrend": mt, "news_type": news_type, "country": country, "aspect": aspect,
