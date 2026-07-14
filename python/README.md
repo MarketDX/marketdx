@@ -41,7 +41,8 @@ across five asset classes, **including private companies** ticker feeds can't se
 ## Why the SDK (not just `requests`)
 
 - **Typed graph** — `signal.entities[0].impact.aspects[0].direction` with autocomplete, not raw dicts.
-- **Auto-pagination** — `for s in mdx.news(...)` walks every page for you. Nothing to manage.
+- **Auto-pagination** — `for s in mdx.news(...)` pages for you. `limit=` caps how many you get
+  (default 50; `limit=None` walks the whole match set); `page.total` is the full count.
 - **Names, not ids** — `megatrend="ai-power"` or `"AI Power & Cooling"` or `10040000` all work.
 - **`.to_df()`** — the whole result as a pandas DataFrame, one row per *(event × entity × aspect)*.
 - **Typed errors** — `AuthError`, `QuotaError`, `RateLimitError`, `BadRequestError`, `NotFoundError`.
@@ -50,7 +51,7 @@ across five asset classes, **including private companies** ticker feeds can't se
 
 ```python
 # 1. Ripple: a themed event that also touches NON-thematic entities (our differentiator)
-for s in mdx.news(megatrend="semiconductors", impact="indirect", max_items=50):
+for s in mdx.news(megatrend="semiconductors", impact="indirect", limit=50):
     ...
 
 # 2. Beyond tickers: private companies in a trend (OpenAI, Anthropic, Ampere, ChangXin…)

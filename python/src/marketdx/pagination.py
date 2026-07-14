@@ -34,8 +34,12 @@ class Page:
 
     def __iter__(self) -> Iterator[Any]:
         offset, seen = 0, 0
+        # Honor the cap in the per-request page size — never fetch (or pay for) more than we'll
+        # yield. `max_items` (the effective `limit`) None → walk the whole set in _PAGE_SIZE pages;
+        # a small cap → a single right-sized request (this is what makes `limit=10` actually mean 10).
+        page_size = min(self._max, _PAGE_SIZE) if self._max else _PAGE_SIZE
         while True:
-            resp = self._get_page(offset, _PAGE_SIZE)
+            resp = self._get_page(offset, page_size)
             data = resp.data if isinstance(resp.data, dict) else {}
             if self._total is None:
                 self._total = data.get("total")
@@ -45,9 +49,13 @@ class Page:
                     return
                 seen += 1
                 yield self._parse(it)
+            # Stop BEFORE fetching another (metered) page once the cap is met — otherwise an exact
+            # multiple of the page size (e.g. cap=100) would pay for one wasted extra request.
+            if self._max is not None and seen >= self._max:
+                return
             if not data.get("has_more") or not items:
                 return
-            offset += _PAGE_SIZE
+            offset += page_size
 
     def to_list(self) -> List[Any]:
         # Comprehension iterates via __iter__ only — deliberately NO __len__ on this

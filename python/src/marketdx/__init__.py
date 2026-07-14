@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 from . import enums
 from .client import GicsRef, MarketDX, MegatrendRef, StockRef

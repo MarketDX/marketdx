@@ -23,6 +23,13 @@ DEFAULT_BASE_URL = "https://api.marketdx.lab.ai"
 NodeRef = Union[int, str, None]  # id | slug | name
 
 
+def _cap(limit: Optional[int], max_items: Optional[int]) -> Optional[int]:
+    """Effective cap on results returned by an auto-paginating method. ``limit`` is the primary
+    knob (has a sane default; ``None`` = fetch everything). ``max_items`` is a deprecated alias kept
+    for back-compat — if given, it wins."""
+    return max_items if max_items is not None else limit
+
+
 class MarketDX:
     """Client for the MarketDX Data API.
 
@@ -68,10 +75,14 @@ class MarketDX:
         since: Optional[str] = None,
         from_: Optional[str] = None,
         to: Optional[str] = None,
-        limit: int = 50,
+        limit: Optional[int] = 50,
         max_items: Optional[int] = None,
     ) -> "Page":
         """News signals, one :class:`~marketdx.models.Signal` per event. Auto-paginated.
+
+        ``limit`` caps how many signals you get back (default 50; pass ``limit=None`` to walk the
+        **entire** match set — mind the credit cost on a broad feed). ``max_items`` is a deprecated
+        alias for ``limit``. Iteration pages under the hood; ``page.total`` is the full match count.
 
         Near-duplicate stories (one story republished / rewritten across outlets) are merged
         into a single signal by default. Pass ``collapse=False`` for the raw, un-deduped feed.
@@ -97,37 +108,39 @@ class MarketDX:
             "from": from_, "to": to,
         }
         return self._page("/v1/news", "results", Signal.from_dict, params,
-                          columns=SIGNAL_COLUMNS, max_items=max_items)
+                          columns=SIGNAL_COLUMNS, max_items=_cap(limit, max_items))
 
     def news_search(self, q: str, *, entity_type: Optional[enums.EntityType] = None,
-                    limit: int = 20, lang: Optional[str] = None,
+                    limit: Optional[int] = 20, lang: Optional[str] = None,
                     include: str = "entities,impact", collapse: Optional[bool] = None,
                     max_items: Optional[int] = None) -> "Page":
         """Semantic (vector) search — news matched by MEANING. Relevance-ranked top-K.
 
-        Unlike the ``news()`` feed, search supports an ``entity_type`` filter (keeps only
-        articles with a related entity of that type — stock/forex/crypto/commodity/private/
-        public_off_coverage), applied server-side. Near-duplicate stories are merged by default;
-        pass ``collapse=False`` for the raw hits.
+        ``limit`` is the top-K size (default 20; ``max_items`` is a deprecated alias). Unlike the
+        ``news()`` feed, search supports an ``entity_type`` filter (keeps only articles with a
+        related entity of that type — stock/forex/crypto/commodity/private/public_off_coverage),
+        applied server-side. Near-duplicate stories are merged by default; pass ``collapse=False``
+        for the raw hits.
         """
         return self._page("/v1/news/search", "results", Signal.from_dict,
                           {"q": q, "lang": lang, "include": include, "entity_type": entity_type,
                            "collapse": collapse},
-                          columns=SIGNAL_COLUMNS, max_items=max_items)
+                          columns=SIGNAL_COLUMNS, max_items=_cap(limit, max_items))
 
     def news_by_tickers(self, ticker: Union[str, List[str]], *, direction: Optional[enums.Direction] = None,
                         aspect: Optional[Union[enums.Aspect, str]] = None,
                         impact: Optional[enums.ImpactType] = None, include: str = "entities,impact",
                         collapse: Optional[bool] = None,
-                        lang: Optional[str] = None, limit: int = 50, max_items: Optional[int] = None) -> "Page":
+                        lang: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
         """News for one or more tickers — the article + that ticker's **direct AND indirect**
         impact. Use this to query by a specific ticker (incl. commodities like ``GOLD.COMM``),
         which the ``news()`` feed does not filter by. ``ticker`` accepts ``NVDA.US`` or a list.
+        ``limit`` caps results (default 50; ``None`` = all; ``max_items`` is a deprecated alias).
         Near-duplicate stories are merged by default; pass ``collapse=False`` for the raw feed."""
         return self._page("/v1/news/by-tickers", "results", Signal.from_dict,
                           {"ticker": ticker, "direction": direction, "aspect": aspect,
                            "impact": impact, "include": include, "lang": lang, "collapse": collapse},
-                          columns=SIGNAL_COLUMNS, max_items=max_items)
+                          columns=SIGNAL_COLUMNS, max_items=_cap(limit, max_items))
 
     def news_types(self) -> List[Dict[str, Any]]:
         """The controlled news-type vocabulary (18 types)."""
@@ -151,12 +164,13 @@ class MarketDX:
     def stocks(self, *, q: Optional[str] = None, megatrend: NodeRef = None,
                aspect: Optional[Union[enums.Aspect, str]] = None, direction: Optional[enums.Direction] = None,
                country: Optional[str] = None, gate: Optional[str] = None, order_by: Optional[str] = None,
-               since: Optional[str] = None, limit: int = 50, max_items: Optional[int] = None) -> "Page":
-        """``q=`` → identity search; otherwise → the news-driven impact screener."""
+               since: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
+        """``q=`` → identity search; otherwise → the news-driven impact screener. ``limit`` caps
+        results (default 50; ``None`` = all; ``max_items`` is a deprecated alias)."""
         params = {"q": q, "megatrend": self._resolve(megatrend), "aspect": aspect,
                   "direction": direction, "country": country, "gate": gate,
                   "order_by": order_by, "since": since}
-        return self._page("/v1/stocks", "stocks", MemberStock.from_dict, params, max_items=max_items)
+        return self._page("/v1/stocks", "stocks", MemberStock.from_dict, params, max_items=_cap(limit, max_items))
 
     def stock(self, ticker: str) -> "StockRef":
         """A per-stock handle: ``.news()`` / ``.competitors()`` / ``.peers()``."""
@@ -265,14 +279,15 @@ class StockRef:
 
     def news(self, *, direction: Optional[enums.Direction] = None,
              aspect: Optional[Union[enums.Aspect, str]] = None, order_by: Optional[str] = None,
-             since: Optional[str] = None, limit: int = 50, max_items: Optional[int] = None) -> "Page":
+             since: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
         """This stock's OWN impact timeline (:class:`~marketdx.models.StockNews`): each article
         + the stock's per-article ``impact`` (net_direction + aspects), ``trend``, and
         ``relevance``. No ``entities[]`` — the stock is the subject; use ``mdx.news()`` for the
-        full entity graph of an article."""
+        full entity graph of an article. ``limit`` caps results (default 50; ``None`` = all;
+        ``max_items`` is a deprecated alias)."""
         params = {"direction": direction, "aspect": aspect, "order_by": order_by, "since": since}
         return self._c._page(f"/v1/stocks/{self.ticker}/news", "results", StockNews.from_dict,
-                            params, columns=STOCK_NEWS_COLUMNS, max_items=max_items)
+                            params, columns=STOCK_NEWS_COLUMNS, max_items=_cap(limit, max_items))
 
     def competitors(self, *, max_items: Optional[int] = None) -> "Page":
         """Rivals derived from competition co-occurrence."""
