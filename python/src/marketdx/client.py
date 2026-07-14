@@ -98,6 +98,10 @@ class MarketDX:
           meets this 0-1 floor (implies scored).
 
         These filter in SQL, so ``page.total`` stays the exact filtered count.
+
+        ``country`` (ISO-2) keeps only articles impacting a company **listed in that country**
+        (e.g. ``country="CN"`` for China-relevant news) — on the bare feed; it is not composed with
+        ``megatrend``/``gics`` (use :meth:`brief` or :meth:`stocks` for country + theme).
         """
         params = {
             "megatrend": self._resolve(megatrend), "gics": gics, "include": include,
