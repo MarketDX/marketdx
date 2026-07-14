@@ -142,6 +142,15 @@ scored = [e for s in mdx.news(megatrend="ai-power", only_scored=True)
           for e in s.entities if e.impact and e.impact.aspects]
 ```
 
+**What to expect in `entities` (not bugs):**
+- **Mostly mention-only.** An article's `entities` mix two kinds: *mentioned* (`e.direct is True`,
+  `e.impact is None`) — every ticker the article names — and *scored* (`e.impact is not None`) — the ones
+  the model judged materially moved. Mentions usually **outnumber** scored (a story names many tickers but
+  moves a few). Want just the movers? `only_scored=True` or filter `e.impact`.
+- **`entities` can be empty.** `include=entities` attaches entities *if the article maps to any*; a macro /
+  policy / commodity story that names no covered company (e.g. "China bans helium exports") legitimately
+  returns `entities == []`. It means *no entity resolved*, not a dropped/failed enrich.
+
 **`stock(t).news()` is a stock-centric timeline** — a `StockNews` (the stock's own `impact` /`trend`/
 `relevance`), **not** an entity graph (no `entities[]`). For the full graph of an article, use `news()`.
 
