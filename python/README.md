@@ -165,6 +165,14 @@ merged = mdx.news(megatrend="ai-power").to_list()                 # deduped (def
 raw    = mdx.news(megatrend="ai-power", collapse=False).to_list() # every republication
 ```
 
+Each collapsed signal also carries its cluster metadata — group a dashboard by `story_id` and see reach +
+lifespan without double-counting:
+
+```python
+for s in mdx.news(megatrend="ai-power", limit=5):
+    print(s.story_id, s.dup_count, s.first_seen, s.latest_seen)   # cluster id · outlets · broke · last echo
+```
+
 ## Theme brief — the whole picture in one call
 
 `mdx.theme(id).summary(...)` (a theme = a megatrend node; also `mdx.megatrends(id).summary(...)`) returns

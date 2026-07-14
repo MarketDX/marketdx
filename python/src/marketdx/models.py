@@ -112,6 +112,12 @@ class Signal:
     entities: List[Entity]
     similarity: Optional[float] = None  # search only: 0–1 cosine, how strongly it matched the query
     scored: Optional[bool] = None       # search only: does the article carry a judged impact on an entity
+    # story-cluster (present on the collapsed feed, the default): a story republished across outlets
+    # is one row; group by story_id to dedupe, and see its reach + lifespan.
+    story_id: Optional[str] = None      # = dup_group_id — the story-cluster id
+    dup_count: Optional[int] = None     # how many articles are in the cluster (outlet reach)
+    first_seen: Optional[str] = None    # earliest published in the cluster (when the story broke)
+    latest_seen: Optional[str] = None   # latest in the cluster (how long it kept echoing)
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
 
     @classmethod
@@ -137,6 +143,10 @@ class Signal:
             entities=[Entity.from_dict(e) for e in (d.get("entities") or [])],
             similarity=d.get("similarity"),
             scored=d.get("scored"),
+            story_id=d.get("story_id") or d.get("dup_group_id"),
+            dup_count=d.get("dup_count"),
+            first_seen=d.get("first_seen"),
+            latest_seen=d.get("latest_seen"),
             raw=d,
         )
 
