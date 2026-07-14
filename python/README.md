@@ -66,6 +66,12 @@ positive_lean = mdx.stocks(megatrend="ai-power", direction="pos", country="US", 
 
 # 5. Semantic search — match news by MEANING, not keywords
 hits = mdx.news_search("chip export controls to China")
+
+# 6. Theme brief in ONE call — pulse timeseries + top stories + winners/losers + heatmap + assets
+brief = mdx.theme("ai-power").summary(window="qtd")     # 7d/30d/90d/1y or mtd/qtd/ytd
+print(brief["pulse"]["story_count"], brief["pulse"]["net_direction"])
+print([w["ticker"] for w in brief["winners"]], "vs", [l["ticker"] for l in brief["losers"]])
+print([a["name"] for a in brief["top_assets"]])          # commodity / forex / crypto the theme moves
 ```
 
 ## Straight to pandas
@@ -143,6 +149,26 @@ default (cosine-similarity grouping, server-side) so a feed reads one-story-one-
 merged = mdx.news(megatrend="ai-power").to_list()                 # deduped (default)
 raw    = mdx.news(megatrend="ai-power", collapse=False).to_list() # every republication
 ```
+
+## Theme brief — the whole picture in one call
+
+`mdx.theme(id).summary(...)` (a theme = a megatrend node; also `mdx.megatrends(id).summary(...)`) returns
+a pre-composed **analyst brief** so you don't stitch 5+ requests together. It's a fixed composite `dict`,
+not a paginated list:
+
+```python
+brief = mdx.theme("ai-power").summary(window="30d")     # 7d/30d/90d/180d/1y or mtd/qtd/ytd (or from_/to)
+brief["pulse"]          # story_count, net_direction, pos/neg share + a `series` (volume+sentiment/bucket)
+brief["top_stories"]    # epicenter, deduped; market-wraps & no-member-named stories deprioritized
+brief["ripple"]         # indirect (ripple-in) stories, each with `via`
+brief["winners"], brief["losers"]   # member stocks by net direction
+brief["aspect_heatmap"] # which channels the theme is playing out through
+brief["top_entities"]   # operating companies most in the news
+brief["top_assets"]     # commodity / forex / crypto the theme moves (split out from companies)
+```
+
+Every count is **story-deduped** (20 outlets on one story = 1). The `pulse.series` is the momentum signal —
+there's no single momentum scalar (the latest bucket is the current, partial period). Cost: 15 credits.
 
 ## Metering & errors
 

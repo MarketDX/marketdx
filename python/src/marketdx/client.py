@@ -162,6 +162,11 @@ class MarketDX:
         """A per-stock handle: ``.news()`` / ``.competitors()`` / ``.peers()``."""
         return StockRef(self, ticker)
 
+    def theme(self, id: NodeRef) -> "MegatrendRef":
+        """A theme handle (= a megatrend node) — call ``.summary(window=…)`` for the one-call analyst
+        brief. Alias of ``megatrends(id)`` that reads at the URL you'd expect (``/v1/themes/:id``)."""
+        return MegatrendRef(self, self._resolve(id))
+
     # ── reference ─────────────────────────────────────────────────────────────
     def enums(self) -> Dict[str, Any]:
         """The live controlled vocabularies — the runtime source of truth (free, unmetered)."""
@@ -216,6 +221,29 @@ class MegatrendRef:
                   "include_flagged": include_flagged, "rollup": rollup}
         return self._c._page(f"/v1/megatrends/{self.node_id}/off-coverage", "companies",
                             Company.from_dict, params, max_items=max_items)
+
+    def summary(self, *, window: Optional[str] = None, interval: Optional[str] = None,
+                country: Optional[str] = None, from_: Optional[str] = None,
+                to: Optional[str] = None, lang: Optional[str] = None) -> Dict[str, Any]:
+        """The theme's pre-composed **analyst brief** (``GET /v1/themes/:id/summary``) — one call for
+        the whole picture, so you don't stitch 5+ requests together. Returns the raw brief ``dict``
+        (a fixed composite, not a paginated list):
+
+        * ``pulse`` — headline totals + a **timeseries** ``series`` (volume + sentiment per bucket).
+          There's no single momentum number: the latest bucket is the current, partial period.
+        * ``top_stories`` (epicenter, deduped; market-wraps + stories that name no member company are
+          deprioritized), ``ripple`` (indirect), ``winners`` / ``losers`` (member stocks),
+          ``aspect_heatmap``, ``top_entities`` (companies), ``top_assets`` (commodity/forex/crypto).
+
+        Every count is **story-deduped** — a story republished by 20 outlets counts once.
+
+        ``window`` = ``7d``/``30d``/``90d``/``180d``/``1y`` or calendar ``mtd``/``qtd``/``ytd`` (or pass
+        ``from_``+``to``). ``interval`` (``day``/``week``/``month``) buckets the pulse series (auto by
+        span if omitted). ``country`` geo-filters winners/losers/entities. Cost: 15 credits.
+        """
+        params = {"window": window, "interval": interval, "country": country,
+                  "from": from_, "to": to, "lang": lang}
+        return self._c._get(f"/v1/themes/{self.node_id}/summary", params).data
 
 
 class GicsRef:
