@@ -142,8 +142,10 @@ class MarketDX:
                         collapse: Optional[bool] = None,
                         lang: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
         """News for one or more tickers — the article + that ticker's **direct AND indirect**
-        impact. Use this to query by a specific ticker (incl. commodities like ``GOLD.COMM``),
-        which the ``news()`` feed does not filter by. ``ticker`` accepts ``NVDA.US`` or a list.
+        impact. Use this to query by a specific ticker, which the ``news()`` feed does not filter
+        by. ``ticker`` accepts a stock ``NVDA.US`` (or a list) AND non-stock assets — pass a
+        commodity/crypto/forex as shown in the feed (``GOLD``, ``BTC``) or its ``SYMBOL.EXCHANGE``
+        form (``GOLD.COMM``); use :meth:`stocks` (``q=``) to look up the exact ``.ticker``.
         ``limit`` caps results (default 50; ``None`` = all; ``max_items`` is a deprecated alias).
         Near-duplicate stories are merged by default; pass ``collapse=False`` for the raw feed."""
         return self._page("/v1/news/by-tickers", "results", Signal.from_dict,
@@ -174,12 +176,16 @@ class MarketDX:
                aspect: Optional[Union[enums.Aspect, str]] = None, direction: Optional[enums.Direction] = None,
                country: Optional[str] = None, gate: Optional[str] = None, order_by: Optional[str] = None,
                since: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
-        """``q=`` → identity search; otherwise → the news-driven impact screener. ``limit`` caps
-        results (default 50; ``None`` = all; ``max_items`` is a deprecated alias)."""
+        """``q=`` → identity search (stocks AND commodities/crypto/forex; each result carries a
+        ready-to-use ``.ticker`` — e.g. ``NVDA.US``, ``GOLD``, ``BTC`` — to feed straight into
+        :meth:`news_by_tickers` / :meth:`stock`); otherwise → the news-driven impact screener.
+        ``limit`` caps results (default 50; ``None`` = all; ``max_items`` is a deprecated alias)."""
         params = {"q": q, "megatrend": self._resolve(megatrend), "aspect": aspect,
                   "direction": direction, "country": country, "gate": gate,
                   "order_by": order_by, "since": since}
-        return self._page("/v1/stocks", "stocks", MemberStock.from_dict, params, max_items=_cap(limit, max_items))
+        # the search (?q=) response nests results under `matches`; the screener under `stocks`
+        key = "matches" if q else "stocks"
+        return self._page("/v1/stocks", key, MemberStock.from_dict, params, max_items=_cap(limit, max_items))
 
     def stock(self, ticker: str) -> "StockRef":
         """A per-stock handle: ``.news()`` / ``.competitors()`` / ``.peers()``."""

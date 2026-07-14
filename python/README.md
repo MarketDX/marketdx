@@ -66,6 +66,10 @@ for s in mdx.news(entity_type="private", only_scored=True):   # also: crypto / c
 tl    = mdx.stock("NVDA.US").news(aspect="competition")
 peers = mdx.stock("NVDA.US").competitors()
 
+# 3b. Find ANY asset (stock, commodity, crypto, forex) → each hit carries a ready-to-use .ticker
+gold      = mdx.stocks(q="gold").first().ticker        # -> "GOLD"  (the commodity)
+gold_news = mdx.news_by_tickers(gold, direction="neg") # feed it straight back in
+
 # 4. News-driven screen — where the news leans positive on a theme (the model's read, for research)
 positive_lean = mdx.stocks(megatrend="ai-power", direction="pos", country="US", order_by="news_count")
 
