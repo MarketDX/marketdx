@@ -73,8 +73,10 @@ positive_lean = mdx.stocks(megatrend="ai-power", direction="pos", country="US", 
 for s in mdx.news_search("chip export controls to China", limit=5):
     print(round(s.similarity, 2), s.scored, s.title)   # how-strongly-matched + does-it-move-an-entity
 
-# 6. Theme brief in ONE call — pulse timeseries + top stories + winners/losers + heatmap + assets
-brief = mdx.theme("ai-power").summary(window="qtd")     # 7d/30d/90d/1y or mtd/qtd/ytd
+# 6. Brief in ONE call — pulse timeseries + top stories + winners/losers + heatmap + assets.
+#    Scope by theme, market, news-type, impact-channel, or any mix (>=1 scope).
+brief = mdx.theme("ai-power").summary(window="qtd")            # theme brief (== brief(megatrend="ai-power"))
+brief = mdx.brief(news_type="commodity_supply", country="JP", window="90d")  # "commodity news, in Japan"
 print(brief["pulse"]["story_count"], brief["pulse"]["net_direction"])
 print([w["ticker"] for w in brief["winners"]], "vs", [l["ticker"] for l in brief["losers"]])
 print([a["name"] for a in brief["top_assets"]])          # commodity / forex / crypto the theme moves
@@ -178,7 +180,7 @@ for s in mdx.news(megatrend="ai-power", limit=5):
     print(s.story_id, s.dup_count, s.first_seen, s.latest_seen)   # cluster id · outlets · broke · last echo
 ```
 
-## Theme brief — the whole picture in one call
+## The brief — the whole picture in one call
 
 `mdx.theme(id).summary(...)` (a theme = a megatrend node; also `mdx.megatrends(id).summary(...)`) returns
 a pre-composed **analyst brief** so you don't stitch 5+ requests together. It's a fixed composite `dict`,
@@ -197,6 +199,22 @@ brief["top_assets"]     # commodity / forex / crypto the theme moves (split out 
 
 Every count is **story-deduped** (20 outlets on one story = 1). The `pulse.series` is the momentum signal —
 there's no single momentum scalar (the latest bucket is the current, partial period). Cost: 15 credits.
+
+**Any scope, not just a theme.** `mdx.brief(...)` composes the *same* object over any AND-combination of
+**megatrend / news_type / country / aspect** (≥1 required) — a theme, a market, a news category, an
+impact channel, or a mix:
+
+```python
+mdx.brief(country="JP")                                   # how is Japan doing right now?
+mdx.brief(news_type="commodity_supply", country="JP")     # commodity news, in Japan
+mdx.brief(aspect="tariff", window="90d")                  # everything moving via tariffs
+mdx.brief(megatrend="semiconductors", country="US")       # a theme, narrowed to one market
+```
+
+`applied_scope` echoes what you filtered. `node` + `ripple` appear **only when a single `megatrend`**
+anchors the brief (without a theme there's no ripple). Under a megatrend scope `winners`/`losers` are the
+theme's members; otherwise they're the top +/- companies in the scope. `theme(id).summary(...)` ==
+`brief(megatrend=id, ...)`. `megatrend`/`news_type`/`country`/`aspect` each take one value or a list.
 
 ## Metering & errors
 

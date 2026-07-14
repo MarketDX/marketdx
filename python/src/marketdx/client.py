@@ -186,6 +186,37 @@ class MarketDX:
         brief. Alias of ``megatrends(id)`` that reads at the URL you'd expect (``/v1/themes/:id``)."""
         return MegatrendRef(self, self._resolve(id))
 
+    def brief(self, *, megatrend: Optional[Union[NodeRef, List[NodeRef]]] = None,
+              news_type: Optional[Union[str, List[str]]] = None,
+              country: Optional[Union[str, List[str]]] = None,
+              aspect: Optional[Union[enums.Aspect, str, List[str]]] = None,
+              window: Optional[str] = None, interval: Optional[str] = None,
+              from_: Optional[str] = None, to: Optional[str] = None,
+              lang: Optional[str] = None) -> Dict[str, Any]:
+        """The generalized **analyst brief** (``GET /v1/brief``) — the same composed picture as
+        ``theme(id).summary()``, but scoped by ANY AND-combination of **megatrend / news_type /
+        country / aspect** (>=1 required). Ask "how is <scope> doing right now?" for a theme, a
+        market, a news category, an impact channel, or any mix — e.g. commodity news affecting
+        Japan, or everything moving via tariffs::
+
+            mdx.brief(news_type="commodity_supply", country="JP", window="90d")
+            mdx.brief(megatrend="ai-power", aspect="tariff")   # == theme("ai-power") narrowed to tariff
+
+        Returns the raw brief ``dict`` (same shape as ``summary()``) plus ``applied_scope``. ``node``
+        and ``ripple`` appear ONLY when a single ``megatrend`` anchors the brief (ripple = the
+        ``megatrend_relation`` spill, undefined without a theme). ``winners``/``losers`` are the
+        theme's members under a megatrend scope, else the top +/- companies in the scope. Every count
+        is story-deduped. ``theme(id).summary(...)`` == ``brief(megatrend=id, ...)``. Cost: 15 credits.
+
+        ``megatrend`` takes a node id/slug/name (or a list); ``news_type`` (see :meth:`news_types`),
+        ``country`` (ISO-2) and ``aspect`` each take one value or a list. ``window``/``interval``/
+        ``from_``/``to``/``lang`` are as ``summary()``.
+        """
+        mt = [self._resolve(m) for m in megatrend] if isinstance(megatrend, list) else self._resolve(megatrend)
+        params = {"megatrend": mt, "news_type": news_type, "country": country, "aspect": aspect,
+                  "window": window, "interval": interval, "from": from_, "to": to, "lang": lang}
+        return self._get("/v1/brief", params).data
+
     # ── reference ─────────────────────────────────────────────────────────────
     def enums(self) -> Dict[str, Any]:
         """The live controlled vocabularies — the runtime source of truth (free, unmetered)."""
