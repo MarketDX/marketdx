@@ -116,6 +116,11 @@ class MarketDX:
                     max_items: Optional[int] = None) -> "Page":
         """Semantic (vector) search — news matched by MEANING. Relevance-ranked top-K.
 
+        Each hit carries two explainability fields (on the ``Signal``): ``similarity`` (0–1 cosine —
+        *how strongly* it matched; sort/threshold on it or pass ``min_similarity``) and ``scored``
+        (does the article actually carry a judged impact on an entity, vs a merely-similar read — a hit
+        can be highly similar yet ``scored=False``, e.g. a macro/policy piece moving no covered company).
+
         ``limit`` is the top-K size (default 20; ``max_items`` is a deprecated alias). Unlike the
         ``news()`` feed, search supports an ``entity_type`` filter (keeps only articles with a
         related entity of that type — stock/forex/crypto/commodity/private/public_off_coverage),

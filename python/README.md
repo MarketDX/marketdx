@@ -69,8 +69,9 @@ peers = mdx.stock("NVDA.US").competitors()
 # 4. News-driven screen — where the news leans positive on a theme (the model's read, for research)
 positive_lean = mdx.stocks(megatrend="ai-power", direction="pos", country="US", order_by="news_count")
 
-# 5. Semantic search — match news by MEANING, not keywords
-hits = mdx.news_search("chip export controls to China")
+# 5. Semantic search — match news by MEANING, not keywords (each hit is explainable)
+for s in mdx.news_search("chip export controls to China", limit=5):
+    print(round(s.similarity, 2), s.scored, s.title)   # how-strongly-matched + does-it-move-an-entity
 
 # 6. Theme brief in ONE call — pulse timeseries + top stories + winners/losers + heatmap + assets
 brief = mdx.theme("ai-power").summary(window="qtd")     # 7d/30d/90d/1y or mtd/qtd/ytd

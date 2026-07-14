@@ -110,6 +110,8 @@ class Signal:
     node_name: Optional[str]
     rationale: Optional[str]
     entities: List[Entity]
+    similarity: Optional[float] = None  # search only: 0–1 cosine, how strongly it matched the query
+    scored: Optional[bool] = None       # search only: does the article carry a judged impact on an entity
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
 
     @classmethod
@@ -133,6 +135,8 @@ class Signal:
             node_name=node_name,
             rationale=d.get("rationale"),
             entities=[Entity.from_dict(e) for e in (d.get("entities") or [])],
+            similarity=d.get("similarity"),
+            scored=d.get("scored"),
             raw=d,
         )
 
