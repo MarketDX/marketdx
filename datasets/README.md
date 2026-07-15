@@ -13,16 +13,16 @@ Graph** — the downloadable twin of our [live playground](https://marketdx.lab.
 
 | file | what | rows |
 |---|---|---|
-| [`data/impact-signals.csv`](data/impact-signals.csv) / [`.jsonl`](data/impact-signals.jsonl) | **the core** — one row per `event × entity × aspect`; **all asset classes** | 3,573 |
-| [`data/screener.csv`](data/screener.csv) | curated screens — 6 "who the news is helping / hurting on X" patterns (the model's read) | 94 |
-| [`data/discover.csv`](data/discover.csv) | **semantic search** — 15 plain-English questions → impact-labeled hits (incl. private) | 378 |
-| [`data/relationships.csv`](data/relationships.csv) | **news-derived** competitor + peer graph (edge list) | 351 |
-| [`data/private-impact.csv`](data/private-impact.csv) / [`.jsonl`](data/private-impact.jsonl) | **beyond tickers** — impact on OpenAI, Anthropic, Stripe… | 296 |
-| [`data/private-roster.csv`](data/private-roster.csv) | the private universe mapped to trends | 1,031 |
+| [`data/impact-signals.csv`](data/impact-signals.csv) / [`.jsonl`](data/impact-signals.jsonl) | **the core** — one row per `event × entity × aspect`; **all asset classes** | 3,841 |
+| [`data/screener.csv`](data/screener.csv) | curated screens — 6 "who the news is helping / hurting on X" patterns (the model's read) | 98 |
+| [`data/discover.csv`](data/discover.csv) | **semantic search** — 15 plain-English questions → impact-labeled hits (incl. private) | 377 |
+| [`data/relationships.csv`](data/relationships.csv) | **news-derived** competitor + peer graph (edge list) | 401 |
+| [`data/private-impact.csv`](data/private-impact.csv) / [`.jsonl`](data/private-impact.jsonl) | **beyond tickers** — impact on OpenAI, Anthropic, Stripe… | 602 |
+| [`data/private-roster.csv`](data/private-roster.csv) | the private universe mapped to trends | 1,175 |
 | [`data/megatrends.csv`](data/megatrends.csv) | the 335-node trend taxonomy (interpret `node_id`) | 335 |
 
 ```
-1,801 events · 3,573 impact labels · themes: AI-Power · Semiconductors  (+ AI · Digital Finance for private)
+1,794 events · 3,841 impact labels · themes: AI-Power · Semiconductors  (+ AI · Digital Finance for private)
 asset classes: stock · commodity · forex · crypto · private   ·   2026-06-25 → 2026-07-06   ·   CC BY 4.0
 ```
 
@@ -63,9 +63,9 @@ The core carries every asset class, so slice by `entity_type`:
 
 | focus | signals | what shows up |
 |---|--:|---|
-| **Commodities** (`entity_type=commodity`) | 536 | Gold · Brent · WTI · Copper — OPEC+ output, Fed risk, tariff |
-| **FX** (`entity_type=forex`) | 287 | USD/JPY · USD/CNY · GBP/USD — intervention, "AI boom reshapes FX flows", Fed/ECB |
-| **Crypto** (`entity_type=crypto`) | 258 | BTC · ETH — FOMC positioning, ETH gov guidance, regulation |
+| **Commodities** (`entity_type=commodity`) | 311 | Gold · Brent · WTI · Copper — OPEC+ output, Fed risk, tariff |
+| **FX** (`entity_type=forex`) | 159 | USD/JPY · USD/CNY · GBP/USD — intervention, "AI boom reshapes FX flows", Fed/ECB |
+| **Crypto** (`entity_type=crypto`) | 203 | BTC · ETH — FOMC positioning, ETH gov guidance, regulation |
 
 ### 🌍 Macro / cross-asset ripple — *one shock, many markets*
 Filter `aspect ∈ {monetary, tariff, geopolitics}` (476 signals) — or find events that touch **3+ asset
@@ -97,7 +97,7 @@ Not hand-curated — 351 edges *emergent* from 100k+ articles. Competitor edges 
 competition-flavoured coverage (`NVDA↔AMD` is the heaviest); peer edges from shared trend membership.
 
 ### 🕵️ Beyond tickers — *private companies as first-class entities*
-Two files. [`private-roster.csv`](data/private-roster.csv) maps **1,031 private / off-coverage firms**
+Two files. [`private-roster.csv`](data/private-roster.csv) maps **1,175 private / off-coverage firms**
 (OpenAI, Anthropic, SpaceX, ByteDance, Stripe…) to the trends they belong to — the *coverage* no
 ticker-keyed feed (Bloomberg / Polygon / Alpha Vantage) can offer at all.
 [`private-impact.csv`](data/private-impact.csv) is the subset we scored per-entity impact on — **296
