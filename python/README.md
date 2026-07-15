@@ -139,7 +139,9 @@ mdx.news(only_scored=True)                              # drop mention-only arti
 mdx.news(min_relevance=0.8)                             # only a strongly-relevant scored entity
 mdx.news(megatrend="ai-power", entity_type="crypto")   # entity filters compose with megatrend scope
 mdx.news_search("oil supply shock", entity_type="commodity")  # search supports entity_type too
-mdx.news_by_tickers("NVDA.US")                          # a covered STOCK's news (direct + indirect)
+mdx.news_by_tickers("NVDA.US")                          # a ticker's news (direct + indirect by default)
+mdx.news_by_tickers("NVDA.US", link="direct")           # only where NVDA is factually named (not ripple-only)
+mdx.news_search("oil shock", megatrend="ai-power")      # semantic search, scoped to a trend
 mdx.megatrends("ai-power").off_coverage()              # private / off-coverage roster
 ```
 
@@ -172,9 +174,10 @@ changes so you can detect and re-evaluate shifts. Audit or gate on it: `e.impact
 `relevance`), **not** an entity graph (no `entities[]`). For the full graph of an article, use `news()`.
 
 **Story-collapse (on by default).** The same story is often republished / rewritten across outlets.
-`news()`, `news_search()` and `news_by_tickers()` merge those near-duplicates into a single signal by
-default (cosine-similarity grouping, server-side) so a feed reads one-story-one-row. Pass
-`collapse=False` when you want the raw, un-deduped stream — e.g. to measure coverage volume:
+Every news feed — `news()`, `news_search()`, `news_by_tickers()` and `stock(t).news()` — merges those
+near-duplicates into a single signal by default (cosine-similarity grouping, server-side) so a feed
+reads one-story-one-row. Pass `collapse=False` when you want the raw, un-deduped stream — e.g. to
+measure coverage volume:
 
 ```python
 merged = mdx.news(megatrend="ai-power").to_list()                 # deduped (default)
@@ -210,8 +213,8 @@ Every count is **story-deduped** (20 outlets on one story = 1). The `pulse.serie
 there's no single momentum scalar (the latest bucket is the current, partial period). Cost: 15 credits.
 
 **Any scope, not just a theme.** `mdx.brief(...)` composes the *same* object over any AND-combination of
-**megatrend / news_type / country / aspect** (≥1 required) — a theme, a market, a news category, an
-impact channel, or a mix:
+**megatrend / news_type / country / aspect / gics** (≥1 required) — a theme, a market, a news category,
+an impact channel, a GICS sector, or a mix:
 
 ```python
 mdx.brief(country="JP")                                   # how is Japan doing right now?
@@ -223,7 +226,7 @@ mdx.brief(megatrend="semiconductors", country="US")       # a theme, narrowed to
 `applied_scope` echoes what you filtered. `node` + `ripple` appear **only when a single `megatrend`**
 anchors the brief (without a theme there's no ripple). Under a megatrend scope `winners`/`losers` are the
 theme's members; otherwise they're the top +/- companies in the scope. `theme(id).summary(...)` ==
-`brief(megatrend=id, ...)`. `megatrend`/`news_type`/`country`/`aspect` each take one value or a list.
+`brief(megatrend=id, ...)`. `megatrend`/`news_type`/`country`/`aspect`/`gics` each take one value or a list.
 
 ## Metering & errors
 
