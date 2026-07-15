@@ -206,6 +206,8 @@ class StockNews:
     trend_id: Optional[int]
     impact_score: Optional[int]
     news_types: List[str]
+    story_id: Optional[str] = None      # = dup_group_id — the story-cluster id (collapse ON, default)
+    dup_count: Optional[int] = None     # articles in the cluster (outlet reach); 1 = singleton
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
 
     @classmethod
@@ -216,13 +218,14 @@ class StockNews:
             published_at=_g(d, "article_published_at", "published_at"),
             impact=Impact.from_dict(d.get("impact")),
             relevance=d.get("relevance"), trend=d.get("trend"), trend_id=d.get("trend_id"),
-            impact_score=d.get("impact_score"), news_types=list(d.get("news_types") or []), raw=d,
+            impact_score=d.get("impact_score"), news_types=list(d.get("news_types") or []),
+            story_id=d.get("story_id") or d.get("dup_group_id"), dup_count=d.get("dup_count"), raw=d,
         )
 
     def to_rows(self) -> List[Dict[str, Any]]:
         base = {
             "published_at": self.published_at, "title": self.title, "trend": self.trend,
-            "relevance": self.relevance, "impact_score": self.impact_score,
+            "relevance": self.relevance, "impact_score": self.impact_score, "dup_count": self.dup_count,
             "brief_text": self.brief_text, "publisher": self.publisher, "url": self.url,
         }
         if self.impact and self.impact.aspects:

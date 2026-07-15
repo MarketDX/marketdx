@@ -70,10 +70,11 @@ class MarketDX:
         entity_type: Optional[enums.EntityType] = None,
         only_scored: Optional[bool] = None,
         min_relevance: Optional[float] = None,
+        min_impact: Optional[int] = None,
+        exclude_noise: Optional[bool] = None,
         country: Optional[str] = None,
         lang: Optional[str] = None,
         order_by: Optional[str] = None,
-        since: Optional[str] = None,
         from_: Optional[str] = None,
         to: Optional[str] = None,
         limit: Optional[int] = 50,
@@ -109,13 +110,17 @@ class MarketDX:
             "collapse": collapse,
             "impact": impact, "direction": direction, "aspect": aspect, "news_type": news_type,
             "entity_type": entity_type, "only_scored": only_scored, "min_relevance": min_relevance,
-            "country": country, "lang": lang, "order_by": order_by, "since": since,
+            "min_impact": min_impact, "exclude_noise": exclude_noise,
+            "country": country, "lang": lang, "order_by": order_by,
             "from": from_, "to": to,
         }
         return self._page("/v1/news", "results", Signal.from_dict, params,
                           columns=SIGNAL_COLUMNS, max_items=_cap(limit, max_items))
 
-    def news_search(self, q: str, *, entity_type: Optional[enums.EntityType] = None,
+    def news_search(self, q: str, *, megatrend: NodeRef = None, ticker: Optional[Union[str, List[str]]] = None,
+                    entity_type: Optional[enums.EntityType] = None, min_similarity: Optional[float] = None,
+                    news_type: Optional[Union[str, List[str]]] = None, min_impact: Optional[int] = None,
+                    exclude_noise: Optional[bool] = None, from_: Optional[str] = None, to: Optional[str] = None,
                     limit: Optional[int] = 20, lang: Optional[str] = None,
                     include: str = "entities,impact", collapse: Optional[bool] = None,
                     max_items: Optional[int] = None) -> "Page":
@@ -126,34 +131,49 @@ class MarketDX:
         (does the article actually carry a judged impact on an entity, vs a merely-similar read — a hit
         can be highly similar yet ``scored=False``, e.g. a macro/policy piece moving no covered company).
 
-        ``limit`` is the top-K size (default 20; ``max_items`` is a deprecated alias). Unlike the
-        ``news()`` feed, search supports an ``entity_type`` filter (keeps only articles with a
-        related entity of that type — stock/forex/crypto/commodity/private/public_off_coverage),
-        applied server-side. Near-duplicate stories are merged by default; pass ``collapse=False``
-        for the raw hits.
+        Scope the search with ``megatrend`` (a trend id/slug/name) or ``ticker`` (restrict to
+        articles touching these tickers); filter with ``entity_type`` (keep only articles with a
+        related entity of that type — stock/forex/crypto/commodity/private/public_off_coverage,
+        server-side), ``min_similarity``, ``news_type`` / ``min_impact`` / ``exclude_noise`` /
+        ``from_`` / ``to``. ``limit`` is the top-K size (default 20). Near-duplicate stories are
+        merged by default; pass ``collapse=False`` for the raw hits.
         """
         return self._page("/v1/news/search", "results", Signal.from_dict,
-                          {"q": q, "lang": lang, "include": include, "entity_type": entity_type,
-                           "collapse": collapse},
+                          {"q": q, "megatrend": self._resolve(megatrend) if megatrend is not None else None,
+                           "ticker": ticker, "entity_type": entity_type, "min_similarity": min_similarity,
+                           "news_type": news_type, "min_impact": min_impact, "exclude_noise": exclude_noise,
+                           "from": from_, "to": to, "lang": lang, "include": include, "collapse": collapse},
                           columns=SIGNAL_COLUMNS, max_items=_cap(limit, max_items))
 
-    def news_by_tickers(self, ticker: Union[str, List[str]], *, direction: Optional[enums.Direction] = None,
+    def news_by_tickers(self, ticker: Union[str, List[str]], *,
+                        link: Optional[str] = None, direction: Optional[enums.Direction] = None,
                         aspect: Optional[Union[enums.Aspect, str]] = None,
-                        impact: Optional[enums.ImpactType] = None, include: str = "entities,impact",
-                        collapse: Optional[bool] = None,
-                        lang: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
-        """News for one or more tickers — the article + that ticker's **direct AND indirect**
-        impact. Use this to query by a specific ticker, which the ``news()`` feed does not filter
-        by. ``ticker`` accepts a stock ``NVDA.US`` (or a list), non-stock assets — a
-        commodity/crypto/forex as shown in the feed (``GOLD``, ``BTC``) or its ``SYMBOL.EXCHANGE``
-        form (``GOLD.COMM``) — AND **off-coverage** private companies as ``oc:<id>`` (``oc:52`` =
-        OpenAI). Mix freely: ``news_by_tickers(["NVDA.US", "oc:52"])``. Use :meth:`stocks` (``q=``)
-        to look up the exact ``.ticker`` for any of these.
-        ``limit`` caps results (default 50; ``None`` = all; ``max_items`` is a deprecated alias).
-        Near-duplicate stories are merged by default; pass ``collapse=False`` for the raw feed."""
+                        news_type: Optional[Union[str, List[str]]] = None,
+                        min_relevance: Optional[float] = None, min_impact: Optional[int] = None,
+                        exclude_noise: Optional[bool] = None, order_by: Optional[str] = None,
+                        from_: Optional[str] = None, to: Optional[str] = None,
+                        include: str = "entities,impact", collapse: Optional[bool] = None,
+                        lang: Optional[str] = None, impact: Optional[enums.ImpactType] = None,
+                        limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
+        """News for one or more tickers — the article + that ticker's impact. Use this to query by a
+        specific ticker, which the ``news()`` feed does not filter by. ``ticker`` accepts a stock
+        ``NVDA.US`` (or a list), non-stock assets — a commodity/crypto/forex as shown in the feed
+        (``GOLD``, ``BTC``) or its ``SYMBOL.EXCHANGE`` form (``GOLD.COMM``) — AND **off-coverage**
+        private companies as ``oc:<id>`` (``oc:52`` = OpenAI). Mix freely:
+        ``news_by_tickers(["NVDA.US", "oc:52"])``. Use :meth:`stocks` (``q=``) to look up the exact
+        ``.ticker`` for any of these.
+
+        ``link`` = ``direct`` (the ticker is factually named in the article) \\| ``indirect``
+        (impact-only, not named) \\| ``all`` (default). Narrow with ``direction`` / ``aspect`` /
+        ``min_relevance`` (on the impact edge), ``news_type`` / ``min_impact`` / ``exclude_noise`` /
+        ``from_`` / ``to`` (on the article), and ``order_by`` (recency\\|impact\\|magnitude\\|relevance).
+        ``limit`` caps results (default 50; ``None`` = all). Near-duplicate stories are merged by
+        default; pass ``collapse=False`` for the raw feed."""
         return self._page("/v1/news/by-tickers", "results", Signal.from_dict,
-                          {"ticker": ticker, "direction": direction, "aspect": aspect,
-                           "impact": impact, "include": include, "lang": lang, "collapse": collapse},
+                          {"ticker": ticker, "link": link or impact, "direction": direction,
+                           "aspect": aspect, "news_type": news_type, "min_relevance": min_relevance,
+                           "min_impact": min_impact, "exclude_noise": exclude_noise, "order_by": order_by,
+                           "from": from_, "to": to, "include": include, "lang": lang, "collapse": collapse},
                           columns=SIGNAL_COLUMNS, max_items=_cap(limit, max_items))
 
     def news_types(self) -> List[Dict[str, Any]]:
@@ -343,23 +363,42 @@ class StockRef:
         self.ticker = ticker
 
     def news(self, *, direction: Optional[enums.Direction] = None,
-             aspect: Optional[Union[enums.Aspect, str]] = None, order_by: Optional[str] = None,
-             since: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
+             aspect: Optional[Union[enums.Aspect, str]] = None, min_relevance: Optional[float] = None,
+             exclude_noise: Optional[bool] = None, from_: Optional[str] = None, to: Optional[str] = None,
+             order_by: Optional[str] = None, collapse: Optional[bool] = None,
+             lang: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
         """This stock's OWN impact timeline (:class:`~marketdx.models.StockNews`): each article
         + the stock's per-article ``impact`` (net_direction + aspects), ``trend``, and
         ``relevance``. No ``entities[]`` — the stock is the subject; use ``mdx.news()`` for the
-        full entity graph of an article. ``limit`` caps results (default 50; ``None`` = all;
-        ``max_items`` is a deprecated alias)."""
-        params = {"direction": direction, "aspect": aspect, "order_by": order_by, "since": since}
+        full entity graph of an article. Filter with ``direction`` / ``aspect`` / ``min_relevance``
+        (the impact edge), ``exclude_noise`` / ``from_`` / ``to`` (the article), ``order_by``
+        (recency\\|impact\\|relevance), and ``lang`` (translates title + brief_text; the ``reason`` is
+        EN-only). Near-duplicate stories (same article from many outlets) are merged by default —
+        each row carries ``story_id`` + ``dup_count``; pass ``collapse=False`` for the raw feed.
+        ``limit`` caps results (default 50; ``None`` = all; ``max_items`` is a deprecated alias)."""
+        params = {"direction": direction, "aspect": aspect, "min_relevance": min_relevance,
+                  "exclude_noise": exclude_noise, "from": from_, "to": to, "order_by": order_by,
+                  "collapse": collapse, "lang": lang}
         return self._c._page(f"/v1/stocks/{self.ticker}/news", "results", StockNews.from_dict,
                             params, columns=STOCK_NEWS_COLUMNS, max_items=_cap(limit, max_items))
 
-    def competitors(self, *, max_items: Optional[int] = None) -> "Page":
-        """Rivals derived from competition co-occurrence."""
+    def competitors(self, *, min_co: Optional[int] = None, country: Optional[str] = None,
+                    lang: Optional[str] = None, limit: Optional[int] = None,
+                    max_items: Optional[int] = None) -> "Page":
+        """Rivals derived from competition co-occurrence. ``min_co`` = the minimum shared
+        competition articles to qualify (default 1); ``country`` (ISO-2, csv) restricts rivals to
+        those markets; ``lang`` sets the language of the ``sample_titles``. Relation-specific
+        fields (``shared_competition_news``, ``sample_titles``) are on each row's ``.raw``."""
+        params = {"min_co": min_co, "country": country, "lang": lang}
         return self._c._page(f"/v1/stocks/{self.ticker}/competitors", "competitors",
-                            MemberStock.from_dict, {}, max_items=max_items)
+                            MemberStock.from_dict, params, max_items=_cap(limit, max_items))
 
-    def peers(self, *, max_items: Optional[int] = None) -> "Page":
-        """"Same arena" cohort (co-membership in trend nodes)."""
+    def peers(self, *, exposure: Optional[enums.Exposure] = None, country: Optional[str] = None,
+              limit: Optional[int] = None, max_items: Optional[int] = None) -> "Page":
+        """"Same arena" cohort (co-membership in trend nodes). ``exposure=core`` keeps only pairs
+        where BOTH sides are core members of the shared node (tighter; default ``all``);
+        ``country`` (ISO-2, csv) restricts peers to those markets. Relation-specific fields
+        (``shared_count``, ``shared_nodes``) are on each row's ``.raw``."""
+        params = {"exposure": exposure, "country": country}
         return self._c._page(f"/v1/stocks/{self.ticker}/peers", "peers",
-                            MemberStock.from_dict, {}, max_items=max_items)
+                            MemberStock.from_dict, params, max_items=_cap(limit, max_items))
