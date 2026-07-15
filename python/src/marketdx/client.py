@@ -8,6 +8,7 @@ from . import enums
 from ._http import Transport
 from .models import (
     Company,
+    GicsCode,
     MegatrendNode,
     MemberStock,
     Signal,
@@ -159,16 +160,25 @@ class MarketDX:
 
     # ── Group B — by trend / sector ───────────────────────────────────────────
     def megatrends(self, id: NodeRef = None) -> Union["MegatrendRef", "Page"]:
-        """No arg → the trend tree (``Page`` of nodes). With an id/slug/name → a
+        """No arg → the **full megatrend tree** as a ``Page`` of nodes (a bounded reference list —
+        the whole taxonomy, no ``limit``/paging; filter client-side). With an id/slug/name → a
         :class:`MegatrendRef` you can call ``.stocks()`` / ``.off_coverage()`` on."""
         if id is None:
             return self._page("/v1/megatrends", "nodes", MegatrendNode.from_dict, {})
         return MegatrendRef(self, self._resolve(id))
 
     def gics(self, code: Optional[str] = None) -> Union["GicsRef", "Page"]:
-        """No arg → the GICS list. With a code → a :class:`GicsRef` (``.stocks()``)."""
+        """No arg → the **full GICS taxonomy** as a ``Page`` (a small, bounded reference list —
+        all ~270 codes across every level; there is no ``limit``/paging, you always get the whole
+        tree, so filter client-side). Each row has ``code`` / ``level``
+        (sector|group|industry|sub-industry) / ``name`` / ``parent_code``::
+
+            retail = [g for g in mdx.gics() if "retail" in g.name.lower()]   # find a code by name
+            groups = [g for g in mdx.gics() if g.level == "group"]           # or by level
+
+        With a code → a :class:`GicsRef` you can call ``.stocks()`` on."""
         if code is None:
-            return self._page("/v1/gics", "gics", MegatrendNode.from_dict, {})
+            return self._page("/v1/gics", "gics", GicsCode.from_dict, {})
         return GicsRef(self, code)
 
     # ── Group C — by stock ────────────────────────────────────────────────────

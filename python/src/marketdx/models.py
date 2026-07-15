@@ -315,3 +315,23 @@ class MegatrendNode:
 
     def to_rows(self) -> List[Dict[str, Any]]:
         return [{"node_id": self.id, "name": self.name, "tier": self.tier, "parent_id": self.parent_id}]
+
+
+@dataclass
+class GicsCode:
+    """A GICS classification code from ``mdx.gics()`` — ``code`` (the id to pass to ``brief(gics=)``
+    / ``gics(code).stocks()``), ``level`` (sector|group|industry|sub-industry), ``name``, and the
+    ``parent_code`` that links it up the tree."""
+
+    code: Optional[str]
+    level: Optional[str]
+    name: Optional[str]
+    parent_code: Optional[str]
+    raw: Dict[str, Any] = field(default_factory=dict, repr=False)
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "GicsCode":
+        return cls(d.get("code"), d.get("level"), d.get("name"), d.get("parent_code"), raw=d)
+
+    def to_rows(self) -> List[Dict[str, Any]]:
+        return [{"code": self.code, "level": self.level, "name": self.name, "parent_code": self.parent_code}]

@@ -82,6 +82,8 @@ for s in mdx.news_search("chip export controls to China", limit=5):
 brief = mdx.theme("ai-power").summary(window="qtd")            # theme brief (== brief(megatrend="ai-power"))
 brief = mdx.brief(news_type="commodity_supply", country="JP", window="90d")  # "commodity news, in Japan"
 brief = mdx.brief(gics="2550", country=["GB","DE","FR","IT","ES","NL"])      # "European retail pulse" (sector x region)
+#    Find a GICS code by name — mdx.gics() returns the whole bounded taxonomy (filter client-side):
+hits = [(g.code, g.name) for g in mdx.gics() if "retail" in g.name.lower()]  # -> ('2550','Consumer Discretionary Distribution & Retail'), …
 print(brief["pulse"]["story_count"], brief["pulse"]["net_direction"])
 print([w["ticker"] for w in brief["winners"]], "vs", [l["ticker"] for l in brief["losers"]])
 print([a["name"] for a in brief["top_assets"]])          # commodity / forex / crypto the theme moves
