@@ -21,7 +21,7 @@ from __future__ import annotations
 from typing import Literal
 
 # ── Literal types (author-time autocomplete / typo hints) ─────────────────────
-EntityType = Literal["stock", "forex", "crypto", "commodity", "private", "public_off_coverage"]
+EntityType = Literal["stock", "etf", "forex", "crypto", "commodity", "private", "public_off_coverage"]
 Direction = Literal["pos", "neg", "ambiguous"]
 Aspect = Literal[
     "demand", "supply", "pricing", "capital", "competition",

@@ -208,9 +208,10 @@ class MarketDX:
                aspect: Optional[Union[enums.Aspect, str]] = None, direction: Optional[enums.Direction] = None,
                country: Optional[str] = None, gate: Optional[str] = None, order_by: Optional[str] = None,
                since: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
-        """``q=`` → identity search (stocks AND commodities/crypto/forex; each result carries a
-        ready-to-use ``.ticker`` — e.g. ``NVDA.US``, ``GOLD``, ``BTC`` — to feed straight into
-        :meth:`news_by_tickers` / :meth:`stock`); otherwise → the news-driven impact screener,
+        """``q=`` → identity search (stocks, ETFs, AND commodities/crypto/forex; each result carries a
+        ready-to-use ``.ticker`` — e.g. ``NVDA.US``, ``SPY.US``, ``GOLD``, ``BTC`` — to feed straight
+        into :meth:`news_by_tickers` / :meth:`stock`, and a ``type`` of
+        ``stock|etf|crypto|forex|commodity|private|public_off_coverage``); otherwise → the news-driven impact screener,
         scoped by ``megatrend`` and/or ``gics`` (a GICS code prefix, see :meth:`gics`) and/or
         ``country`` (≥1 required). ``limit`` caps results (default 50; ``None`` = all; ``max_items``
         is a deprecated alias)."""
