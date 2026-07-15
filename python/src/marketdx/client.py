@@ -182,15 +182,17 @@ class MarketDX:
         return GicsRef(self, code)
 
     # ── Group C — by stock ────────────────────────────────────────────────────
-    def stocks(self, *, q: Optional[str] = None, megatrend: NodeRef = None,
+    def stocks(self, *, q: Optional[str] = None, megatrend: NodeRef = None, gics: Optional[str] = None,
                aspect: Optional[Union[enums.Aspect, str]] = None, direction: Optional[enums.Direction] = None,
                country: Optional[str] = None, gate: Optional[str] = None, order_by: Optional[str] = None,
                since: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
         """``q=`` → identity search (stocks AND commodities/crypto/forex; each result carries a
         ready-to-use ``.ticker`` — e.g. ``NVDA.US``, ``GOLD``, ``BTC`` — to feed straight into
-        :meth:`news_by_tickers` / :meth:`stock`); otherwise → the news-driven impact screener.
-        ``limit`` caps results (default 50; ``None`` = all; ``max_items`` is a deprecated alias)."""
-        params = {"q": q, "megatrend": self._resolve(megatrend), "aspect": aspect,
+        :meth:`news_by_tickers` / :meth:`stock`); otherwise → the news-driven impact screener,
+        scoped by ``megatrend`` and/or ``gics`` (a GICS code prefix, see :meth:`gics`) and/or
+        ``country`` (≥1 required). ``limit`` caps results (default 50; ``None`` = all; ``max_items``
+        is a deprecated alias)."""
+        params = {"q": q, "megatrend": self._resolve(megatrend), "gics": gics, "aspect": aspect,
                   "direction": direction, "country": country, "gate": gate,
                   "order_by": order_by, "since": since}
         # the search (?q=) response nests results under `matches`; the screener under `stocks`
