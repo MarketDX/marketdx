@@ -238,7 +238,8 @@ class MemberStock:
 
     stock_id: Optional[int]
     symbol: Optional[str]
-    ticker: Optional[str]          # ready-to-use id for by-tickers / stock(): NVDA.US, GOLD, BTC
+    ticker: Optional[str]          # ready-to-use id for by-tickers / stock(): NVDA.US, GOLD, BTC, oc:52
+    type: Optional[str]            # stock | crypto | forex | commodity | private | public_off_coverage
     name: Optional[str]
     exchange: Optional[str]
     country: Optional[str]
@@ -254,7 +255,7 @@ class MemberStock:
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "MemberStock":
         return cls(
-            d.get("stock_id"), d.get("symbol"), d.get("ticker"), d.get("name"), d.get("exchange"),
+            d.get("stock_id"), d.get("symbol"), d.get("ticker"), d.get("type"), d.get("name"), d.get("exchange"),
             d.get("country"), d.get("domicile"), d.get("currency"), d.get("gic_code"),
             d.get("market_cap_usd"), d.get("market_cap_local"), d.get("fx_rate_usd"),
             d.get("megatrend") or {}, raw=d,
@@ -263,7 +264,7 @@ class MemberStock:
     def to_rows(self) -> List[Dict[str, Any]]:
         m = self.megatrend
         return [{
-            "stock_id": self.stock_id, "symbol": self.symbol, "ticker": self.ticker, "name": self.name,
+            "stock_id": self.stock_id, "symbol": self.symbol, "ticker": self.ticker, "type": self.type, "name": self.name,
             "exchange": self.exchange, "country": self.country, "domicile": self.domicile,
             "currency": self.currency, "gic_code": self.gic_code,
             "market_cap_usd": self.market_cap_usd, "market_cap_local": self.market_cap_local,

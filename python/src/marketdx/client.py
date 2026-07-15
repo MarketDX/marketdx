@@ -144,9 +144,11 @@ class MarketDX:
                         lang: Optional[str] = None, limit: Optional[int] = 50, max_items: Optional[int] = None) -> "Page":
         """News for one or more tickers — the article + that ticker's **direct AND indirect**
         impact. Use this to query by a specific ticker, which the ``news()`` feed does not filter
-        by. ``ticker`` accepts a stock ``NVDA.US`` (or a list) AND non-stock assets — pass a
+        by. ``ticker`` accepts a stock ``NVDA.US`` (or a list), non-stock assets — a
         commodity/crypto/forex as shown in the feed (``GOLD``, ``BTC``) or its ``SYMBOL.EXCHANGE``
-        form (``GOLD.COMM``); use :meth:`stocks` (``q=``) to look up the exact ``.ticker``.
+        form (``GOLD.COMM``) — AND **off-coverage** private companies as ``oc:<id>`` (``oc:52`` =
+        OpenAI). Mix freely: ``news_by_tickers(["NVDA.US", "oc:52"])``. Use :meth:`stocks` (``q=``)
+        to look up the exact ``.ticker`` for any of these.
         ``limit`` caps results (default 50; ``None`` = all; ``max_items`` is a deprecated alias).
         Near-duplicate stories are merged by default; pass ``collapse=False`` for the raw feed."""
         return self._page("/v1/news/by-tickers", "results", Signal.from_dict,
