@@ -17,9 +17,13 @@ from dataclasses import asdict, is_dataclass
 from typing import Any, Optional, List
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from marketdx import MarketDX
 
-mcp = FastMCP("marketdx")
+# DNS-rebinding protection defaults to a localhost allow-list (it guards a *local* server from
+# browser-driven Host spoofing). We're a hosted API behind Cloud Run TLS with our own per-request
+# Bearer auth, and the Host varies (run.app + mcp.marketdx.lab.ai) — so disable the Host check here.
+mcp = FastMCP("marketdx", transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False))
 _HERE = pathlib.Path(__file__).parent
 
 def _ser(items: list) -> list:
