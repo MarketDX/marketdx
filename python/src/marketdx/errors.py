@@ -13,11 +13,21 @@ from typing import Optional
 class MarketDXError(Exception):
     """Base class for every SDK error."""
 
-    def __init__(self, message: str, *, status: Optional[int] = None, response: object = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        status: Optional[int] = None,
+        response: object = None,
+        note: Optional[str] = None,
+    ) -> None:
         super().__init__(message)
         self.message = message
         self.status = status
         self.response = response
+        #: Plain-language guidance + CTA from the API (present on 401/402/429). Already appended to
+        #: ``message``; exposed separately so an agent can surface it to the end user verbatim.
+        self.note = note
 
 
 class AuthError(MarketDXError):

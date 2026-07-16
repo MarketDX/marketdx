@@ -76,24 +76,29 @@ def _int(v: Optional[str]) -> Optional[int]:
 
 
 def _to_error(r: httpx.Response) -> MarketDXError:
+    note: Optional[str] = None
     try:
-        msg = r.json().get("error") or r.text
+        body = r.json()
+        msg = body.get("error") or r.text
+        note = body.get("note")  # plain-language guidance + CTA (401/402/429)
     except Exception:  # noqa: BLE001 — non-JSON body
         msg = r.text or f"HTTP {r.status_code}"
+    # Fold the note into the message so `str(exc)` (what an LLM/agent sees) carries the guidance + link.
+    full = f"{msg} — {note}" if note else msg
     s = r.status_code
     if s == 400:
-        return BadRequestError(msg, status=s, response=r)
+        return BadRequestError(full, status=s, response=r, note=note)
     if s == 401:
-        return AuthError(msg, status=s, response=r)
+        return AuthError(full, status=s, response=r, note=note)
     if s == 402:
-        return QuotaError(msg, status=s, response=r)
+        return QuotaError(full, status=s, response=r, note=note)
     if s == 404:
-        return NotFoundError(msg, status=s, response=r)
+        return NotFoundError(full, status=s, response=r, note=note)
     if s == 429:
-        return RateLimitError(msg, status=s, response=r, retry_after=_float(r.headers.get("retry-after")))
+        return RateLimitError(full, status=s, response=r, note=note, retry_after=_float(r.headers.get("retry-after")))
     if s >= 500:
-        return ServerError(msg, status=s, response=r)
-    return MarketDXError(msg, status=s, response=r)
+        return ServerError(full, status=s, response=r, note=note)
+    return MarketDXError(full, status=s, response=r, note=note)
 
 
 def _float(v: Optional[str]) -> Optional[float]:
