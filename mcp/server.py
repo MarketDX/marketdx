@@ -291,17 +291,63 @@ def capabilities() -> str:
     except Exception as e:  # keep the resource readable even if the API hiccups
         return json.dumps({"error": str(e)})
 
+# ── OAuth (WorkOS AuthKit) — MCP Authorization ────────────────────────────────
+# When WORKOS_ISSUER is set the server advertises itself as an OAuth 2.0 Protected Resource (RFC 9728):
+# an unauthenticated MCP request gets 401 + WWW-Authenticate pointing at the metadata document, which
+# names the WorkOS authorization server. The client then runs the OAuth flow (DCR/PKCE, handled by
+# WorkOS) and retries with a Bearer JWT — which we forward to the API exactly like an API key (the API
+# validates it, see news-api src/jwt.rs). Unset → no OAuth advertised; only the Bearer-key path works.
+_WORKOS_ISSUER = os.environ.get("WORKOS_ISSUER", "").rstrip("/") or None
+_WELL_KNOWN = "/.well-known/oauth-protected-resource"
+
+def _origin(scope) -> str:
+    hdrs = dict(scope.get("headers") or {})
+    host = hdrs.get(b"host", b"").decode() or "mcp.marketdx.lab.ai"
+    proto = hdrs.get(b"x-forwarded-proto", b"https").decode().split(",")[0].strip() or "https"
+    return f"{proto}://{host}"
+
+def _resource_metadata(scope) -> dict:
+    origin = _origin(scope)
+    # `resource` must equal the token audience the client requests — our MCP endpoint URL. Derived
+    # from the request host so both mcp.marketdx.lab.ai and the run.app URL self-describe correctly.
+    return {
+        "resource": os.environ.get("MCP_RESOURCE_URL") or f"{origin}/mcp",
+        "authorization_servers": [_WORKOS_ISSUER],
+        "bearer_methods_supported": ["header"],
+        "scopes_supported": ["openid", "email", "profile"],
+    }
+
+async def _send_json(send, status: int, obj: dict, extra_headers: list | None = None):
+    body = json.dumps(obj).encode()
+    headers = [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())]
+    headers += extra_headers or []
+    await send({"type": "http.response.start", "status": status, "headers": headers})
+    await send({"type": "http.response.body", "body": body})
+
 class _AuthASGI:
     """Pure-ASGI middleware (NOT BaseHTTPMiddleware — that runs the route in a separate task where a
     contextvar set here wouldn't propagate). Reads `Authorization: Bearer <key>` and stashes it in
-    _req_key for the duration of the request, so mdx() picks up THIS caller's key. Unauthed requests
-    are allowed through (the tool raises a clear error) — discovery/health stay open."""
+    _req_key for the duration of the request, so mdx() picks up THIS caller's key. Also implements the
+    OAuth protected-resource discovery (RFC 9728) when WORKOS_ISSUER is configured."""
     def __init__(self, app): self.app = app
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        path = scope.get("path", "")
         auth = dict(scope.get("headers") or {}).get(b"authorization", b"").decode()
         key = auth[7:].strip() if auth[:7].lower() == "bearer " else None
+
+        if _WORKOS_ISSUER:
+            # Public discovery document — names the WorkOS authorization server.
+            if path.startswith(_WELL_KNOWN):
+                return await _send_json(send, 200, _resource_metadata(scope))
+            # Unauthenticated MCP call → challenge so the client starts the OAuth flow. (Bearer present
+            # → fall through; the token, key or JWT, is validated downstream by the API.)
+            if key is None:
+                challenge = f'Bearer resource_metadata="{_origin(scope)}{_WELL_KNOWN}"'
+                return await _send_json(send, 401, {"error": "unauthorized"},
+                                        [(b"www-authenticate", challenge.encode())])
+
         tok = _req_key.set(key)
         try:
             await self.app(scope, receive, send)

@@ -21,6 +21,7 @@ gcloud run deploy "${SERVICE}" \
   --region "${REGION}" \
   --allow-unauthenticated \
   --set-secrets "DEEPSEEK_API_KEY=DEEPSEEK_API_KEY:latest" \
+  --update-env-vars "WORKOS_ISSUER=${WORKOS_ISSUER:-https://cuddly-honey-96-staging.authkit.app}" \
   --cpu 1 --memory 512Mi --min-instances 0 --max-instances 4 --timeout 120
 
 echo "Deployed. Test the .run.app URL, then map mcp.marketdx.lab.ai (see header)."
