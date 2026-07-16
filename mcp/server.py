@@ -18,6 +18,7 @@ from typing import Any, Optional, List
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
+from mcp.types import ToolAnnotations
 from marketdx import MarketDX
 
 # DNS-rebinding protection defaults to a localhost allow-list (it guards a *local* server from
@@ -28,6 +29,10 @@ _HERE = pathlib.Path(__file__).parent
 # Served at /favicon.ico so clients (Claude's connector card) show the MarketDX mark for this host —
 # without it, a favicon resolver strips the subdomain and grabs the apex lab.ai icon.
 _FAVICON = (_HERE / "favicon.ico").read_bytes() if (_HERE / "favicon.ico").exists() else b""
+# Every tool here is READ-ONLY (queries the graph / runs our own LLM — never writes user data). The
+# readOnlyHint lets a client auto-run without a confirm prompt, and it's a Connector-Directory gate.
+# Convention: give EVERY new tool a `title=` + `annotations=_RO` (or a destructive hint if it ever writes).
+_RO = ToolAnnotations(readOnlyHint=True)
 
 def _ser(items: list) -> list:
     """SDK returns typed @dataclass models; MCP needs JSON — convert to plain dicts."""
@@ -175,7 +180,7 @@ def _to_node(theme: str):
         return theme
 
 # ── SIMPLE tools (thin SDK wrappers — client LLM orchestrates) ────────────────
-@mcp.tool()
+@mcp.tool(title="Theme Summary", annotations=_RO)
 def theme_summary(theme: str, window: str = "30d", country: Optional[str] = None) -> dict:
     """Pre-composed analyst brief for a megatrend theme: pulse, winners/losers, top entities, aspect
     heatmap, ripple. `theme` = a theme name or id/slug; `window` = 7d/30d/90d/1y/mtd/qtd/ytd."""
@@ -184,7 +189,7 @@ def theme_summary(theme: str, window: str = "30d", country: Optional[str] = None
 _SIM_STRONG = 0.68   # cosine ≥ this = a solid semantic match. ⚠️ CALIBRATE against real off-topic queries.
 _SIM_WEAK = 0.58     # below this = essentially no match
 
-@mcp.tool()
+@mcp.tool(title="Search News", annotations=_RO)
 def search_news(q: str, entity_type: Optional[str] = None, collapse: Optional[bool] = None) -> dict:
     """SEMANTIC news search — articles matched by MEANING, impact-labeled (title, publisher, entities,
     direction, why). `entity_type` keeps only stock/forex/crypto/commodity/private hits. For a
@@ -200,7 +205,7 @@ def search_news(q: str, entity_type: Optional[str] = None, collapse: Optional[bo
         "present these as evidence; tell the user, and use world knowledge / another tool instead.")
     return {"match_quality": quality, "top_similarity": round(top, 3), "note": note, "results": results}
 
-@mcp.tool()
+@mcp.tool(title="News Feed", annotations=_RO)
 def news_feed(megatrend: Optional[str] = None, country: Optional[str] = None,
               aspect: Optional[str] = None, direction: Optional[str] = None,
               news_type: Optional[str] = None, only_scored: Optional[bool] = None,
@@ -210,35 +215,35 @@ def news_feed(megatrend: Optional[str] = None, country: Optional[str] = None,
     return _ser(mdx().news(megatrend=megatrend, country=country, aspect=aspect, direction=direction,
                           news_type=news_type, only_scored=only_scored, min_relevance=min_relevance).to_list())
 
-@mcp.tool()
+@mcp.tool(title="Stock Impact", annotations=_RO)
 def stock_impact(ticker: str, direction: Optional[str] = None) -> list:
     """How recent news moved a specific company — per-article impact (direction + aspect + why)."""
     return _ser(mdx().stock(ticker).news(direction=direction).to_list())
 
-@mcp.tool()
+@mcp.tool(title="Theme Players", annotations=_RO)
 def theme_players(theme: str, country: str, exposure: Optional[str] = None) -> list:
     """Investable MEMBER companies of a theme (curated membership) in a country. Different from
     top_entities (which are news-derived)."""
     return _ser(mdx().theme(_to_node(theme)).stocks(country=country, exposure=exposure).to_list())
 
-@mcp.tool()
+@mcp.tool(title="Private Movers", annotations=_RO)
 def private_movers(theme: str, country: Optional[str] = None) -> list:
     """Off-coverage / private companies the news moved within a theme — the 'beyond tickers' surface."""
     return _ser(mdx().theme(_to_node(theme)).off_coverage(country=country).to_list())
 
-@mcp.tool()
+@mcp.tool(title="Company Relationships", annotations=_RO)
 def relationships(ticker: str) -> dict:
     """Competitors + peers of a company (news-derived relationship graph)."""
     ref = mdx().stock(ticker)
     return {"competitors": _ser(ref.competitors().to_list()), "peers": _ser(ref.peers().to_list())}
 
-@mcp.tool()
+@mcp.tool(title="List Megatrends", annotations=_RO)
 def list_themes(query: Optional[str] = None) -> list:
     """Browse / discover the megatrend taxonomy (25 tier-1 families + sub-nodes) — resolve a theme id."""
     return _ser(mdx().megatrends().to_list())
 
 # ── COMPOSITE tools (whole multi-step pipeline server-side, ONE call) ─────────
-@mcp.tool()
+@mcp.tool(title="Resolve Themes", annotations=_RO)
 def resolve_themes(terms: List[str]) -> dict:
     """Map trend-language ('HBM', 'foundry', 'cancer drug', 'robotaxi') to the specific taxonomy
     node(s) at the right level (may be tier-1, -2, or -3; may be several for a polysemous term).
@@ -262,7 +267,7 @@ def resolve_themes(terms: List[str]) -> dict:
         result[term] = [_node_out(i) for i in dict.fromkeys(nodes)]
     return result
 
-@mcp.tool()
+@mcp.tool(title="Suggest Explorations", annotations=_RO)
 def suggest_cta(theme: str, window: str = "30d") -> dict:
     """After answering, propose 1-2 data-backed 'explore further' hooks that pull the user into the
     graph's moat (ripple/relations/commodity/off-coverage). Server-side: theme_summary(has ripple/
