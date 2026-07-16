@@ -1,0 +1,20 @@
+[project]
+name = "marketdx-mcp"
+version = "0.1.0"
+description = "MCP server for the MarketDX financial-impact graph (news→impact across stocks, commodities, FX, crypto, and private companies)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "mcp>=1.8.0",           # >=1.8 for streamable-http transport (hosted remote server)
+    "marketdx>=0.10.0",
+    "openai>=1.0.0",        # deepseek is OpenAI-compatible (server-side composite-tool LLM)
+    "uvicorn>=0.30.0",      # ASGI server for the hosted (MCP_TRANSPORT=http) mode
+]
+
+[project.scripts]
+marketdx-mcp = "server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
