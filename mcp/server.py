@@ -25,6 +25,9 @@ from marketdx import MarketDX
 # Bearer auth, and the Host varies (run.app + mcp.marketdx.lab.ai) — so disable the Host check here.
 mcp = FastMCP("marketdx", transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False))
 _HERE = pathlib.Path(__file__).parent
+# Served at /favicon.ico so clients (Claude's connector card) show the MarketDX mark for this host —
+# without it, a favicon resolver strips the subdomain and grabs the apex lab.ai icon.
+_FAVICON = (_HERE / "favicon.ico").read_bytes() if (_HERE / "favicon.ico").exists() else b""
 
 def _ser(items: list) -> list:
     """SDK returns typed @dataclass models; MCP needs JSON — convert to plain dicts."""
@@ -293,12 +296,21 @@ def capabilities() -> str:
 
 # ── OAuth (WorkOS AuthKit) — MCP Authorization ────────────────────────────────
 # When WORKOS_ISSUER is set the server advertises itself as an OAuth 2.0 Protected Resource (RFC 9728):
-# an unauthenticated MCP request gets 401 + WWW-Authenticate pointing at the metadata document, which
-# names the WorkOS authorization server. The client then runs the OAuth flow (DCR/PKCE, handled by
-# WorkOS) and retries with a Bearer JWT — which we forward to the API exactly like an API key (the API
-# validates it, see news-api src/jwt.rs). Unset → no OAuth advertised; only the Bearer-key path works.
+# an unauthenticated MCP request gets 401 + WWW-Authenticate pointing at the metadata document.
+#
+# We act as an **authorization-server-metadata proxy**: `authorization_servers` names US, and we serve
+# BOTH RFC 8414 (`oauth-authorization-server`) and OIDC (`openid-configuration`) discovery docs from our
+# own origin, built from WorkOS's RFC 8414 doc with `issuer` rewritten to us. Why: WorkOS advertises
+# `registration_endpoint` + `client_id_metadata_document_supported` ONLY in its RFC 8414 doc, NOT in its
+# openid-configuration — so a client that reads the OIDC doc (as Claude did → "automatic client
+# registration isn't supported") sees no DCR/CIMD. Proxying both docs guarantees the client finds them
+# either way and can use CIMD (no registration) or DCR. The OAuth endpoints still point at WorkOS, which
+# authenticates the user (via our External Sign-in URI) and mints the JWT; we just forward the Bearer.
+# Unset → no OAuth advertised; only the Bearer-key path works.
 _WORKOS_ISSUER = os.environ.get("WORKOS_ISSUER", "").rstrip("/") or None
-_WELL_KNOWN = "/.well-known/oauth-protected-resource"
+_RESOURCE_WK = "/.well-known/oauth-protected-resource"
+_AS_WK = ("/.well-known/oauth-authorization-server", "/.well-known/openid-configuration")
+_AS_CACHE: dict = {}   # WorkOS RFC 8414 metadata, fetched once
 
 def _origin(scope) -> str:
     hdrs = dict(scope.get("headers") or {})
@@ -312,10 +324,37 @@ def _resource_metadata(scope) -> dict:
     # from the request host so both mcp.marketdx.lab.ai and the run.app URL self-describe correctly.
     return {
         "resource": os.environ.get("MCP_RESOURCE_URL") or f"{origin}/mcp",
-        "authorization_servers": [_WORKOS_ISSUER],
+        "authorization_servers": [origin],   # we proxy the AS metadata (see block comment)
         "bearer_methods_supported": ["header"],
         "scopes_supported": ["openid", "email", "profile"],
     }
+
+async def _as_metadata(scope) -> dict:
+    """WorkOS RFC 8414 metadata with `issuer` rewritten to our origin (RFC 8414 §3.3 self-consistency).
+    Endpoints still point at WorkOS. Fetched once and cached; falls back to a minimal doc on failure."""
+    import asyncio, urllib.request
+    if not _AS_CACHE:
+        def _fetch():
+            url = f"{_WORKOS_ISSUER}/.well-known/oauth-authorization-server"
+            with urllib.request.urlopen(url, timeout=10) as r:
+                return json.loads(r.read())
+        try:
+            _AS_CACHE.update(await asyncio.to_thread(_fetch))
+        except Exception:  # WorkOS unreachable → minimal doc from known endpoints
+            _AS_CACHE.update({
+                "authorization_endpoint": f"{_WORKOS_ISSUER}/oauth2/authorize",
+                "token_endpoint": f"{_WORKOS_ISSUER}/oauth2/token",
+                "registration_endpoint": f"{_WORKOS_ISSUER}/oauth2/register",
+                "jwks_uri": f"{_WORKOS_ISSUER}/oauth2/jwks",
+                "response_types_supported": ["code"],
+                "grant_types_supported": ["authorization_code", "refresh_token"],
+                "code_challenge_methods_supported": ["S256"],
+                "token_endpoint_auth_methods_supported": ["none", "client_secret_post", "client_secret_basic"],
+                "client_id_metadata_document_supported": True,
+            })
+    meta = dict(_AS_CACHE)
+    meta["issuer"] = _origin(scope)   # served from our origin → issuer must be us
+    return meta
 
 async def _send_json(send, status: int, obj: dict, extra_headers: list | None = None):
     body = json.dumps(obj).encode()
@@ -337,14 +376,24 @@ class _AuthASGI:
         auth = dict(scope.get("headers") or {}).get(b"authorization", b"").decode()
         key = auth[7:].strip() if auth[:7].lower() == "bearer " else None
 
+        # Public branding asset (no auth) — the connector's icon.
+        if path == "/favicon.ico":
+            hdrs = [(b"content-type", b"image/x-icon"), (b"content-length", str(len(_FAVICON)).encode()),
+                    (b"cache-control", b"public, max-age=86400")]
+            await send({"type": "http.response.start", "status": 200 if _FAVICON else 404, "headers": hdrs})
+            await send({"type": "http.response.body", "body": _FAVICON})
+            return
+
         if _WORKOS_ISSUER:
-            # Public discovery document — names the WorkOS authorization server.
-            if path.startswith(_WELL_KNOWN):
+            # Public discovery documents (RFC 9728 + RFC 8414/OIDC proxy) — no auth.
+            if path.startswith(_RESOURCE_WK):
                 return await _send_json(send, 200, _resource_metadata(scope))
+            if path.startswith(_AS_WK):
+                return await _send_json(send, 200, await _as_metadata(scope))
             # Unauthenticated MCP call → challenge so the client starts the OAuth flow. (Bearer present
             # → fall through; the token, key or JWT, is validated downstream by the API.)
             if key is None:
-                challenge = f'Bearer resource_metadata="{_origin(scope)}{_WELL_KNOWN}"'
+                challenge = f'Bearer resource_metadata="{_origin(scope)}{_RESOURCE_WK}"'
                 return await _send_json(send, 401, {"error": "unauthorized"},
                                         [(b"www-authenticate", challenge.encode())])
 
