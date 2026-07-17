@@ -9,7 +9,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 RUN pip install --no-cache-dir \
-      "mcp>=1.8.0" "marketdx>=0.12.1" "openai>=1.0.0" "uvicorn>=0.30.0"
+      "mcp>=1.8.0" "marketdx>=0.13.0" "openai>=1.0.0" "uvicorn>=0.30.0"
 COPY server.py policy.md favicon.ico ./
 
 ENV MCP_TRANSPORT=http \

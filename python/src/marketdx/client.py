@@ -285,18 +285,27 @@ class MarketDX:
         (``count`` = 0) carrying a ``note`` (plain-language + a create link) — relay it, not an empty."""
         return self._get("/v1/portfolios", {"include": include} if include else None).data
 
-    def portfolio_context(self, portfolio_id: int) -> Dict[str, Any]:
+    def portfolio_context(self, portfolio_id: int, *, snapshots: Optional[str] = None,
+                          snapshots_from: Optional[str] = None,
+                          snapshots_to: Optional[str] = None) -> Dict[str, Any]:
         """LLM-ready snapshot of one of YOUR portfolios (owner-scoped by your account).
 
         Returns a rich, self-explanatory context: `meta` (stated intent/goal/horizon),
-        `summary` (NAV, P&L, exposure), `allocation` (by class/country/currency/theme),
-        `concentration` (HHI, top holdings), `performance` (drawdown, volatility),
-        `positions` (each holding + its megatrend path + value trend), `inferred_behavior`
-        (revealed archetype from actual holdings) and `flags` (e.g. stated-vs-revealed
-        mismatches). PURE portfolio data — pair it with `news()`/`stock(...).news()` for a
-        news-aware view. 404 if the portfolio isn't yours.
+        `summary` (NAV, P&L, exposure), `lifetime` + `recent` blocks (each with `performance`
+        — return/cagr/sharpe/sortino/calmar/drawdown/vol/win_rate — and `attribution`, who drove
+        the NAV change incl since-sold names, reconciled to the cent), `positions`,
+        `closed_positions` (realized P&L), `composition` (point-in-time holdings), `allocation`,
+        `concentration` (HHI), `inferred_behavior` and `flags`. PURE portfolio data — pair with
+        `news()`/`stock(...).news()` for a news-aware view. 404 if the portfolio isn't yours.
+
+        The `composition` block is caller-controlled: ``snapshots`` = the point-in-time step
+        (``year|quarter|month|week|day|off``, default ``quarter``; ``off`` omits it), and
+        ``snapshots_from``/``snapshots_to`` (ISO dates) zoom a window to a finer step — e.g.
+        ``snapshots="day", snapshots_from="2025-06-01", snapshots_to="2025-06-30"`` = the daily
+        book through June 2025. To compare periods, call once per window.
         """
-        return self._get(f"/v1/portfolios/{portfolio_id}/context").data
+        params = {"snapshots": snapshots, "snapshots_from": snapshots_from, "snapshots_to": snapshots_to}
+        return self._get(f"/v1/portfolios/{portfolio_id}/context", params).data
 
     # ── helpers / lifecycle ───────────────────────────────────────────────────
     def _page(self, path, key, parse, params, *, columns=None, max_items=None) -> "Page":

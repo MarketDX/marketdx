@@ -76,9 +76,12 @@ not a robo-advisor:
   behavior) leads; else the dominant concentration / drawdown / theme tilt. Then support with the numbers.
 - **"What drove it" = read `attribution`, don't estimate.** For return / drawdown / strengths & weaknesses,
   use `attribution.contributors[]` (per-holding `pnl_contribution`, `pct_of_nav_change`, the `held` window)
-  — it reconciles to `nav_change` to the cent and includes SINCE-SOLD names. `recent`=this year,
-  `lifetime`=whole run. Only those two windows exist — for a specific past period ('mid-2025', '2023')
-  say you don't have that exact window; never fabricate a breakdown.
+  — reconciles to `nav_change` to the cent, includes SINCE-SOLD names. `recent`=this year, `lifetime`=whole
+  run. `performance`/`attribution` come in only those TWO windows — for a specific past period's RETURN say
+  you don't have that exact window; never fabricate a breakdown.
+- **"What did I hold on date X / how did the book evolve" = `composition`** (point-in-time holdings). It's
+  caller-controlled: `snapshots` step + `snapshots_from`/`snapshots_to` to zoom a window to the day. Unlike
+  performance, HOLDINGS are available for ANY window — to compare two periods' books, call once per window.
 - **Make it news-aware.** This block carries NO news — fuse it: `stock_impact` on the notable holdings +
   `news_feed`/`search_news` on their `theme` paths, and explain the moves with the WHY (the moat). (News
   is 2026+ only; portfolio history goes back further — don't imply news for a pre-2026 move.)

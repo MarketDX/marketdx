@@ -346,28 +346,35 @@ def list_portfolios() -> dict:
     return mdx().portfolios()
 
 @mcp.tool(title="Portfolio Context", annotations=_RO)
-def portfolio_context(portfolio_id: int) -> dict:
+def portfolio_context(portfolio_id: int, snapshots: Optional[str] = None,
+                      snapshots_from: Optional[str] = None, snapshots_to: Optional[str] = None) -> dict:
     """An LLM-ready snapshot of ONE of the user's OWN portfolios (owner-scoped) — analyze it directly.
-    Returns: `meta` (stated goal/thesis/horizon/risk-reaction) · `summary` (NAV, P&L, exposure, cash) ·
-    `lifetime` and `recent`(~12mo) blocks, EACH with `performance` (return/cagr/sharpe/sortino/calmar/
-    drawdown/vol/win_rate) + `attribution` · `positions` (live holdings + megatrend path + value_trend) ·
-    `closed_positions` (sold / margin-called, with realized_pnl) · `allocation` · `concentration` (HHI) ·
-    `inferred_behavior` (revealed archetype) · `flags`. Needs the numeric `portfolio_id`
-    (use `list_portfolios`); 404 if not the user's.
+    Returns: `meta` · `summary` (NAV, P&L, exposure, cash) · `lifetime` and `recent`(~12mo) blocks, EACH
+    with `performance` (return/cagr/sharpe/sortino/calmar/drawdown/vol/win_rate) + `attribution` ·
+    `positions` (live holdings + megatrend path + value_trend) · `closed_positions` (realized_pnl) ·
+    `composition` (POINT-IN-TIME holdings) · `allocation` · `concentration` (HHI) · `inferred_behavior` ·
+    `flags`. Needs the numeric `portfolio_id` (use `list_portfolios`); 404 if not the user's.
+
+    TIME CONTROLS for `composition` (holdings-as-of-a-date): `snapshots` = step
+    (`year|quarter|month|week|day|off`, default `quarter`; `off` drops the block); `snapshots_from` /
+    `snapshots_to` (ISO dates) zoom a window to a finer step (e.g. snapshots='day',
+    snapshots_from='2025-06-01', snapshots_to='2025-06-30' = the daily book through June 2025).
 
     HOW TO ANALYZE (research-analyst framing — see marketdx://policy):
     • Lead with the sharpest thing: a non-empty `flag`, or the biggest concentration / drawdown / tilt.
-      One insight-first sentence, then support with the numbers.
-    • "What drove the return / the drawdown / strengths & weaknesses" → use `attribution.contributors[]`
-      (per-holding `pnl_contribution` + `pct_of_nav_change` + the `held` window; reconciles to `nav_change`
-      to the cent and INCLUDES since-sold names). Use `recent` for 'this year', `lifetime` for the whole
-      run. Do NOT estimate contribution yourself — read it from `attribution`.
-    • ⚠️ Only TWO windows exist (lifetime + recent ~12mo). For a specific past window ('mid-2025', '2023
-      vs now') you do NOT have exact data — say so; don't fabricate a per-period breakdown.
-    • Make it NEWS-AWARE: FUSE with `stock_impact` on the notable holdings + `news_feed`/`search_news` on
-      their `theme` paths for the WHY (⚠️ news only covers 2026+; portfolio history goes back further).
+    • "What drove the return / drawdown / strengths & weaknesses" → read `attribution.contributors[]`
+      (per-holding `pnl_contribution` + `pct_of_nav_change` + `held` window; reconciles to `nav_change` to
+      the cent, INCLUDES since-sold names). `recent`=this year, `lifetime`=whole run. Don't estimate it.
+    • "What did I hold / at what weight on date X", "how did the book evolve" → `composition` (zoom with
+      snapshots+from/to). To COMPARE two periods' holdings, call this tool once per window and compare.
+    • ⚠️ `performance`/`attribution` come in only TWO windows (lifetime + recent ~12mo) — they are NOT
+      per-window yet, so for a specific past period's RETURN/attribution say you don't have that exact
+      window (composition holdings you DO have for any window). Never fabricate a breakdown.
+    • NEWS-AWARE: fuse `stock_impact` / `news_feed`/`search_news` on the holdings' `theme` paths for the
+      WHY (⚠️ news only covers 2026+; portfolio history goes back further).
     • Facts, not advice. Observe; do NOT tell them to buy/sell/rebalance/time — hand the judgment back."""
-    return mdx().portfolio_context(portfolio_id)
+    return mdx().portfolio_context(portfolio_id, snapshots=snapshots,
+                                   snapshots_from=snapshots_from, snapshots_to=snapshots_to)
 
 # ── COMPOSITE tools (whole multi-step pipeline server-side, ONE call) ─────────
 @mcp.tool(title="Resolve Themes", annotations=_RO)
