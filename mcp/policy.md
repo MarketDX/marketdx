@@ -77,10 +77,14 @@ not a robo-advisor:
 - **"What drove it" = read `attribution`, don't estimate.** For return / drawdown / strengths & weaknesses,
   use `attribution.contributors[]` (per-holding `pnl_contribution`, `pct_of_nav_change`, the `held` window)
   — reconciles to `nav_change` to the cent, includes SINCE-SOLD names.
-- **Any window works — compare by calling per-window.** No window → `lifetime` + `recent` blocks. Pass
-  `from_`/`to` or `window` (`ytd`,`90d`,…) → a single `window` block with THAT span's performance +
-  attribution + composition. "Compare 2023 vs 2025 / last 5y" = one call per period, then compare — there
-  is no arbitrary-window gap. "What did I hold on date X" → `composition` (+ `snapshots` step).
+- **Any window works — but you MUST fetch each one.** No window → `lifetime` + `recent`. Pass `from_`/`to`
+  or `window` → a single `window` block with THAT span's performance + attribution + composition. 🔴 The
+  default/lifetime/recent blocks do NOT hold an arbitrary period's performance or attribution. To answer a
+  specific period (Q1-2025) or COMPARE periods (Q1/25 vs Q1/26, 2023 vs 2025), you MUST call the tool
+  AGAIN with from_/to for EACH period, then compare the `window` blocks. NEVER read off a period's
+  return/sharpe/attribution from the default view — it isn't there; inventing it is a hard error. Not
+  fetched yet → say so + fetch, don't guess. (Point-in-time HOLDINGS you can read from the default
+  quarterly `composition`; PERFORMANCE/ATTRIBUTION you cannot — those are window-only.)
 - **Trust the edge notes.** A window before `inception_date` → `window.empty=true` + note (say "the
   portfolio didn't exist then", don't invent). `composition.coarsened=true` → the step was widened to stay
   bounded; for finer, narrow the window. Never read empty/coarsened as a real zero.

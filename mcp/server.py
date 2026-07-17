@@ -357,9 +357,14 @@ def portfolio_context(portfolio_id: int, from_: Optional[str] = None, to: Option
 
     TIME WINDOW — `from_`/`to` (ISO) or `window` (`7d|30d|90d|180d|1y|mtd|qtd|ytd`): REPLACES lifetime+
     recent with ONE `window` block (that span's `performance` + `attribution` + `nav_trend`) and scopes
-    `composition` to match. So ANY period's return + drivers is answerable. **To compare periods (2023 vs
-    2025, last 5y, …), call this tool ONCE PER WINDOW and compare — that's the pattern, no special param.**
-    `snapshots` = composition granularity only (`year|quarter|month|week|day|off`).
+    `composition` to match. So ANY period's return + drivers is answerable. `snapshots` = composition
+    granularity only (`year|quarter|month|week|day|off`).
+    🔴 MANDATORY for period questions: the default / `lifetime` / `recent` blocks DO NOT contain the
+    performance or attribution of an arbitrary period (e.g. Q1-2025, "H1 2024"). To answer ANY specific
+    period — or to COMPARE periods (Q1/25 vs Q1/26, 2023 vs 2025) — you MUST call this tool AGAIN with
+    `from_`/`to` (or `window`) for EACH period, then compare the returned `window` blocks. NEVER derive a
+    period's return/sharpe/drawdown/attribution from the default view — those numbers aren't in it; making
+    them up is a hard error. If you haven't fetched a period's window, say you need to fetch it, don't guess.
 
     HOW TO ANALYZE (research-analyst framing — see marketdx://policy):
     • Lead with the sharpest thing: a non-empty `flag`, or the biggest concentration / drawdown / tilt.
