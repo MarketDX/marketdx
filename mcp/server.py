@@ -34,6 +34,14 @@ _FAVICON = (_HERE / "favicon.ico").read_bytes() if (_HERE / "favicon.ico").exist
 # Convention: give EVERY new tool a `title=` + `annotations=_RO` (or a destructive hint if it ever writes).
 _RO = ToolAnnotations(readOnlyHint=True)
 
+def _lim(n: Optional[int], default: int = 20, ceiling: int = 50) -> int:
+    """Bound a list tool's page size so the result stays context-friendly. Heavily-covered assets
+    (GOLD, oil, mega-caps) have hundreds of impact articles — dumping them all overflows the client's
+    context. `None` → default; the LLM may raise it up to `ceiling`, then should page/narrow instead."""
+    if n is None:
+        return default
+    return max(1, min(int(n), ceiling))
+
 def _ser(items: list) -> list:
     """SDK returns typed @dataclass models; MCP needs JSON — convert to plain dicts."""
     return [asdict(x) if is_dataclass(x) else x for x in items]
@@ -190,13 +198,14 @@ _SIM_STRONG = 0.68   # cosine ≥ this = a solid semantic match. ⚠️ CALIBRAT
 _SIM_WEAK = 0.58     # below this = essentially no match
 
 @mcp.tool(title="Search News", annotations=_RO)
-def search_news(q: str, entity_type: Optional[str] = None, collapse: Optional[bool] = None) -> dict:
+def search_news(q: str, entity_type: Optional[str] = None, collapse: Optional[bool] = None,
+                limit: Optional[int] = None) -> dict:
     """SEMANTIC news search — articles matched by MEANING, impact-labeled (title, publisher, entities,
     direction, why). `entity_type` keeps only stock/forex/crypto/commodity/private hits. For a
-    FILTERED feed by aspect/direction/country use `news_feed`.
+    FILTERED feed by aspect/direction/country use `news_feed`. `limit` = how many (default 20, max 50).
     Returns {match_quality, top_similarity, note, results}. If match_quality is 'weak'/'none', the corpus
     has no strongly relevant news — do NOT present these results as evidence; say so and use another route."""
-    results = _ser(mdx().news_search(q, entity_type=entity_type, collapse=collapse).to_list())
+    results = _ser(mdx().news_search(q, entity_type=entity_type, collapse=collapse, limit=_lim(limit)).to_list())
     sims = [r.get("similarity") for r in results if isinstance(r.get("similarity"), (int, float))]
     top = max(sims) if sims else 0.0
     quality = "strong" if top >= _SIM_STRONG else ("weak" if top >= _SIM_WEAK else "none")
@@ -209,33 +218,47 @@ def search_news(q: str, entity_type: Optional[str] = None, collapse: Optional[bo
 def news_feed(megatrend: Optional[str] = None, country: Optional[str] = None,
               aspect: Optional[str] = None, direction: Optional[str] = None,
               news_type: Optional[str] = None, only_scored: Optional[bool] = None,
-              min_relevance: Optional[float] = None) -> list:
+              min_relevance: Optional[float] = None, limit: Optional[int] = None,
+              collapse: Optional[bool] = None) -> list:
     """The filtered impact feed — news by megatrend/country/aspect/direction/news_type. Use for
-    'negative tariff news on Semiconductors', 'macro news moving European stocks', etc."""
+    'negative tariff news on Semiconductors', 'macro news moving European stocks', etc. Near-duplicate
+    stories are MERGED by default (+`dup_count`); `collapse=false` for the raw feed. `limit` = how many
+    (default 20, max 50); narrow the filters rather than paging deep."""
     return _ser(mdx().news(megatrend=megatrend, country=country, aspect=aspect, direction=direction,
-                          news_type=news_type, only_scored=only_scored, min_relevance=min_relevance).to_list())
+                          news_type=news_type, only_scored=only_scored, min_relevance=min_relevance,
+                          collapse=collapse, limit=_lim(limit)).to_list())
 
 @mcp.tool(title="Stock Impact", annotations=_RO)
-def stock_impact(ticker: str, direction: Optional[str] = None) -> list:
-    """How recent news moved a specific company — per-article impact (direction + aspect + why)."""
-    return _ser(mdx().stock(ticker).news(direction=direction).to_list())
+def stock_impact(ticker: str, direction: Optional[str] = None, limit: Optional[int] = None,
+                 collapse: Optional[bool] = None) -> list:
+    """How recent news moved a specific company — per-article impact (direction + aspect + why), most
+    recent first. Near-duplicate stories (same event across outlets) are MERGED by default (each row =
+    one story + `dup_count`); pass `collapse=false` only for the raw un-deduped feed. `limit` = how many
+    (default 20, max 50). Heavily-covered assets (GOLD, oil, mega-caps) have HUNDREDS — keep `limit`
+    small and narrow (direction/aspect) rather than pulling everything."""
+    return _ser(mdx().stock(ticker).news(direction=direction, collapse=collapse, limit=_lim(limit)).to_list())
 
 @mcp.tool(title="Theme Players", annotations=_RO)
-def theme_players(theme: str, country: str, exposure: Optional[str] = None) -> list:
+def theme_players(theme: str, country: str, exposure: Optional[str] = None,
+                  limit: Optional[int] = None) -> list:
     """Investable MEMBER companies of a theme (curated membership) in a country. Different from
-    top_entities (which are news-derived)."""
-    return _ser(mdx().theme(_to_node(theme)).stocks(country=country, exposure=exposure).to_list())
+    top_entities (which are news-derived). `limit` = how many (default 20, max 50; big themes have many)."""
+    return _ser(mdx().theme(_to_node(theme)).stocks(country=country, exposure=exposure,
+                                                    max_items=_lim(limit)).to_list())
 
 @mcp.tool(title="Private Movers", annotations=_RO)
-def private_movers(theme: str, country: Optional[str] = None) -> list:
-    """Off-coverage / private companies the news moved within a theme — the 'beyond tickers' surface."""
-    return _ser(mdx().theme(_to_node(theme)).off_coverage(country=country).to_list())
+def private_movers(theme: str, country: Optional[str] = None, limit: Optional[int] = None) -> list:
+    """Off-coverage / private companies the news moved within a theme — the 'beyond tickers' surface.
+    `limit` = how many (default 20, max 50)."""
+    return _ser(mdx().theme(_to_node(theme)).off_coverage(country=country, max_items=_lim(limit)).to_list())
 
 @mcp.tool(title="Company Relationships", annotations=_RO)
-def relationships(ticker: str) -> dict:
-    """Competitors + peers of a company (news-derived relationship graph)."""
+def relationships(ticker: str, limit: Optional[int] = None) -> dict:
+    """Competitors + peers of a company (news-derived relationship graph). `limit` caps EACH list
+    (default 15, max 50)."""
     ref = mdx().stock(ticker)
-    return {"competitors": _ser(ref.competitors().to_list()), "peers": _ser(ref.peers().to_list())}
+    n = _lim(limit, default=15)
+    return {"competitors": _ser(ref.competitors(limit=n).to_list()), "peers": _ser(ref.peers(limit=n).to_list())}
 
 @mcp.tool(title="List Megatrends", annotations=_RO)
 def list_themes(query: Optional[str] = None) -> list:
