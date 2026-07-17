@@ -348,22 +348,25 @@ def list_portfolios() -> dict:
 @mcp.tool(title="Portfolio Context", annotations=_RO)
 def portfolio_context(portfolio_id: int) -> dict:
     """An LLM-ready snapshot of ONE of the user's OWN portfolios (owner-scoped) — analyze it directly.
-    Returns: `meta` (stated goal/thesis/horizon/risk-reaction), `summary` (NAV, P&L, exposure, cash),
-    `allocation` (by class/country/currency/theme), `concentration` (HHI, top holdings), `performance`
-    (drawdown, volatility), `positions` (each holding + its megatrend path + value trend),
-    `inferred_behavior` (revealed archetype from what they actually hold) and `flags` (e.g. stated-goal
-    vs actual-behavior mismatch). Needs the numeric `portfolio_id` (use `list_portfolios` to find it);
-    404 if not the user's.
+    Returns: `meta` (stated goal/thesis/horizon/risk-reaction) · `summary` (NAV, P&L, exposure, cash) ·
+    `lifetime` and `recent`(~12mo) blocks, EACH with `performance` (return/cagr/sharpe/sortino/calmar/
+    drawdown/vol/win_rate) + `attribution` · `positions` (live holdings + megatrend path + value_trend) ·
+    `closed_positions` (sold / margin-called, with realized_pnl) · `allocation` · `concentration` (HHI) ·
+    `inferred_behavior` (revealed archetype) · `flags`. Needs the numeric `portfolio_id`
+    (use `list_portfolios`); 404 if not the user's.
 
     HOW TO ANALYZE (research-analyst framing — see marketdx://policy):
-    • Lead with the sharpest thing: if `flags` is non-empty (e.g. stated goal ≠ revealed behavior), open
-      with it; else the biggest concentration / drawdown / theme tilt. One insight-first sentence, then
-      support with the numbers.
-    • Make it NEWS-AWARE — this is pure portfolio data. FUSE it: call `stock_impact` on the notable
-      holdings and `news_feed`/`search_news` on their `theme` paths, and explain moves with the WHY.
-    • Read stated_intent vs inferred_behavior honestly; describe the mismatch, don't scold.
-    • Facts, not advice. Observe concentration/exposure/drawdown; do NOT tell them to buy/sell/rebalance
-      or time the market — surface the picture and hand the judgment back (VOICE #4)."""
+    • Lead with the sharpest thing: a non-empty `flag`, or the biggest concentration / drawdown / tilt.
+      One insight-first sentence, then support with the numbers.
+    • "What drove the return / the drawdown / strengths & weaknesses" → use `attribution.contributors[]`
+      (per-holding `pnl_contribution` + `pct_of_nav_change` + the `held` window; reconciles to `nav_change`
+      to the cent and INCLUDES since-sold names). Use `recent` for 'this year', `lifetime` for the whole
+      run. Do NOT estimate contribution yourself — read it from `attribution`.
+    • ⚠️ Only TWO windows exist (lifetime + recent ~12mo). For a specific past window ('mid-2025', '2023
+      vs now') you do NOT have exact data — say so; don't fabricate a per-period breakdown.
+    • Make it NEWS-AWARE: FUSE with `stock_impact` on the notable holdings + `news_feed`/`search_news` on
+      their `theme` paths for the WHY (⚠️ news only covers 2026+; portfolio history goes back further).
+    • Facts, not advice. Observe; do NOT tell them to buy/sell/rebalance/time — hand the judgment back."""
     return mdx().portfolio_context(portfolio_id)
 
 # ── COMPOSITE tools (whole multi-step pipeline server-side, ONE call) ─────────
