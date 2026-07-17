@@ -34,8 +34,13 @@ _INSTRUCTIONS = (
     "asset or theme — INCLUDING commodities and metals (copper, gold, oil, …) — use THESE tools, not a "
     "web search: MarketDX returns scored per-article impact + the causal 'why' + the ripple that a web "
     "search cannot. Commodities use a `SYMBOL.COMM` ticker (COPPER.COMM, GOLD.COMM) with stock_impact, "
-    "or just search_news('copper'). Resolve a trend term via resolve_themes; follow marketdx://policy "
-    "for voice, scope, and the response stance."
+    "or just search_news('copper'). News tools accept a time range (`from_`/`to` ISO or `window` like "
+    "'90d'/'qtd'/'1y'); to compare periods, call the tool once per period and compare. "
+    "⚠️ NEWS coverage starts 2026-01-01 — there is NO news before 2026; for an older period say so "
+    "plainly, never fabricate or present an empty result as 'nothing happened'. PRICE / volatility "
+    "history, by contrast, goes back decades — so 'why was gold volatile in 2023' is answerable from "
+    "price even though there's no 2023 news. Resolve a trend term via resolve_themes; follow "
+    "marketdx://policy for voice, scope, and the response stance."
 )
 mcp = FastMCP("marketdx", instructions=_INSTRUCTIONS, website_url="https://marketdx.lab.ai",
               transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False))
@@ -55,6 +60,43 @@ def _lim(n: Optional[int], default: int = 20, ceiling: int = 50) -> int:
     if n is None:
         return default
     return max(1, min(int(n), ceiling))
+
+# News exists only from here (backfill floor; still walking backward). There is NO news before this.
+# Price/EOD history, by contrast, goes back decades — so historical volatility is answerable, news isn't.
+_NEWS_COVERAGE_START = "2026-01-01"
+
+def _win(window: Optional[str]) -> Optional[str]:
+    """Resolve a relative/calendar `window` ('90d','1y','mtd','qtd','ytd') to a `from_` ISO date (to=now)
+    — an LLM-friendlier alternative to computing dates by hand. Unknown/None → None (no lower bound).
+    Explicit `from_`/`to` always take precedence over this."""
+    if not window:
+        return None
+    import datetime as _dt
+    now = _dt.datetime.now(_dt.timezone.utc)
+    w = window.strip().lower()
+    try:
+        if w.endswith("d") and w[:-1].isdigit():
+            return (now - _dt.timedelta(days=int(w[:-1]))).date().isoformat()
+        if w.endswith("y") and w[:-1].isdigit():
+            return (now - _dt.timedelta(days=365 * int(w[:-1]))).date().isoformat()
+        if w == "mtd":
+            return now.replace(day=1).date().isoformat()
+        if w == "ytd":
+            return now.replace(month=1, day=1).date().isoformat()
+        if w == "qtd":
+            return now.replace(month=3 * ((now.month - 1) // 3) + 1, day=1).date().isoformat()
+    except Exception:
+        return None
+    return None
+
+def _coverage_note(from_: Optional[str]) -> Optional[str]:
+    """If a requested range starts before news coverage, a caller-facing warning so the LLM never reads
+    an empty/short result as 'no news happened' (it's 'no coverage')."""
+    if from_ and str(from_)[:10] < _NEWS_COVERAGE_START:
+        return (f"Requested range starts before MarketDX news coverage (news begins {_NEWS_COVERAGE_START}; "
+                "there is NO news before 2026). Results are limited to the covered window — do NOT present an "
+                "empty/short result as 'nothing happened'. Price/volatility history DOES go back decades.")
+    return None
 
 def _ser(items: list) -> list:
     """SDK returns typed @dataclass models; MCP needs JSON — convert to plain dicts."""
@@ -213,21 +255,26 @@ _SIM_WEAK = 0.58     # below this = essentially no match
 
 @mcp.tool(title="Search News", annotations=_RO)
 def search_news(q: str, entity_type: Optional[str] = None, collapse: Optional[bool] = None,
-                limit: Optional[int] = None) -> dict:
+                limit: Optional[int] = None, from_: Optional[str] = None, to: Optional[str] = None,
+                window: Optional[str] = None) -> dict:
     """SEMANTIC news search across ALL covered asset classes — stocks, FX, crypto, COMMODITIES (metals
     like copper/gold, energy like oil), and private companies. Articles matched by MEANING, impact-labeled
     (title, publisher, entities, direction, why). USE THIS for 'copper news', 'metals', 'gold', etc.
     instead of a web search. `entity_type` keeps only stock/forex/crypto/commodity/private hits. For a
     FILTERED feed by aspect/direction/country use `news_feed`. `limit` = how many (default 20, max 50).
+    TIME-SCOPE with `from_`/`to` (ISO dates, e.g. '2026-04-01') or a `window` ('90d','qtd','ytd','1y').
+    ⚠️ News coverage starts 2026-01-01 — older ranges return nothing (that's no COVERAGE, not 'no news').
     Returns {match_quality, top_similarity, note, results}. If match_quality is 'weak'/'none', the corpus
     has no strongly relevant news — do NOT present these results as evidence; say so and use another route."""
-    results = _ser(mdx().news_search(q, entity_type=entity_type, collapse=collapse, limit=_lim(limit)).to_list())
+    frm = from_ or _win(window)
+    results = _ser(mdx().news_search(q, entity_type=entity_type, collapse=collapse,
+                                     from_=frm, to=to, limit=_lim(limit)).to_list())
     sims = [r.get("similarity") for r in results if isinstance(r.get("similarity"), (int, float))]
     top = max(sims) if sims else 0.0
     quality = "strong" if top >= _SIM_STRONG else ("weak" if top >= _SIM_WEAK else "none")
-    note = None if quality == "strong" else (
+    note = _coverage_note(frm) or (None if quality == "strong" else (
         "Weak/no semantic match — MarketDX likely has no strongly relevant news for this query. Do NOT "
-        "present these as evidence; tell the user, and use world knowledge / another tool instead.")
+        "present these as evidence; tell the user, and use world knowledge / another tool instead."))
     return {"match_quality": quality, "top_similarity": round(top, 3), "note": note, "results": results}
 
 @mcp.tool(title="News Feed", annotations=_RO)
@@ -235,25 +282,31 @@ def news_feed(megatrend: Optional[str] = None, country: Optional[str] = None,
               aspect: Optional[str] = None, direction: Optional[str] = None,
               news_type: Optional[str] = None, only_scored: Optional[bool] = None,
               min_relevance: Optional[float] = None, limit: Optional[int] = None,
-              collapse: Optional[bool] = None) -> list:
+              collapse: Optional[bool] = None, from_: Optional[str] = None,
+              to: Optional[str] = None, window: Optional[str] = None) -> list:
     """The filtered impact feed — news by megatrend/country/aspect/direction/news_type, across stocks,
     FX, crypto, COMMODITIES (metals/energy) and private cos. Use for 'negative tariff news on
     Semiconductors', 'macro news moving European stocks', 'copper / metals news', etc. Near-duplicate
     stories are MERGED by default (+`dup_count`); `collapse=false` for the raw feed. `limit` = how many
-    (default 20, max 50); narrow the filters rather than paging deep."""
+    (default 20, max 50); narrow the filters rather than paging deep. TIME-SCOPE with `from_`/`to` (ISO)
+    or a `window` ('90d','qtd','ytd','1y'). To COMPARE periods, call once per period and compare the
+    results. ⚠️ News starts 2026-01-01 — older ranges return nothing (no coverage, not 'no news')."""
     return _ser(mdx().news(megatrend=megatrend, country=country, aspect=aspect, direction=direction,
                           news_type=news_type, only_scored=only_scored, min_relevance=min_relevance,
-                          collapse=collapse, limit=_lim(limit)).to_list())
+                          collapse=collapse, from_=from_ or _win(window), to=to, limit=_lim(limit)).to_list())
 
 @mcp.tool(title="Stock Impact", annotations=_RO)
 def stock_impact(ticker: str, direction: Optional[str] = None, limit: Optional[int] = None,
-                 collapse: Optional[bool] = None) -> list:
-    """How recent news moved a specific company — per-article impact (direction + aspect + why), most
-    recent first. Near-duplicate stories (same event across outlets) are MERGED by default (each row =
-    one story + `dup_count`); pass `collapse=false` only for the raw un-deduped feed. `limit` = how many
-    (default 20, max 50). Heavily-covered assets (GOLD, oil, mega-caps) have HUNDREDS — keep `limit`
-    small and narrow (direction/aspect) rather than pulling everything."""
-    return _ser(mdx().stock(ticker).news(direction=direction, collapse=collapse, limit=_lim(limit)).to_list())
+                 collapse: Optional[bool] = None, from_: Optional[str] = None,
+                 to: Optional[str] = None, window: Optional[str] = None) -> list:
+    """How news moved a specific company/asset (incl commodities like GOLD.COMM) — per-article impact
+    (direction + aspect + why), most recent first. Near-duplicate stories are MERGED by default (each row
+    = one story + `dup_count`); `collapse=false` for the raw feed. `limit` = how many (default 20, max 50)
+    — heavily-covered assets have HUNDREDS, so keep it small + narrow. TIME-SCOPE with `from_`/`to` (ISO)
+    or `window` ('90d','qtd','1y'); to COMPARE periods, call once per period. ⚠️ News starts 2026-01-01 —
+    older ranges return nothing (no coverage, not 'no news'; price/volatility history goes back decades)."""
+    return _ser(mdx().stock(ticker).news(direction=direction, collapse=collapse,
+                                         from_=from_ or _win(window), to=to, limit=_lim(limit)).to_list())
 
 @mcp.tool(title="Theme Players", annotations=_RO)
 def theme_players(theme: str, country: str, exposure: Optional[str] = None,
