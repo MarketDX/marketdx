@@ -276,6 +276,27 @@ class MarketDX:
         """Your account status: balance, quota + reset, plan, rate limit (free, unmetered)."""
         return self._get("/v1/account").data
 
+    def portfolios(self, *, include: Optional[str] = None) -> Dict[str, Any]:
+        """List YOUR portfolios (owner-scoped) → ``{"portfolios": [...], "count": N}``. Each item is
+        light + engine-computed: id, name, base_currency, account_type, nav, cash, invested,
+        unrealized_pnl, total_return_pct, position_count, liquidated, inception_date, updated_at.
+        ``include='allocation'`` adds an asset-class breakdown (heavier). Use this to find a
+        ``portfolio_id``, then call :meth:`portfolio_context`."""
+        return self._get("/v1/portfolios", {"include": include} if include else None).data
+
+    def portfolio_context(self, portfolio_id: int) -> Dict[str, Any]:
+        """LLM-ready snapshot of one of YOUR portfolios (owner-scoped by your account).
+
+        Returns a rich, self-explanatory context: `meta` (stated intent/goal/horizon),
+        `summary` (NAV, P&L, exposure), `allocation` (by class/country/currency/theme),
+        `concentration` (HHI, top holdings), `performance` (drawdown, volatility),
+        `positions` (each holding + its megatrend path + value trend), `inferred_behavior`
+        (revealed archetype from actual holdings) and `flags` (e.g. stated-vs-revealed
+        mismatches). PURE portfolio data — pair it with `news()`/`stock(...).news()` for a
+        news-aware view. 404 if the portfolio isn't yours.
+        """
+        return self._get(f"/v1/portfolios/{portfolio_id}/context").data
+
     # ── helpers / lifecycle ───────────────────────────────────────────────────
     def _page(self, path, key, parse, params, *, columns=None, max_items=None) -> "Page":
         return Page(lambda offset, lim: self._get(path, {**params, "limit": lim, "offset": offset}),

@@ -242,6 +242,35 @@ def list_themes(query: Optional[str] = None) -> list:
     """Browse / discover the megatrend taxonomy (25 tier-1 families + sub-nodes) — resolve a theme id."""
     return _ser(mdx().megatrends().to_list())
 
+@mcp.tool(title="List Portfolios", annotations=_RO)
+def list_portfolios() -> dict:
+    """List the user's OWN portfolios (id, name, base_currency, account_type, nav, total_return_pct,
+    unrealized_pnl, position_count, …) so you can pick one to analyze. Call this FIRST whenever the user
+    says 'my portfolio' without a number — show the names, then pass the chosen `id` to
+    `portfolio_context`. Owner-scoped: only ever the user's own portfolios."""
+    return mdx().portfolios()
+
+@mcp.tool(title="Portfolio Context", annotations=_RO)
+def portfolio_context(portfolio_id: int) -> dict:
+    """An LLM-ready snapshot of ONE of the user's OWN portfolios (owner-scoped) — analyze it directly.
+    Returns: `meta` (stated goal/thesis/horizon/risk-reaction), `summary` (NAV, P&L, exposure, cash),
+    `allocation` (by class/country/currency/theme), `concentration` (HHI, top holdings), `performance`
+    (drawdown, volatility), `positions` (each holding + its megatrend path + value trend),
+    `inferred_behavior` (revealed archetype from what they actually hold) and `flags` (e.g. stated-goal
+    vs actual-behavior mismatch). Needs the numeric `portfolio_id` (use `list_portfolios` to find it);
+    404 if not the user's.
+
+    HOW TO ANALYZE (research-analyst framing — see marketdx://policy):
+    • Lead with the sharpest thing: if `flags` is non-empty (e.g. stated goal ≠ revealed behavior), open
+      with it; else the biggest concentration / drawdown / theme tilt. One insight-first sentence, then
+      support with the numbers.
+    • Make it NEWS-AWARE — this is pure portfolio data. FUSE it: call `stock_impact` on the notable
+      holdings and `news_feed`/`search_news` on their `theme` paths, and explain moves with the WHY.
+    • Read stated_intent vs inferred_behavior honestly; describe the mismatch, don't scold.
+    • Facts, not advice. Observe concentration/exposure/drawdown; do NOT tell them to buy/sell/rebalance
+      or time the market — surface the picture and hand the judgment back (VOICE #4)."""
+    return mdx().portfolio_context(portfolio_id)
+
 # ── COMPOSITE tools (whole multi-step pipeline server-side, ONE call) ─────────
 @mcp.tool(title="Resolve Themes", annotations=_RO)
 def resolve_themes(terms: List[str]) -> dict:
