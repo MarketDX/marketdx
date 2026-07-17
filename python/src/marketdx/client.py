@@ -285,26 +285,28 @@ class MarketDX:
         (``count`` = 0) carrying a ``note`` (plain-language + a create link) — relay it, not an empty."""
         return self._get("/v1/portfolios", {"include": include} if include else None).data
 
-    def portfolio_context(self, portfolio_id: int, *, snapshots: Optional[str] = None,
-                          snapshots_from: Optional[str] = None,
-                          snapshots_to: Optional[str] = None) -> Dict[str, Any]:
+    def portfolio_context(self, portfolio_id: int, *, from_: Optional[str] = None,
+                          to: Optional[str] = None, window: Optional[str] = None,
+                          snapshots: Optional[str] = None) -> Dict[str, Any]:
         """LLM-ready snapshot of one of YOUR portfolios (owner-scoped by your account).
 
-        Returns a rich, self-explanatory context: `meta` (stated intent/goal/horizon),
-        `summary` (NAV, P&L, exposure), `lifetime` + `recent` blocks (each with `performance`
-        — return/cagr/sharpe/sortino/calmar/drawdown/vol/win_rate — and `attribution`, who drove
-        the NAV change incl since-sold names, reconciled to the cent), `positions`,
-        `closed_positions` (realized P&L), `composition` (point-in-time holdings), `allocation`,
-        `concentration` (HHI), `inferred_behavior` and `flags`. PURE portfolio data — pair with
-        `news()`/`stock(...).news()` for a news-aware view. 404 if the portfolio isn't yours.
+        NO window → default view: `meta`, `summary`, a `lifetime` (all-time) block + a `recent`
+        (~12mo) block — each with `performance` (return/cagr/sharpe/sortino/calmar/drawdown/vol/
+        win_rate) and `attribution` (who drove the NAV change, incl since-sold names, reconciled to
+        the cent) — plus `positions`, `closed_positions` (realized P&L), `composition` (point-in-time
+        holdings), `allocation`, `concentration`, `inferred_behavior`, `flags`. Pair with `news()`/
+        `stock(...).news()` for a news-aware view. 404 if the portfolio isn't yours.
 
-        The `composition` block is caller-controlled: ``snapshots`` = the point-in-time step
-        (``year|quarter|month|week|day|off``, default ``quarter``; ``off`` omits it), and
-        ``snapshots_from``/``snapshots_to`` (ISO dates) zoom a window to a finer step — e.g.
-        ``snapshots="day", snapshots_from="2025-06-01", snapshots_to="2025-06-30"`` = the daily
-        book through June 2025. To compare periods, call once per window.
+        WINDOW (``from_``/``to`` ISO dates, or a relative ``window`` = 7d/30d/90d/180d/1y/mtd/qtd/ytd,
+        anchored on the last data date): replaces `lifetime`+`recent` with ONE ``window`` block —
+        that span's `performance` + `attribution` + `nav_trend` — and scopes `composition` to match.
+        **To compare periods, call once per window.** ``snapshots`` = the composition granularity only
+        (``year|quarter|month|week|day|off``); it auto-coarsens (cap 12 default / 40 windowed) and flags
+        it in `composition.note` — narrow the window (≤~40 trading days) for true daily. Edge cases are
+        explicit, never silent zeros: a window before the portfolio's `inception_date` comes back
+        `window.empty=true` with a note (clamped if it only partly precedes inception).
         """
-        params = {"snapshots": snapshots, "snapshots_from": snapshots_from, "snapshots_to": snapshots_to}
+        params = {"from": from_, "to": to, "window": window, "snapshots": snapshots}
         return self._get(f"/v1/portfolios/{portfolio_id}/context", params).data
 
     # ── helpers / lifecycle ───────────────────────────────────────────────────
