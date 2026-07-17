@@ -24,7 +24,21 @@ from marketdx import MarketDX
 # DNS-rebinding protection defaults to a localhost allow-list (it guards a *local* server from
 # browser-driven Host spoofing). We're a hosted API behind Cloud Run TLS with our own per-request
 # Bearer auth, and the Host varies (run.app + mcp.marketdx.lab.ai) — so disable the Host check here.
-mcp = FastMCP("marketdx", transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False))
+# Server instructions — the client LLM reads this at connect time. Its main job: stop the client from
+# web-searching topics MarketDX actually covers (esp. COMMODITIES/metals, which agents forget we have).
+_INSTRUCTIONS = (
+    "MarketDX is a financial news→impact graph: it maps news to the assets and megatrends it actually "
+    "moves — direction (+/−), the reason WHY, and the ripple to connected players — across STOCKS, "
+    "FOREX, CRYPTO, COMMODITIES (metals like copper & gold, energy like oil & gas, and agris), and "
+    "PRIVATE / off-coverage companies. For ANY question about news, market impact, or what moved an "
+    "asset or theme — INCLUDING commodities and metals (copper, gold, oil, …) — use THESE tools, not a "
+    "web search: MarketDX returns scored per-article impact + the causal 'why' + the ripple that a web "
+    "search cannot. Commodities use a `SYMBOL.COMM` ticker (COPPER.COMM, GOLD.COMM) with stock_impact, "
+    "or just search_news('copper'). Resolve a trend term via resolve_themes; follow marketdx://policy "
+    "for voice, scope, and the response stance."
+)
+mcp = FastMCP("marketdx", instructions=_INSTRUCTIONS, website_url="https://marketdx.lab.ai",
+              transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False))
 _HERE = pathlib.Path(__file__).parent
 # Served at /favicon.ico so clients (Claude's connector card) show the MarketDX mark for this host —
 # without it, a favicon resolver strips the subdomain and grabs the apex lab.ai icon.
@@ -200,8 +214,10 @@ _SIM_WEAK = 0.58     # below this = essentially no match
 @mcp.tool(title="Search News", annotations=_RO)
 def search_news(q: str, entity_type: Optional[str] = None, collapse: Optional[bool] = None,
                 limit: Optional[int] = None) -> dict:
-    """SEMANTIC news search — articles matched by MEANING, impact-labeled (title, publisher, entities,
-    direction, why). `entity_type` keeps only stock/forex/crypto/commodity/private hits. For a
+    """SEMANTIC news search across ALL covered asset classes — stocks, FX, crypto, COMMODITIES (metals
+    like copper/gold, energy like oil), and private companies. Articles matched by MEANING, impact-labeled
+    (title, publisher, entities, direction, why). USE THIS for 'copper news', 'metals', 'gold', etc.
+    instead of a web search. `entity_type` keeps only stock/forex/crypto/commodity/private hits. For a
     FILTERED feed by aspect/direction/country use `news_feed`. `limit` = how many (default 20, max 50).
     Returns {match_quality, top_similarity, note, results}. If match_quality is 'weak'/'none', the corpus
     has no strongly relevant news — do NOT present these results as evidence; say so and use another route."""
@@ -220,8 +236,9 @@ def news_feed(megatrend: Optional[str] = None, country: Optional[str] = None,
               news_type: Optional[str] = None, only_scored: Optional[bool] = None,
               min_relevance: Optional[float] = None, limit: Optional[int] = None,
               collapse: Optional[bool] = None) -> list:
-    """The filtered impact feed — news by megatrend/country/aspect/direction/news_type. Use for
-    'negative tariff news on Semiconductors', 'macro news moving European stocks', etc. Near-duplicate
+    """The filtered impact feed — news by megatrend/country/aspect/direction/news_type, across stocks,
+    FX, crypto, COMMODITIES (metals/energy) and private cos. Use for 'negative tariff news on
+    Semiconductors', 'macro news moving European stocks', 'copper / metals news', etc. Near-duplicate
     stories are MERGED by default (+`dup_count`); `collapse=false` for the raw feed. `limit` = how many
     (default 20, max 50); narrow the filters rather than paging deep."""
     return _ser(mdx().news(megatrend=megatrend, country=country, aspect=aspect, direction=direction,
