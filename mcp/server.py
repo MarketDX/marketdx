@@ -247,7 +247,9 @@ def list_portfolios() -> dict:
     """List the user's OWN portfolios (id, name, base_currency, account_type, nav, total_return_pct,
     unrealized_pnl, position_count, …) so you can pick one to analyze. Call this FIRST whenever the user
     says 'my portfolio' without a number — show the names, then pass the chosen `id` to
-    `portfolio_context`. Owner-scoped: only ever the user's own portfolios."""
+    `portfolio_context`. Owner-scoped: only ever the user's own portfolios.
+    If `count` is 0 (they own none), the response carries a `note` with a create link — relay THAT
+    (invite them to create a portfolio) instead of saying an empty 'you have no portfolios'."""
     return mdx().portfolios()
 
 @mcp.tool(title="Portfolio Context", annotations=_RO)

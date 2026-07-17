@@ -281,7 +281,8 @@ class MarketDX:
         light + engine-computed: id, name, base_currency, account_type, nav, cash, invested,
         unrealized_pnl, total_return_pct, position_count, liquidated, inception_date, updated_at.
         ``include='allocation'`` adds an asset-class breakdown (heavier). Use this to find a
-        ``portfolio_id``, then call :meth:`portfolio_context`."""
+        ``portfolio_id``, then call :meth:`portfolio_context`. When you own none it's still a ``200``
+        (``count`` = 0) carrying a ``note`` (plain-language + a create link) — relay it, not an empty."""
         return self._get("/v1/portfolios", {"include": include} if include else None).data
 
     def portfolio_context(self, portfolio_id: int) -> Dict[str, Any]:
