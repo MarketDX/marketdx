@@ -138,6 +138,20 @@ def _ser(items: list) -> list:
     """SDK returns typed @dataclass models; MCP needs JSON — convert to plain dicts."""
     return [asdict(x) if is_dataclass(x) else x for x in items]
 
+def _paged(page, key: str = "items") -> dict:
+    """Wrap a paginated SDK result so the LLM can SEE truncation. Returns
+    {<key>:[…], count, total, note?}. Without this the tool hands back a bare list and the LLM
+    presents a curated subset as if it were the whole set (e.g. 23 of 50 theme members, silently)."""
+    items = _ser(page.to_list())
+    out: dict = {key: items, "count": len(items)}
+    total = page.total          # cheap — populated from the first page's `total` field during to_list()
+    if total is not None:
+        out["total"] = total
+        if total > len(items):
+            out["note"] = (f"showing {len(items)} of {total} — this is a curated top slice, not the full "
+                           f"list; tell the user more exist, and raise `limit` or narrow the scope to see them")
+    return out
+
 # ── per-request identity (hosted) + client cache ─────────────────────────────
 # HTTP transport: each request carries its OWN caller's key (Authorization header → _req_key,
 # set by the ASGI auth middleware in main()), so users are metered on THEIR account — never a
@@ -476,25 +490,31 @@ def find_stock(q: str, country: Optional[str] = None, limit: Optional[int] = Non
 
 @mcp.tool(title="Theme Players", annotations=_RO)
 def theme_players(theme: str, country: str, exposure: Optional[str] = None,
-                  limit: Optional[int] = None) -> list:
+                  limit: Optional[int] = None) -> dict:
     """Investable MEMBER companies of a theme (curated membership) in a country. Different from
-    top_entities (which are news-derived). `limit` = how many (default 20, max 50; big themes have many)."""
-    return _ser(mdx().theme(_to_node(theme)).stocks(country=country, exposure=exposure,
-                                                    max_items=_lim(limit)).to_list())
+    top_entities (which are news-derived). `limit` = how many (default 20, max 50; big themes have many).
+    Returns {stocks, count, total, note?} — if `total` > `count`, the list is a TOP SLICE: say so and
+    don't present it as the full roster (raise `limit` or narrow scope for the rest)."""
+    return _paged(mdx().theme(_to_node(theme)).stocks(country=country, exposure=exposure,
+                                                      max_items=_lim(limit)), key="stocks")
 
 @mcp.tool(title="Private Movers", annotations=_RO)
-def private_movers(theme: str, country: Optional[str] = None, limit: Optional[int] = None) -> list:
+def private_movers(theme: str, country: Optional[str] = None, limit: Optional[int] = None) -> dict:
     """Off-coverage / private companies the news moved within a theme — the 'beyond tickers' surface.
-    `limit` = how many (default 20, max 50)."""
-    return _ser(mdx().theme(_to_node(theme)).off_coverage(country=country, max_items=_lim(limit)).to_list())
+    `limit` = how many (default 20, max 50). Returns {companies, count, total, note?} — honor `note` when
+    `total` > `count` (it's a top slice, not the whole set)."""
+    return _paged(mdx().theme(_to_node(theme)).off_coverage(country=country, max_items=_lim(limit)),
+                  key="companies")
 
 @mcp.tool(title="Company Relationships", annotations=_RO)
 def relationships(ticker: str, limit: Optional[int] = None) -> dict:
     """Competitors + peers of a company (news-derived relationship graph). `limit` caps EACH list
-    (default 15, max 50)."""
+    (default 15, max 50). Each side carries `total`/`count`/`note` — a big `total` (peers often run to
+    hundreds) means you're seeing a TOP slice; say so rather than implying it's the complete set."""
     ref = mdx().stock(ticker)
     n = _lim(limit, default=15)
-    return {"competitors": _ser(ref.competitors(limit=n).to_list()), "peers": _ser(ref.peers(limit=n).to_list())}
+    return {"competitors": _paged(ref.competitors(limit=n), key="items"),
+            "peers": _paged(ref.peers(limit=n), key="items")}
 
 @mcp.tool(title="List Megatrends", annotations=_RO)
 def list_themes(query: Optional[str] = None) -> list:
@@ -1034,13 +1054,17 @@ def screen_dividends(country: Optional[str] = None, gics: Optional[str] = None, 
     RAW pieces to tell a real income name from a YIELD TRAP, so YOU judge (don't trust a headline yield).
       • Scope (≥1 REQUIRED): `country` (csv ISO-2), `gics` (csv prefixes, e.g. '2550' retail), `sector`
         (csv, the plain sector name). Combine freely.
-      • `order_by` = `yield` (default) | `streak` (longest no-cut run — aristocrats) | `cagr` (fastest
-        dividend growth). Filters: `min_yield`/`max_yield` (PERCENT, e.g. 3 = 3%; max guards against
-        traps), `min_streak_years` (25 = Dividend Aristocrat), `min_cagr` (%), `min/max_market_cap_usd`.
+      • `order_by` = `yield` (default) | `streak` (reliability — longest clean run in our window) | `cagr`
+        (fastest dividend growth). Filters: `min_yield`/`max_yield` (PERCENT, e.g. 3 = 3%; max guards against
+        traps), `min_streak_years` (≤10, see below), `min_cagr` (%), `min/max_market_cap_usd`.
+    🔴 `no_cut_streak_yrs` is a bounded RELIABILITY signal — consecutive no-cut years within a **10-year**
+    tracking window, so it CAPS AT 10 (10 = never cut across the whole decade, i.e. survived the 2020 &
+    2022 stress). It is NOT the company's full dividend age: DO NOT report "~50-year king / 69-year streak"
+    or any multi-decade figure from your own knowledge — say "clean for 10y+ (the full window we track)".
     Each row's `dividend` block DECOMPOSES the yield: `yield_pct` (FORWARD/sustainable — what to quote),
     `yield_trailing_pct` (if >> yield_pct, a SPECIAL one-time dividend inflated it — not repeatable),
     `payout_ratio` (>1 = pays more than it earns = unsustainable), `ttm_div_yoy_pct` (is the PAYMENT up/flat/
-    CUT), `no_cut_streak_yrs`, `last_cut_year`, `cagr_5y_pct` — plus `week52_high/low` (is the yield high
+    CUT), `no_cut_streak_yrs` (≤10, reliability not age), `last_cut_year`, `cagr_5y_pct` — plus `week52_high/low` (is the yield high
     because the PRICE fell?) + `pe_ratio`/`eps` + a `news` block. 🔴 NEVER rank on yield alone: high yield +
     recent `last_cut_year` + negative `ttm_div_yoy_pct` + high payout + bad `news` = TRAP; high yield from a
     price drop + intact/growing dividend + long streak = possible VALUE. Read the payload's `_guide`.
