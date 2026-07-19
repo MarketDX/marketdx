@@ -16,10 +16,10 @@ import os, json, pathlib, contextvars
 from dataclasses import asdict, is_dataclass
 from typing import Any, Optional, List
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Context
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
-from marketdx import MarketDX
+from marketdx import MarketDX, NotFoundError
 
 # DNS-rebinding protection defaults to a localhost allow-list (it guards a *local* server from
 # browser-driven Host spoofing). We're a hosted API behind Cloud Run TLS with our own per-request
@@ -39,8 +39,41 @@ _INSTRUCTIONS = (
     "⚠️ NEWS coverage starts 2026-01-01 — there is NO news before 2026; for an older period say so "
     "plainly, never fabricate or present an empty result as 'nothing happened'. PRICE / volatility "
     "history, by contrast, goes back decades — so 'why was gold volatile in 2023' is answerable from "
-    "price even though there's no 2023 news. Resolve a trend term via resolve_themes; follow "
-    "marketdx://policy for voice, scope, and the response stance."
+    "price even though there's no 2023 news. Any read on how a tradable asset (a stock, ETF, or index) is "
+    "DOING — whatever the phrasing or language — is a MarketDX question: our news→impact + options-"
+    "positioning read IS the substance of 'how is it doing' (the WHY it's moving + the market's stance), "
+    "which a web search cannot supply. Reach for `asset_pulse(<ticker>)` on these. 🔴 This INCLUDES a "
+    "MARKET / INDEX asked in a 'right now / ตอนนี้ / current' phrasing (S&P, Nasdaq, Dow, 'the market'): "
+    "map it to its ETF (S&P→SPY · Nasdaq→QQQ · Dow→DIA — WE DO COVER their options + news) and call "
+    "`asset_pulse` for the news-impact + positioning that IS 'how it's doing'. A web-searched index LEVEL "
+    "is at most ONE supplementary number — NEVER answer a market/index question with only a web level, and "
+    "never skip the MarketDX read (the level alone is not 'how is it doing'). asset_pulse = ONE call returning "
+    "BOTH lenses, so the read is never half-informed. 🔵 But if the subject is a SECTOR / INDUSTRY / THEME "
+    "CONCEPT rather than one ticker (semiconductors, tech, energy, banks, AI, clean energy, gold, …) → use "
+    "`theme_pulse(<concept>)` instead: it resolves the concept across the THREE independent taxonomies and "
+    "returns every angle that applies, each SEPARATE — the MarketDX megatrend cohort, the GICS-sector "
+    "cohort (a different membership), and the tradable ETF's options positioning (it does the concept→ETF "
+    "mapping for you; full 58-ETF set in marketdx://policy). So: a specific TICKER/company → `asset_pulse`; "
+    "a sector/theme CONCEPT → `theme_pulse`. ⚠️ For a NON-US company or when unsure of the exact ticker "
+    "(esp. Asian/European names — we use our OWN suffixes, Korea=.KO not .KS, so a guess 404s), resolve it "
+    "FIRST with `find_stock(<name>)` and use the returned `ticker`. Also resolves commodities/crypto/"
+    "private (gold→GOLD, openai→oc:52). "
+    "Prefer these composites over calling stock_impact / "
+    "options_sentiment one at a time; use those only to DRILL deeper afterwards. Synthesize where news and "
+    "positioning AGREE or DIVERGE; if the user HOLDS the name, tie the read back to their position. "
+    "To SUMMARIZE a whole scope — a news CATEGORY (e.g. "
+    "'สรุปข่าว commodity' → news_type='commodity_supply'), a country/market, an impact channel (aspect), "
+    "a GICS sector, a megatrend, or any AND-mix — use `brief` (the composed 'how is <X> doing right now?' "
+    "picture), NOT search_news/news_feed (those return a raw article LIST, not a summary). Resolve a "
+    "trend term via resolve_themes; follow marketdx://policy for voice, scope, and the response stance. "
+    "NOTES — the user keeps a personal INVESTMENT KNOWLEDGE BASE via `write_note` (their notes join this "
+    "same graph and are retrievable by entity later — the point is to fight scattered knowledge). Act as a "
+    "proactive librarian: after a SUBSTANTIVE investment answer — a sector/mechanism explainer, a dated "
+    "market read (with its 'why'), a thesis, a comparison, a decision — briefly OFFER to keep it "
+    "('เก็บเข้าโน้ตไหม?'), and save right away on any explicit 'save this / จดไว้'. When you save, pass the "
+    "tickers + megatrend ids you already used this turn so the note links to the graph. Do NOT offer on "
+    "chit-chat, trivia lookups (e.g. 'what's NVDA's ticker'), or off-topic / non-investment turns; don't "
+    "nag more than once, and never save pure filler."
 )
 mcp = FastMCP("marketdx", instructions=_INSTRUCTIONS, website_url="https://marketdx.lab.ai",
               transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False))
@@ -52,6 +85,9 @@ _FAVICON = (_HERE / "favicon.ico").read_bytes() if (_HERE / "favicon.ico").exist
 # readOnlyHint lets a client auto-run without a confirm prompt, and it's a Connector-Directory gate.
 # Convention: give EVERY new tool a `title=` + `annotations=_RO` (or a destructive hint if it ever writes).
 _RO = ToolAnnotations(readOnlyHint=True)
+# WRITE tools persist user data → readOnlyHint=False so a client can prompt/confirm before running.
+# additive (a new note), not an update/delete → not destructive, not idempotent.
+_WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False)
 
 def _lim(n: Optional[int], default: int = 20, ceiling: int = 50) -> int:
     """Bound a list tool's page size so the result stays context-friendly. Heavily-covered assets
@@ -243,12 +279,101 @@ def _to_node(theme: str):
     except Exception:
         return theme
 
+def _to_nodes(spec: str) -> Optional[str]:
+    """Resolve a csv of trend TERMS and/or node IDs → csv of node ids, in ONE resolve pass (so
+    'foundry,hbm' becomes '56020000,56030000' without two round-trips). Numeric parts pass through as
+    ids; term parts are batch-resolved via resolve_themes and take the top candidate each. Order-preserved,
+    de-duped. Returns None if nothing resolves."""
+    parts = [p.strip() for p in str(spec).split(",") if p.strip()]
+    ids, terms = [], []
+    for p in parts:
+        (ids if p.isdigit() else terms).append(p)
+    if terms:
+        try:
+            res = resolve_themes(terms)
+            for t in terms:
+                cand = res.get(t) or []
+                if cand:
+                    ids.append(str(cand[0]["id"]))
+        except Exception:
+            pass
+    return ",".join(dict.fromkeys(ids)) or None
+
 # ── SIMPLE tools (thin SDK wrappers — client LLM orchestrates) ────────────────
+# The valid news_type names (GET /v1/news/types) — used to sanitize a hallucinated value before it
+# hard-errors the API. Keep in sync with the API's list.
+_NEWS_TYPES = {"product_tech", "ma_partnership", "industry_thematic", "earnings_results",
+               "corporate_action", "management_governance", "analyst_rating", "macro_economic",
+               "geopolitics", "commodity_supply", "regulatory_legal", "cybersecurity_digital_trust",
+               "digital_finance_tokenization", "price_action_technical", "noise_other", "short_news",
+               "crypto_related", "forex_related", "analyst_forecast"}
+
+# The 58 opana-covered ETFs → concept label (from ava_listings.asset_type='ETF'). Doubles as the asset-
+# angle resolver vocabulary for theme_pulse and the authoritative "which ETF is covered" set.
+_COVERED_ETFS = {
+    "SPY": "S&P 500", "QQQ": "Nasdaq 100", "IWM": "Russell 2000", "DIA": "Dow 30", "MDY": "S&P Midcap 400",
+    "XLK": "Technology sector", "XLF": "Financials sector", "XLE": "Energy sector", "XLV": "Healthcare sector",
+    "XLY": "Consumer Discretionary", "XLP": "Consumer Staples", "XLI": "Industrials", "XLU": "Utilities",
+    "XLB": "Materials", "XLRE": "Real Estate", "XLC": "Communication Services",
+    "SMH": "Semiconductors", "SOXX": "Semiconductors", "XBI": "Biotech", "IBB": "Biotech",
+    "KRE": "Regional Banks", "OIH": "Oil Services", "XOP": "Oil & Gas E&P", "XRT": "Retail",
+    "JETS": "Airlines", "TAN": "Solar", "GLD": "Gold", "SLV": "Silver", "USO": "Crude Oil",
+    "UNG": "Natural Gas", "GDX": "Gold Miners", "GDXJ": "Junior Gold Miners", "TLT": "20y+ Treasuries",
+    "IEF": "7-10y Treasuries", "AGG": "US Aggregate Bonds", "LQD": "Investment-Grade Corp",
+    "HYG": "High-Yield Corp", "TIP": "TIPS", "EMB": "EM Bonds", "EEM": "Emerging Markets",
+    "EFA": "Developed ex-US", "FXI": "China Large-Cap", "KWEB": "China Internet", "EWJ": "Japan",
+    "EWY": "South Korea", "EWZ": "Brazil", "INDA": "India", "VXX": "VIX Volatility", "UVXY": "VIX 2x",
+    "IBIT": "Bitcoin", "ETHA": "Ethereum", "SPXL": "S&P 3x Bull", "SPXU": "S&P 3x Bear",
+    "TQQQ": "Nasdaq 3x Bull", "SQQQ": "Nasdaq 3x Bear", "SOXL": "Semis 3x Bull", "TZA": "Small-Cap 3x Bear",
+}
+
 @mcp.tool(title="Theme Summary", annotations=_RO)
 def theme_summary(theme: str, window: str = "30d", country: Optional[str] = None) -> dict:
     """Pre-composed analyst brief for a megatrend theme: pulse, winners/losers, top entities, aspect
     heatmap, ripple. `theme` = a theme name or id/slug; `window` = 7d/30d/90d/1y/mtd/qtd/ytd."""
     return mdx().theme(_to_node(theme)).summary(window=window, country=country)
+
+@mcp.tool(title="Brief", annotations=_RO)
+def brief(news_type: Optional[str] = None, country: Optional[str] = None,
+          aspect: Optional[str] = None, gics: Optional[str] = None,
+          megatrend: Optional[str] = None, window: str = "30d",
+          from_: Optional[str] = None, to: Optional[str] = None,
+          interval: Optional[str] = None, lang: Optional[str] = None) -> dict:
+    """The generalized ANALYST BRIEF — one composed "how is <scope> doing right now?" picture (pulse +
+    net direction, top_stories, winners/losers, aspect_heatmap, top_entities, top_assets) for ANY
+    AND-combination of scopes. ⭐ Use this to SUMMARIZE a SCOPE — a THEME, a news CATEGORY, a COUNTRY, a
+    SECTOR, or an aspect (NOT a raw article list → that's search_news/news_feed). ⛔ NOT for a single
+    COMPANY or a market INDEX/ticker: "how is the S&P / Nasdaq / AAPL doing?" → `options_sentiment`
+    (+ `stock_impact`/`news_feed`), because an index maps to an ETF asset (S&P→SPY), not a brief scope.
+    Scope by ≥1 of (each takes a CSV for multiple values):
+      • `news_type` — a news CATEGORY. Use ONLY these EXACT names (never invent one): product_tech,
+        ma_partnership, industry_thematic, earnings_results, corporate_action, management_governance,
+        analyst_rating, macro_economic, geopolitics, commodity_supply, regulatory_legal,
+        cybersecurity_digital_trust, digital_finance_tokenization, price_action_technical, crypto_related,
+        forex_related, analyst_forecast. ("สรุปข่าว commodity" → commodity_supply; central-bank/rates →
+        macro_economic — there is NO 'monetary_policy').
+      • `country` — an ISO-2 market. country='JP' → "how is Japan doing right now?".
+      • `aspect` — an impact CHANNEL. aspect='tariff' → "everything moving via tariffs".
+      • `gics` — a GICS code prefix (sector 25 / industry-group 2550 / industry 255010), often × country.
+      • `megatrend` — a theme node id/slug. For a NAMED theme use `theme_summary` (it resolves free text);
+        use `megatrend` here only when you already have the id or want to AND it with another scope.
+    Combine (AND): news_type='commodity_supply'+country='JP' = commodity news in Japan; gics='2550'+
+    country='GB,DE,FR,IT,ES,NL' = a European retail pulse. `window` = 7d/30d/90d/180d/1y/mtd/qtd/ytd (or
+    pass from_/to as ISO dates). ≥1 scope is REQUIRED (it never scans everything). ⚠️ News coverage starts
+    2026-01-01. `node`+`ripple` appear only when a SINGLE megatrend anchors the brief."""
+    # Runtime-sanitize news_type: the client can hallucinate a name (e.g. 'monetary_policy') → the API
+    # hard-errors. Drop unknowns so the valid scope still returns; flag what we dropped.
+    dropped = []
+    if news_type:
+        req = [t.strip() for t in str(news_type).split(",") if t.strip()]
+        news_type = ",".join(t for t in req if t in _NEWS_TYPES) or None
+        dropped = [t for t in req if t not in _NEWS_TYPES]
+    res = mdx().brief(megatrend=megatrend, news_type=news_type, country=country, aspect=aspect,
+                      gics=gics, window=window, from_=from_, to=to, interval=interval, lang=lang)
+    if dropped and isinstance(res, dict):
+        res["_warning"] = (f"Ignored invalid news_type(s) {dropped} — not real categories. Valid names: "
+                           f"{sorted(_NEWS_TYPES)}. (There is no 'monetary_policy'; use 'macro_economic'.)")
+    return res
 
 _SIM_STRONG = 0.68   # cosine ≥ this = a solid semantic match. ⚠️ CALIBRATE against real off-topic queries.
 _SIM_WEAK = 0.58     # below this = essentially no match
@@ -307,6 +432,47 @@ def stock_impact(ticker: str, direction: Optional[str] = None, limit: Optional[i
     older ranges return nothing (no coverage, not 'no news'; price/volatility history goes back decades)."""
     return _ser(mdx().stock(ticker).news(direction=direction, collapse=collapse,
                                          from_=from_ or _win(window), to=to, limit=_lim(limit)).to_list())
+
+@mcp.tool(title="Options Sentiment", annotations=_RO)
+def options_sentiment(ticker: str, style: str = "plain") -> dict:
+    """What the US OPTIONS MARKET is saying about `ticker` — the POSITIONING lens (~547 popular US
+    optionable names, stocks + ETFs). Pairs with the news→impact read: for "how is <X> doing?" fetch
+    THIS *and* `stock_impact`/`news_feed` and fuse them (news = what's happening + WHY; options = how the
+    market is positioned — direction lean via put/call, fear/greed via skew, IV level, dealer-gamma
+    stability, max-pain pinning, notable expiries). For a name the user HOLDS it shows how the market is
+    hedging that position. Broad-INDEX question → pass the liquid ETF proxy: S&P 500→`SPY`, Nasdaq 100→
+    `QQQ`, Dow→`DIA`, Russell 2000→`IWM`, 20y Treasuries→`TLT`, Gold→`GLD`. `ticker` = bare US symbol or
+    `SYMBOL.US` (`NVDA`/`NVDA.US`); US-only. `style` = `plain` (everyday language, default) | `technical`.
+    ⚠️ Narrate from the payload's `sentiment._guide`: read straight off each signal's `read` + `because`,
+    DON'T recompute, DON'T compare raw O/S or IV across assets, `baseline_pending`/`level` ≠ "unusual"
+    (only a `_percentile`/`_rank` read flags unusual), and the VERDICT is YOURS (opana stops at
+    interpretation). Not covered → `{covered:false, note}`: say options data isn't available for it and
+    use the news/impact read instead — never fabricate an options view."""
+    try:
+        return mdx()._get(f"/v1/options/{ticker}/sentiment", {"style": style}).data
+    except NotFoundError as e:
+        return {"covered": False, "symbol": ticker, "note": str(e) or (
+            f"No options-sentiment for '{ticker}' — opana covers ~547 US-listed optionable names. Don't "
+            "fabricate an options view; use news/impact for the read, and (if relevant) note options "
+            "coverage isn't available for this name.")}
+
+@mcp.tool(title="Find Stock / Resolve Ticker", annotations=_RO)
+def find_stock(q: str, country: Optional[str] = None, limit: Optional[int] = None) -> list:
+    """Resolve ANY free-text — a company NAME, a ticker (full or prefix), an alias, a phrase, or a
+    non-English name — to the EXACT MarketDX `ticker`. 🔴 Use this BEFORE asset_pulse / stock_impact
+    whenever you're not 100% sure of the exact ticker — ESPECIALLY for NON-US companies: MarketDX uses
+    its OWN exchange suffixes (Korea = `.KO` NOT Yahoo's `.KS`; Taiwan = `.TW`; etc.) so GUESSING a
+    foreign ticker usually 404s. Also resolves commodities (gold→`GOLD`), crypto (`BTC`), and off-coverage
+    PRIVATE companies (openai→`oc:52`). Matching = lexical first (symbol/prefix/alias/name), then a
+    SEMANTIC fallback so a phrase ('chip maker') or another language still resolves. Returns matches with
+    a ready-to-use `ticker` (paste straight into asset_pulse/stock_impact), `type` (stock/etf/commodity/
+    crypto/forex/private), `name`, `country`, `market_cap_usd`, `similarity`. `country` restricts to a
+    market. Take the top match; for a US mega-cap you already know the ticker (AAPL) you can skip this."""
+    rows = mdx()._get("/v1/stocks", {"q": q, "country": country,
+                                     "limit": _lim(limit, default=8, ceiling=25)}).data.get("matches", [])
+    keep = ("ticker", "symbol", "name", "type", "country", "exchange", "market_cap_usd", "similarity",
+            "match_type", "mode")
+    return [{k: m[k] for k in keep if k in m} for m in rows]
 
 @mcp.tool(title="Theme Players", annotations=_RO)
 def theme_players(theme: str, country: str, exposure: Optional[str] = None,
@@ -380,13 +546,486 @@ def portfolio_context(portfolio_id: int, from_: Optional[str] = None, to: Option
     • Facts, not advice. Observe; do NOT tell them to buy/sell/rebalance/time — hand the judgment back."""
     return mdx().portfolio_context(portfolio_id, from_=from_, to=to, window=window, snapshots=snapshots)
 
+# WHICH surface authored a note — read from the MCP `clientInfo` handshake, NEVER a model argument (an
+# LLM must not be trusted to self-report provenance). Known clients → a stable token; unknown → a safe slug.
+_AGENT_ALIASES = (("claude", "claude"), ("chatgpt", "chatgpt"), ("openai", "chatgpt"),
+                  ("cursor", "cursor"), ("marketdx", "marketdx-web"))
+
+def _client_agent(ctx: Optional[Context]) -> Optional[str]:
+    try:
+        raw = (ctx.session.client_params.clientInfo.name or "").strip().lower()
+    except Exception:
+        return None
+    if not raw:
+        return None
+    for needle, token in _AGENT_ALIASES:
+        if needle in raw:
+            return token
+    slug = "".join(c if (c.isalnum() or c in "._-") else "-" for c in raw)[:40].strip("-")
+    return slug or None
+
+@mcp.tool(title="Save Note", annotations=_WRITE)
+def write_note(subject: str, body: str, summary: Optional[str] = None,
+               note_type: Optional[str] = None, category: Optional[str] = None,
+               tags: Optional[List[str]] = None,
+               stocks: Optional[List[str]] = None,
+               mentioned_stocks: Optional[List[str]] = None,
+               megatrend_ids: Optional[List[int]] = None,
+               gics: Optional[List[str]] = None,
+               portfolio_id: Optional[int] = None,
+               ctx: Context = None) -> dict:
+    """🔴 WRITE — save a NOTE to the user's account (this PERSISTS data; it is NOT a read/lookup). Typical
+    flow: FIRST give the user your complete answer as usual, THEN — as the final step of the turn — call
+    `write_note` once to keep it.
+
+    CONTENT:
+      • `subject` — a short title you compose (≤200 chars).
+      • `body` — the substance to keep: your full answer, or a clean self-contained distillation (you are
+        RE-WRITING it here, so it need not be byte-identical to what you showed — make it stand alone).
+      • `summary` — a 1–2 sentence gist for scanning later.
+      • `note_type` — one of `thesis` / `reference` / `snapshot` / `decision` / `watchlist`.
+      • `category` — a free bucket, e.g. `research` / `portfolio` / `idea`.
+      • `tags` — a few keywords for retrieval.
+
+    ENTITY LINKS — this is what makes the note findable later by interest and joinable to the graph, so
+    fill them whenever the note is about specific things. Pass what you ALREADY resolved this turn; the
+    server canonicalizes and links them (and tells you what linked in the response):
+      Pass the identifiers you ALREADY picked this turn (same ones you used to answer) — do NOT re-resolve:
+      • `stocks` — the MarketDX ticker(s) this note is ABOUT (its subjects) — the one you PICKED from
+        `find_stock` (e.g. `005930.KO`); a bare US symbol (`AAPL`) also works.
+      • `mentioned_stocks` — tickers merely referenced, not the focus.
+      • `megatrend_ids` — the megatrend node id(s) you settled on: from `find_megatrend` (returns
+        {id,name,tier} candidates — YOU pick) or a theme tool's output (`theme_pulse` returns the resolved
+        `megatrend.id`). Reuse that id — never guess a number.
+      • `gics` — 6-digit GICS sector code(s), reused from a theme tool's output (`theme_pulse` → `gics_code`).
+      • `portfolio_id` — if the note is about one of the user's portfolios (from `list_portfolios`).
+      If you're unsure of an entity, leave it out or just name it in `tags`/`body` — anything unresolved is
+      preserved verbatim, nothing is lost.
+
+    WHEN TO SAVE — this is the investor's knowledge base; CAPTURE substantive investment content generously
+    (reference/understanding, a dated market-read WITH its 'why', a thesis/decision, curated research). Value
+    is realized on RETRIEVAL, so lean toward keeping. SKIP only the noise floor: chit-chat/thanks, trivial
+    lookups ("what's the ticker?"), or off-topic non-investment content (save that only if explicitly asked).
+    An explicit "save this / จดไว้" → always save. Otherwise, if the content is note-worthy, briefly OFFER to
+    keep it — don't nag on every turn, and don't save pure filler. Owner-scoped. Returns `{id, created_at,
+    linked}` where `linked` confirms what was tied to the graph (resolved ids + any `unresolved` names)."""
+    payload = {k: v for k, v in {"subject": subject, "body": body, "summary": summary,
+                                 "type": note_type, "category": category, "tags": tags,
+                                 "stocks": stocks, "mentioned_stocks": mentioned_stocks,
+                                 "megatrend_ids": megatrend_ids, "gics_codes": gics,
+                                 "portfolio_id": portfolio_id,
+                                 "agent": _client_agent(ctx)}.items() if v is not None}
+    r = mdx()._http._client.post("/v1/notes", json=payload)
+    if r.is_success:
+        return r.json()
+    try:
+        j = r.json(); msg = j.get("error") or r.text; note = j.get("note")
+    except Exception:
+        msg = r.text or f"HTTP {r.status_code}"; note = None
+    raise ValueError(f"save failed: {msg}{' — ' + note if note else ''}")
+
+@mcp.tool(title="My Notes", annotations=_RO)
+def query_notes(q: Optional[str] = None, stock: Optional[str] = None, theme: Optional[str] = None,
+                gics: Optional[str] = None, tag: Optional[str] = None, note_type: Optional[str] = None,
+                since: Optional[str] = None, limit: Optional[int] = None) -> dict:
+    """Recall the USER'S OWN saved notes — their personal investment knowledge base (owner-scoped, only
+    ever their notes). Two combinable ways:
+      • SEMANTIC recall via `q` — natural language ("what did I say about foundry manufacturing?"); results
+        are ranked by MEANING with a `similarity` score (cross-language OK).
+      • Structured filters: `stock` (a ticker → their notes about it), `theme` (a sector/trend NAME →
+        resolved to the megatrend, subtree included), `gics` (6-digit code), `tag`, `note_type`
+        (thesis/reference/snapshot/decision/watchlist), `since` (e.g. '30d').
+    Returns note SUMMARIES + linked entities + `similarity` — NOT the full body (call `get_note(id)` for
+    that). `limit` default 10 (max 50).
+    🔴 FUSE personal + live: when the user asks about something they've likely noted, pair this with the
+    live read — e.g. `asset_pulse(NVDA)` AND "your NVDA thesis from last week said …". That personal-
+    knowledge + live-graph combination is the whole point of the notes layer."""
+    params: dict = {}
+    if q:
+        params["q"] = q
+    if stock:
+        params["stock"] = stock
+    if theme:
+        try:
+            hits = resolve_themes([theme]).get(theme) or []
+            if hits:
+                params["megatrend"] = hits[0]["id"]
+        except Exception:
+            pass
+    if gics:
+        params["gics"] = gics
+    if tag:
+        params["tag"] = tag
+    if note_type:
+        params["type"] = note_type
+    if since:
+        params["since"] = since
+    params["limit"] = _lim(limit, default=10, ceiling=50)
+    return mdx()._get("/v1/notes", params).data
+
+@mcp.tool(title="Read Note", annotations=_RO)
+def get_note(note_id: int) -> dict:
+    """The FULL saved note (including its `body`) by id — owner-scoped. Use after `query_notes` when you
+    need the complete content, not just the summary."""
+    return mdx()._get(f"/v1/notes/{note_id}", {}).data
+
+# NB: portfolio_card / portfolio_nav IMAGE tools (rendered PNG via /v1/portfolios/:id/{card,nav}) were
+# built + removed 2026-07-17 — Claude custom connectors DON'T render inline tool-result images (same gate
+# as MCP Apps UI), so a 120KB PNG just burned context without displaying. The API endpoints stay; re-add
+# these tools if a client gains connector-image rendering or via a Connector Directory listing.
+
 # ── COMPOSITE tools (whole multi-step pipeline server-side, ONE call) ─────────
-@mcp.tool(title="Resolve Themes", annotations=_RO)
+# Composites bundle several endpoints → keep each row APPROPRIATELY light so the bundle stays
+# context-friendly (the raw impact row carries a huge `raw` blob; options a big per_bucket audit).
+_ART_KEEP = ("title", "brief_text", "url", "publisher", "published_at", "impact", "news_types",
+             "impact_score", "dup_count")
+def _slim_articles(rows, n=6):
+    """Keep only the narratable fields of an impact-article row (drop the big `raw` blob + ids) + cap N."""
+    return [{k: a[k] for k in _ART_KEEP if k in a} for a in (rows or [])[:n]]
+
+_REL_KEEP = ("name", "symbol", "exchange", "country", "gic_code")
+def _slim_relations(rows, n=5):
+    """Keep just enough of a competitor/peer to judge sector-overlap (name/symbol/exchange/country)."""
+    return [{k: c[k] for k in _REL_KEEP if c.get(k) is not None} for c in (rows or [])[:n]]
+
+def _brief_slim(b):
+    """Keep a brief's breadth SUBSTANCE (pulse summary + winners/losers + top_stories) for a multi-angle
+    bundle; drop the heavy chart-series + aspect_heatmap + top_entities/top_assets (get the full brief via
+    `brief`/`theme_summary`)."""
+    if not isinstance(b, dict):
+        return b
+    out = {k: b[k] for k in ("applied_scope", "window", "winners", "losers", "top_stories") if k in b}
+    p = b.get("pulse") or {}
+    out["pulse"] = {k: p[k] for k in ("story_count", "net_direction", "pos_share") if k in p}
+    return out
+
+def _slim_context(ctx: dict) -> dict:
+    """Drop CHART-only / redundant bulk from a portfolio_context for the pulse bundle — the analytical
+    substance (summary, performance, attribution, positions, allocation, concentration, flags, meta,
+    closed_positions) stays; only the raw nav sparklines, per-position value_trend, and point-in-time
+    `composition` snapshots go (call `portfolio_context` if you need those)."""
+    c = dict(ctx)
+    c.pop("composition", None)
+    for blk in ("lifetime", "recent", "window"):
+        if isinstance(c.get(blk), dict):
+            c[blk] = {k: v for k, v in c[blk].items() if k not in ("nav", "nav_trend")}
+    if isinstance(c.get("positions"), list):
+        c["positions"] = [{k: v for k, v in p.items() if k != "value_trend"} for p in c["positions"]]
+    return c
+
+@mcp.tool(title="Asset Pulse", annotations=_RO)
+def asset_pulse(ticker: str, window: Optional[str] = None, limit: Optional[int] = None,
+                style: str = "plain") -> dict:
+    """⭐ THE tool for "how is <ticker> doing right now?" — gathers EVERY lens in ONE call so the answer
+    is never half-informed (the whole point: you decide ONCE, the server guarantees completeness). Fans
+    out server-side, in parallel, to:
+      • `price` — the LEVEL + how it's moving: windowed changes (1w→1y), 52-week range, drawdown from the
+        peak, realized-vol percentile (is today's vol high vs its OWN year), volume conviction — digested
+        with plain-language `*_read` labels (split/div-adjusted). The number that makes news+options actionable.
+      • `impact` — the ticker's news→impact feed (what moved it + direction + aspect + WHY; == stock_impact)
+      • `options` — the US options market's positioning (fear/greed via skew, put/call lean, dealer-gamma
+        stability, max-pain pinning, notable expiries; == options_sentiment)
+      • `relationships` — competitors + peers (== relationships) → tells you if a move is SECTOR-WIDE
+        (rivals/peers moving too) or IDIOSYNCRATIC (this name only)
+    PREFER THIS over calling stock_impact / options_sentiment separately for any "how is X doing / what's
+    up with X / X update" ask — it guarantees BOTH lenses are present; use the individual tools only to
+    DRILL into one afterwards. `ticker` = a company (`AAPL` / `NVDA.US`) or a market INDEX via its liquid
+    ETF proxy (S&P 500→`SPY`, Nasdaq 100→`QQQ`, Dow→`DIA`, Russell 2000→`IWM`, 20y UST→`TLT`, Gold→`GLD`).
+    `window` = 7d/30d/90d/180d/1y/mtd/qtd/ytd — scopes the news recency. Then SYNTHESIZE a multi-lens read:
+    the sharpest insight is often where NEWS and OPTIONS POSITIONING **diverge** (e.g. calm news but
+    options paying up for downside). Narrate `options` from ITS `_guide` (read+because, no recompute, no
+    cross-asset O/S·IV compare, verdict is yours). `options.covered=false` (non-US / not in the ~547) →
+    answer from `impact` and say options isn't available; never fabricate positioning. If the user HOLDS
+    the ticker, tie the read to their position (facts, not advice)."""
+    cli = mdx()  # bind the caller's client in THIS thread — the contextvar key isn't set inside workers
+    frm = _win(window)
+    def _impact():
+        try:
+            rows = _ser(cli.stock(ticker).news(collapse=True, from_=frm, limit=_lim(limit, default=6)).to_list())
+            return {"articles": _slim_articles(rows, 6)}
+        except Exception as e:  # unknown ticker / no impact rows — degrade, don't kill the bundle
+            return {"error": str(e), "articles": []}
+    def _options():
+        try:  # single asset → return options FULL (it's only ~10KB; keeps _guide.audience so the plain-
+            return cli._get(f"/v1/options/{ticker}/sentiment", {"style": style}).data  # language mandate survives
+        except NotFoundError as e:
+            return {"covered": False, "note": str(e)}
+        except Exception as e:
+            return {"covered": False, "note": f"options lookup failed: {e}"}
+    def _relations():
+        try:
+            ref = cli.stock(ticker)
+            return {"competitors": _slim_relations(_ser(ref.competitors(limit=5).to_list())),
+                    "peers": _slim_relations(_ser(ref.peers(limit=5).to_list()))}
+        except Exception as e:
+            return {"error": str(e), "competitors": [], "peers": []}
+    def _price():
+        try:  # the LEVEL lens — digested, already-narrated price features (1w→1y changes, 52w range,
+            return cli._get(f"/v1/stocks/{ticker}/prices", {}).data  # drawdown, realized-vol percentile, volume conviction; *_read labels)
+        except NotFoundError as e:
+            return {"note": f"no price history: {e}"}
+        except Exception as e:  # endpoint not shipped yet / lookup failed → degrade, don't kill the bundle
+            return {"note": f"price unavailable: {e}"}
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        fi, fo, fr, fp = ex.submit(_impact), ex.submit(_options), ex.submit(_relations), ex.submit(_price)
+        impact, options, relations, price = fi.result(), fo.result(), fr.result(), fp.result()
+    return {
+        "ticker": ticker, "window": window or "recent",
+        "price": price, "impact": impact, "options": options, "relationships": relations,
+        "_guide": ("Synthesize a MULTI-LENS read — do NOT answer from one lens. `price` = the LEVEL + how "
+                   "it's moving (windowed changes, how far below the 52w peak = `drawdown_from_52w_high_pct`, "
+                   "is today's vol high vs its OWN year = `realized_vol_percentile_1y`, accumulation vs "
+                   "distribution = `up_down_volume_ratio_1mo`); `impact` = what the news did (+ why); "
+                   "`options` = how the options market is positioned; `relationships` = is the move "
+                   "SECTOR-WIDE (peers/rivals moving too) or IDIOSYNCRATIC? Lead with where the lenses AGREE "
+                   "or DIVERGE (divergence is the insight — e.g. strong news but price −14% from the peak). "
+                   "QUOTE price `*_read` labels directly (pre-computed, don't re-derive). 🔴 EXPLAIN "
+                   "`options` FOR A NON-EXPERT (follow the options payload's own `_guide.audience`) — "
+                   "translate EVERY options term (put/call, IV, gamma, skew, max-pain, O/S) into plain "
+                   "everyday words, keep a number only if it helps a layperson; do NOT dump jargon. If "
+                   "`options.covered` is false, answer from `impact`+`price`; `price.note` present → say "
+                   "price isn't available; never fabricate."),
+    }
+
+@mcp.tool(title="Stock Prices", annotations=_RO)
+def stock_prices(ticker: str, to: Optional[str] = None, from_: Optional[str] = None) -> dict:
+    """Price context for a tradable ticker (stock / ETF / index-ETF / forex / crypto / commodity), split &
+    dividend-ADJUSTED — a DIGESTED read, NOT a raw bar series: windowed changes (1w/1mo/3mo/ytd/1y), 52-week
+    range + `drawdown_from_52w_high_pct` (how far below the peak), realized vol + `realized_vol_percentile_1y`
+    (is today's vol high vs its OWN year), trend vs SMA50/200, volume conviction (`up_down_volume_ratio_1mo`,
+    rvol). `*_read` fields are ready plain-language labels — quote them, don't re-derive. Reach for this on
+    "is it cheap/extended / how has it moved / why is it dropping" — the LEVEL that makes a news+options read
+    actionable (or use `asset_pulse` to get price + news + options in one). `to` = as-of date (point-in-time,
+    YYYY-MM-DD, features as of that day); `from_` bounds history (narrowing below ~1y nulls the long windows).
+    For a SECTOR/theme (not one ticker) use `theme_pulse`, not this."""
+    return mdx()._get(f"/v1/stocks/{ticker}/prices", {"to": to, "from": from_}).data
+
+@mcp.tool(title="Batch Stock Prices", annotations=_RO)
+def stock_prices_batch(tickers: List[str], to: Optional[str] = None, from_: Optional[str] = None) -> dict:
+    """The same digested price context for UP TO 50 tickers in ONE call — a watchlist / cohort snapshot
+    ("which of these names are most extended, or deepest in drawdown"). Returns `results` (in input order)
+    + `unresolved` (unknown / no-price-history tickers). `to`/`from_` as in `stock_prices`."""
+    return mdx()._get("/v1/stocks/prices", {"tickers": ",".join(tickers), "to": to, "from": from_}).data
+
+def _options_brief(o: Optional[dict]) -> dict:
+    """Compact an options-sentiment payload for a bundle: keep positioning_score + flow + per-horizon
+    metrics (IV/gex/pcr/skew/max_pain, ~0.7KB) + read/because + slim key_dates; DROP only the big
+    `per_bucket` audit block (~4.6KB → get it from `options_sentiment`) + the redundant top-level `_guide`
+    (the composite carries its own), so it stays context-light even across N holdings."""
+    if not o or o.get("covered") is False:
+        return {"covered": False, "note": (o or {}).get("note")}
+    s = o.get("sentiment") or {}
+    hz = {k: {"positioning_score": v.get("positioning_score"),
+              "metrics": v.get("metrics"),   # the raw numbers (IV/gex/pcr/skew/max_pain) — only ~0.7KB
+              "signals": [{"read": g.get("read"), "because": g.get("because")}
+                          for g in (v.get("signals") or [])]}
+          for k, v in (s.get("horizons") or {}).items()}
+    return {"positioning_score": s.get("positioning_score"), "stale": o.get("stale"),
+            # audience = the style=plain narration mandate ("explain for a non-expert, no jargon"). KEEP it
+            # — dropping it (with the rest of _guide) is what made the LLM narrate options technically.
+            "audience": (s.get("_guide") or {}).get("audience"),
+            "flow": s.get("flow"), "horizons": hz,
+            "key_dates": [{"expiry": d.get("expiry"), "dte": d.get("dte"), "read": d.get("read"),
+                           "because": d.get("because")} for d in (s.get("key_dates") or [])]}
+
+@mcp.tool(title="Portfolio Pulse", annotations=_RO)
+def portfolio_pulse(portfolio_id: int, top_n: int = 3, window: Optional[str] = None) -> dict:
+    """⭐ THE tool for "how is my portfolio doing?" / "how is my <holding> doing?" — the owner-scoped
+    portfolio snapshot FUSED with the market lenses on its biggest positions, in ONE call. Returns
+    `context` (holdings / performance / attribution / composition / flags — == portfolio_context) PLUS
+    `holdings_pulse`: for the TOP-`top_n` positions by value, a COMPACT news→impact + options-positioning
+    read, so you can explain WHAT is happening to the book, not just its numbers. Prefer this over
+    `portfolio_context` alone whenever the user asks how the portfolio (or a position in it) is DOING;
+    use `portfolio_context` for pure numbers/analytics (a period's sharpe, attribution, composition).
+    Drill into any single holding with `asset_pulse(symbol)` for full detail. `top_n` default 3 (cap 5 —
+    each holding adds credits + latency). `window` scopes the news recency. `portfolio_id` from
+    `list_portfolios`; 404 if not the user's. Analyze as an analyst (marketdx://policy PORTFOLIO)."""
+    cli = mdx()  # bind the caller's client in THIS thread (contextvar not set inside workers)
+    frm = _win(window)
+    ctx = cli.portfolio_context(portfolio_id)  # owner-scoped; surfaces 404 if not the user's
+    nav = (ctx.get("summary") or {}).get("nav") or 0
+    positions = [p for p in (ctx.get("positions") or []) if p.get("symbol")]
+    top = sorted(positions, key=lambda p: abs(p.get("value") or 0), reverse=True)[:max(1, min(top_n, 5))]
+    def _holding(p):
+        sym = p["symbol"]
+        try:
+            imp = _slim_articles(_ser(cli.stock(sym).news(collapse=True, from_=frm, limit=3).to_list()), 3)
+        except Exception as e:
+            imp = {"error": str(e)}
+        try:
+            opt = _options_brief(cli._get(f"/v1/options/{sym}/sentiment", {"style": "plain"}).data)
+        except NotFoundError:
+            opt = {"covered": False}
+        except Exception as e:
+            opt = {"covered": False, "note": str(e)}
+        w = round((p.get("value") or 0) / nav * 100, 1) if nav else None
+        return {"symbol": sym, "name": p.get("name"), "weight_pct": w, "side": p.get("side"),
+                "impact": imp, "options": opt}
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=min(5, len(top) or 1)) as ex:
+        holdings_pulse = list(ex.map(_holding, top))
+    return {
+        "context": _slim_context(ctx), "top_n": len(top), "holdings_pulse": holdings_pulse,
+        "_guide": ("Analyze as a research analyst (marketdx://policy PORTFOLIO): LEAD with context.flags / "
+                   "the dominant concentration / drawdown; explain the return from context…attribution; "
+                   "THEN use holdings_pulse to say WHAT news + options positioning is driving the biggest "
+                   "positions (tie each to its weight_pct). Narrate options from read/because; "
+                   "covered=false → skip options for that name. Facts, not advice — hand the call back."),
+    }
+
+@mcp.tool(title="Theme Pulse", annotations=_RO)
+def theme_pulse(query: str, window: str = "30d") -> dict:
+    """⭐ THE tool for "how is <a SECTOR / INDUSTRY / THEME> doing?" (semiconductors, tech, energy, banks,
+    AI, clean energy, …) — a concept that spans MULTIPLE INDEPENDENT taxonomies. It resolves the concept
+    and fans out, in ONE call, to EVERY angle that applies (skipping ones that don't), each a SEPARATE
+    lens over a DIFFERENT dataset — present them separately, do NOT merge:
+      • `theme` — the MarketDX MEGATREND cohort (our proprietary trend tree) → a brief (pulse / winners /
+        losers / top stories). Membership = companies EXPOSED to the trend (can cross GICS sectors).
+      • `gics` — the standard GICS SECTOR cohort → a brief. A DIFFERENT membership (strict sector
+        classification) → genuinely different winners/losers than the megatrend.
+      • `asset` — the tradable ETF's OPTIONS positioning (SMH/XLK/GLD/…) — fear-greed / dealer-gamma.
+    Applicable angles VARY: 'semiconductors' → all 3; 'gold' → asset only (GLD, no GICS/megatrend for a
+    commodity); 'AI' → theme (no single AI ETF covered). `skipped` lists the angles that didn't resolve.
+    ⚠️ Use `asset_pulse(ticker)` for a SINGLE company/ETF; use `theme_pulse` for a sector/theme CONCEPT.
+    `window` = 7d/30d/90d/1y/…"""
+    cli = mdx()
+    # ── resolve the concept into its (up to 3) angle keys — skip any that don't resolve ──
+    mt = _to_node(query)
+    megatrend = mt if isinstance(mt, int) else None
+    gics = etf = None
+    try:
+        r = _deepseek(
+            "Map a market concept to standard classifications. Return JSON "
+            '{"gics": <best-matching GICS sector/industry code as a digit string, or null>, '
+            '"etf": <the ONE best ticker from the provided covered list, or null>}. '
+            "gics = the standard GICS code (e.g. semiconductors->'453010', energy->'10', banks->'4010', "
+            "software->'451030'); null if the concept is NOT a GICS sector/industry (a single commodity "
+            "like gold, a cross-sector trend like AI, a country). etf = the ticker whose theme matches the "
+            "concept; null if none fits well.",
+            f"Concept: {query}\nCovered ETFs: " + ", ".join(f"{k}={v}" for k, v in _COVERED_ETFS.items()),
+            0.0)
+        g = str(r.get("gics") or "").strip()
+        gics = g if (g.isdigit() and 2 <= len(g) <= 8) else None
+        etf = r.get("etf") if r.get("etf") in _COVERED_ETFS else None
+    except Exception:
+        pass
+
+    def _theme():
+        if megatrend is None:
+            return None
+        try:
+            return {"megatrend": _node_out(megatrend), "brief": _brief_slim(cli.brief(megatrend=megatrend, window=window))}
+        except Exception as e:
+            return {"error": str(e)}
+    def _gics():
+        if not gics:
+            return None
+        try:
+            return {"gics_code": gics, "brief": _brief_slim(cli.brief(gics=gics, window=window))}
+        except Exception as e:
+            return {"error": str(e), "gics_code": gics}
+    def _asset():
+        if not etf:
+            return None
+        try:
+            return {"etf": etf, "concept": _COVERED_ETFS.get(etf),
+                    "options": _options_brief(cli._get(f"/v1/options/{etf}/sentiment", {"style": "plain"}).data)}
+        except NotFoundError:
+            return {"etf": etf, "covered": False}
+        except Exception as e:
+            return {"error": str(e)}
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        ft, fg, fa = ex.submit(_theme), ex.submit(_gics), ex.submit(_asset)
+        angles = {k: v for k, v in {"theme": ft.result(), "gics": fg.result(), "asset": fa.result()}.items()
+                  if v is not None}
+    return {
+        "query": query, "window": window, "angles": angles,
+        "skipped": [k for k in ("theme", "gics", "asset") if k not in angles],
+        "_guide": ("Present each angle SEPARATELY — they are DIFFERENT cohorts: `theme` = MarketDX "
+                   "megatrend membership (trend-exposed, may cross sectors); `gics` = standard GICS sector "
+                   "classification (different winners/losers); `asset` = the tradable ETF's options "
+                   "positioning. Do NOT merge them. `skipped` angles don't apply to this concept. Lead "
+                   "with the sharpest cross-angle read (e.g. where the megatrend and the GICS sector "
+                   "diverge, or where options positioning contradicts the news breadth). Narrate options "
+                   "from its read/because for a non-expert."),
+    }
+
+@mcp.tool(title="Screen Stocks", annotations=_RO)
+def screen_stocks(megatrend: Optional[str] = None, gics: Optional[str] = None,
+                  country: Optional[str] = None, direction: Optional[str] = None,
+                  aspect: Optional[str] = None, order_by: Optional[str] = None,
+                  min_impact: Optional[int] = None, min_relevance: Optional[float] = None,
+                  min_market_cap_usd: Optional[float] = None, since: Optional[str] = None,
+                  from_: Optional[str] = None, to: Optional[str] = None,
+                  gate: Optional[str] = None, limit: Optional[int] = None) -> dict:
+    """⭐ "Which stocks in <a group> are INTERESTING / winning / losing / most-talked-about?" — the
+    news-driven impact SCREENER. Ranks the companies in a scope by how the news is hitting them, so you
+    can lead with the WINNERS-vs-LOSERS split, not a flat list.
+      • Scope (≥1 REQUIRED — it never scans the whole universe): `megatrend` (one OR SEVERAL trend
+        names/ids as csv — resolved for you in one pass, same as theme_pulse: 'foundry', 'foundry,hbm',
+        '56020000'), `gics` (csv GICS prefixes from your own knowledge: '453010' semis, '2550' retail,
+        '201010' aerospace/defense, '352010' biotech), `country` (csv ISO-2; for a REGION pass every
+        country — Asia='CN,JP,KR,TW,HK,IN,SG'). Combine freely — "China+Taiwan foundry & HBM names" = ONE
+        call: country='CN,TW', megatrend='foundry,hbm'.
+      • `order_by` = `news_count` (default — most attention) | `relevance` (most central to its news) |
+        `market_cap` (biggest).
+      • `direction` = `pos` → winners only · `neg` → losers/at-risk only · omit → all, each with its own
+        net_direction. `aspect` = keep only a channel (demand/competition/capital/…).
+      • Quality floors: `min_impact` (1–5 article-importance), `min_relevance` (0–1 centrality),
+        `min_market_cap_usd`, `since` ('7d'). `gate` (megatrend scope only) = `both` (default, strict:
+        member AND epicenter) | `membership` (looser, more leakage).
+      • TIME WINDOW: `since='7d'` = trailing N days ("this week"=7d, "this month"=30d). For a SPECIFIC past
+        window use `from`/`to` (YYYY-MM-DD): "last week"→the two dates, "as of <date>"→`to`. ⚠️ per-stock
+        IMPACT scoring only exists from ~2026-07-03 onward, so any window BEFORE early-July-2026 (a Q1/March
+        query) returns EMPTY — say so plainly ("no impact data that far back"); do NOT present empty as
+        "nothing happened".
+    Each row = `{symbol, name, country, gic_code, market_cap_usd, impact:{news_count, pos, neg, ambiguous,
+    net_direction, top_relevance, aspects, top_reason}}` — each row carries `market_cap_usd`, so for a
+    constraint we DON'T support (e.g. "SMALL-cap only", a max size) return the cohort and filter/annotate
+    from that field + your own knowledge. `direction_split` pre-tallies the cohort's winners/losers so you
+    can open with it. If a scope term isn't a MarketDX taxonomy node (a niche theme like 'protein
+    engineering'), map it to the nearest `gics`/`country` you CAN pass and lean on your world knowledge for
+    the rest. For ONE ticker use `asset_pulse`; for a sector's overall pulse use `theme_pulse`; use THIS to
+    rank the NAMES inside a group. `limit` default 10 (max 50)."""
+    mt = _to_nodes(megatrend) if megatrend else None
+    if not (mt or gics or country):
+        return {"error": "screen_stocks needs at least one scope: megatrend (node id from find_megatrend), gics, or country."}
+    params = {"megatrend": mt, "gics": gics, "country": country, "direction": direction,
+              "aspect": aspect, "order_by": order_by, "min_impact": min_impact,
+              "min_relevance": min_relevance, "min_market_cap_usd": min_market_cap_usd,
+              "since": since, "from": from_, "to": to,
+              "gate": gate, "limit": _lim(limit, default=10, ceiling=50)}
+    rows = mdx()._get("/v1/stocks", params).data.get("stocks", [])
+    keep = ("stock_id", "symbol", "ticker", "name", "country", "gic_code", "market_cap_usd", "impact")
+    stocks = [{k: r[k] for k in keep if k in r} for r in rows]
+    def _nd(r):
+        return ((r.get("impact") or {}).get("net_direction")) or "n/a"
+    split = {"total": len(stocks),
+             "net_positive": sum(1 for r in stocks if _nd(r) == "pos"),
+             "net_negative": sum(1 for r in stocks if _nd(r) == "neg"),
+             "ambiguous": sum(1 for r in stocks if _nd(r) == "ambiguous")}
+    return {
+        "scope": {k: v for k, v in {"megatrend": mt, "gics": gics, "country": country}.items() if v},
+        "order_by": order_by or "news_count", "direction": direction,
+        "direction_split": split, "stocks": stocks,
+        "_guide": ("LEAD with the winners-vs-losers split (`direction_split` + each row's `impact."
+                   "net_direction` with its pos/neg counts), NOT a flat ranked dump. Surface any "
+                   "net-NEGATIVE standouts SEPARATELY — they're the contrarian / at-risk names. For each "
+                   "name explain WHY it's interesting from its `impact.top_reason` + `aspects` (the "
+                   "channels), not just that it ranks high. If a name has high news_count but a large neg "
+                   "count too, call it CONTESTED. Research-analyst voice — observations, not advice."),
+    }
+
+@mcp.tool(title="Find Megatrend", annotations=_RO)
 def resolve_themes(terms: List[str]) -> dict:
-    """Map trend-language ('HBM', 'foundry', 'cancer drug', 'robotaxi') to the specific taxonomy
-    node(s) at the right level (may be tier-1, -2, or -3; may be several for a polysemous term).
-    Gazetteer first (deterministic, free), deepseek 3-tier match + deterministic solve for the rest.
-    Returns {term: [{id,name,tier},...]}. Call this before theme queries; don't flatten/guess yourself."""
+    """🔴 The MEGATREND counterpart of `find_stock`: map trend-language ('HBM', 'foundry', 'robotaxi',
+    'robotics') to the specific taxonomy node(s) — returns CANDIDATES for YOU to pick from (exactly like
+    `find_stock` returns candidate tickers). May be tier-1/-2/-3; may be several for a polysemous term.
+    Gazetteer first (deterministic, free), deepseek 3-tier match for the rest. Returns
+    {term: [{id,name,tier},...]}. Call this to get a megatrend `id`, then REUSE the id you pick downstream
+    (theme queries, `write_note`) — don't flatten or guess the number yourself."""
     tier1 = [n for n in _taxonomy()["nodes"] if n["tier"] == 1]
     result: dict = {}
     for term in terms:
@@ -469,7 +1108,10 @@ def _resource_metadata(scope) -> dict:
         "resource": os.environ.get("MCP_RESOURCE_URL") or f"{origin}/mcp",
         "authorization_servers": [origin],   # we proxy the AS metadata (see block comment)
         "bearer_methods_supported": ["header"],
-        "scopes_supported": ["openid", "email", "profile"],
+        # offline_access is REQUIRED so the client asks WorkOS for a refresh token and can renew the
+        # access token silently — without it a spec-compliant client (Claude) never requests refresh
+        # and must reconnect every time the ~1h access token expires. WorkOS supports it.
+        "scopes_supported": ["openid", "email", "profile", "offline_access"],
     }
 
 async def _as_metadata(scope) -> dict:
@@ -483,20 +1125,32 @@ async def _as_metadata(scope) -> dict:
                 return json.loads(r.read())
         try:
             _AS_CACHE.update(await asyncio.to_thread(_fetch))
-        except Exception:  # WorkOS unreachable → minimal doc from known endpoints
-            _AS_CACHE.update({
-                "authorization_endpoint": f"{_WORKOS_ISSUER}/oauth2/authorize",
+        except Exception:  # WorkOS unreachable → minimal doc from known endpoints. Return WITHOUT
+            fallback = {   # caching so a transient boot-time egress hiccup doesn't poison the cache
+                "authorization_endpoint": f"{_origin(scope)}/oauth2/authorize",  # our force-offline_access proxy
                 "token_endpoint": f"{_WORKOS_ISSUER}/oauth2/token",
                 "registration_endpoint": f"{_WORKOS_ISSUER}/oauth2/register",
                 "jwks_uri": f"{_WORKOS_ISSUER}/oauth2/jwks",
                 "response_types_supported": ["code"],
                 "grant_types_supported": ["authorization_code", "refresh_token"],
+                "scopes_supported": ["openid", "email", "profile", "offline_access"],
                 "code_challenge_methods_supported": ["S256"],
                 "token_endpoint_auth_methods_supported": ["none", "client_secret_post", "client_secret_basic"],
                 "client_id_metadata_document_supported": True,
-            })
+                "issuer": _origin(scope),
+            }
+            return fallback
     meta = dict(_AS_CACHE)
     meta["issuer"] = _origin(scope)   # served from our origin → issuer must be us
+    # Guarantee offline_access is advertised (don't depend on WorkOS's list) so the client requests a
+    # refresh token → silent renewal instead of reconnect-on-expiry.
+    meta["scopes_supported"] = sorted(set(meta.get("scopes_supported") or []) |
+                                      {"openid", "email", "profile", "offline_access"})
+    # Point authorize at OUR proxy (below) which force-injects offline_access before forwarding to
+    # WorkOS — advertising the scope isn't enough (a client, e.g. Claude, may not copy scopes_supported
+    # into its authorize request → WorkOS issues no refresh token → hourly reconnect). token/jwks/
+    # register still point at WorkOS (unchanged).
+    meta["authorization_endpoint"] = f"{_origin(scope)}/oauth2/authorize"
     return meta
 
 async def _send_json(send, status: int, obj: dict, extra_headers: list | None = None):
@@ -528,6 +1182,25 @@ class _AuthASGI:
             return
 
         if _WORKOS_ISSUER:
+            # Authorize proxy — force-inject offline_access so WorkOS always mints a refresh token,
+            # then 302 to WorkOS's real authorize. Advertising offline_access in scopes_supported is not
+            # enough: a client (e.g. Claude, whose CIMD declares no scope) may not copy it into its
+            # authorize request → no refresh token → the user must reconnect every ~1h. Injecting it here
+            # is client-independent. PKCE (code_challenge) is passed through untouched; the token exchange
+            # still hits WorkOS directly, so the verifier check is unaffected.
+            if path == "/oauth2/authorize":
+                from urllib.parse import parse_qsl, urlencode
+                params = dict(parse_qsl(scope.get("query_string", b"").decode(), keep_blank_values=True))
+                scopes = (params.get("scope") or "").split()
+                for s in ("openid", "offline_access"):
+                    if s not in scopes:
+                        scopes.append(s)
+                params["scope"] = " ".join(scopes)
+                target = f"{_WORKOS_ISSUER}/oauth2/authorize?{urlencode(params)}"
+                await send({"type": "http.response.start", "status": 302,
+                            "headers": [(b"location", target.encode()), (b"content-length", b"0")]})
+                await send({"type": "http.response.body", "body": b""})
+                return
             # Public discovery documents (RFC 9728 + RFC 8414/OIDC proxy) — no auth.
             if path.startswith(_RESOURCE_WK):
                 return await _send_json(send, 200, _resource_metadata(scope))
