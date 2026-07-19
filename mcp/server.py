@@ -998,7 +998,7 @@ def screen_stocks(megatrend: Optional[str] = None, gics: Optional[str] = None,
               "since": since, "from": from_, "to": to,
               "gate": gate, "limit": _lim(limit, default=10, ceiling=50)}
     rows = mdx()._get("/v1/stocks", params).data.get("stocks", [])
-    keep = ("stock_id", "symbol", "ticker", "name", "country", "gic_code", "market_cap_usd", "impact")
+    keep = ("stock_id", "symbol", "ticker", "name", "country", "gic_code", "market_cap_usd", "impact", "fundamentals")
     stocks = [{k: r[k] for k in keep if k in r} for r in rows]
     def _nd(r):
         return ((r.get("impact") or {}).get("net_direction")) or "n/a"
@@ -1015,8 +1015,42 @@ def screen_stocks(megatrend: Optional[str] = None, gics: Optional[str] = None,
                    "net-NEGATIVE standouts SEPARATELY — they're the contrarian / at-risk names. For each "
                    "name explain WHY it's interesting from its `impact.top_reason` + `aspects` (the "
                    "channels), not just that it ranks high. If a name has high news_count but a large neg "
-                   "count too, call it CONTESTED. Research-analyst voice — observations, not advice."),
+                   "count too, call it CONTESTED. Each row also carries `fundamentals` (dividend_yield_pct, "
+                   "pe_ratio, pb_ratio, 52w range) — a MATRIX: weave the facet that fits the group (income "
+                   "yield for retail/utilities/banks, valuation for value plays; ignore for pure-growth/AI "
+                   "names that don't pay). For a dedicated income rank use `screen_dividends`. "
+                   "Research-analyst voice — observations, not advice."),
     }
+
+@mcp.tool(title="Screen Dividends", annotations=_RO)
+def screen_dividends(country: Optional[str] = None, gics: Optional[str] = None, sector: Optional[str] = None,
+                     min_yield: Optional[float] = None, max_yield: Optional[float] = None,
+                     min_streak_years: Optional[int] = None, min_cagr: Optional[float] = None,
+                     min_market_cap_usd: Optional[float] = None, max_market_cap_usd: Optional[float] = None,
+                     order_by: Optional[str] = None, limit: Optional[int] = None) -> dict:
+    """💰 THE income screener — "which stocks in <a group> pay a high / reliable / growing DIVIDEND?"
+    ("retail names with high dividend", "dividend aristocrats in the US", "Thai high-yield stocks"). Ranks
+    the DIVIDEND-PAYING universe (all payers, NOT just news-covered) and — the whole point — hands you the
+    RAW pieces to tell a real income name from a YIELD TRAP, so YOU judge (don't trust a headline yield).
+      • Scope (≥1 REQUIRED): `country` (csv ISO-2), `gics` (csv prefixes, e.g. '2550' retail), `sector`
+        (csv, the plain sector name). Combine freely.
+      • `order_by` = `yield` (default) | `streak` (longest no-cut run — aristocrats) | `cagr` (fastest
+        dividend growth). Filters: `min_yield`/`max_yield` (PERCENT, e.g. 3 = 3%; max guards against
+        traps), `min_streak_years` (25 = Dividend Aristocrat), `min_cagr` (%), `min/max_market_cap_usd`.
+    Each row's `dividend` block DECOMPOSES the yield: `yield_pct`, `ttm_div_yoy_pct` (is the PAYMENT itself
+    up/flat/CUT), `no_cut_streak_yrs`, `last_cut_year`, `cagr_5y_pct` — plus `week52_high/low` (is the yield
+    high because the PRICE fell?) + `pe_ratio`/`eps` + a `news` block (net_direction + top_reason = what the
+    market fears). 🔴 NEVER rank on yield alone: a high yield + a recent `last_cut_year` + negative
+    `ttm_div_yoy_pct` + bad `news` = TRAP; a high yield from a price drop + intact/growing dividend + long
+    streak = possible VALUE. Read the payload's `_guide`. `limit` default 15 (max 50)."""
+    if not (country or gics or sector):
+        return {"error": "screen_dividends needs a scope: country, gics, or sector."}
+    params = {"country": country, "gics": gics, "sector": sector,
+              "min_yield": min_yield, "max_yield": max_yield,
+              "min_streak_years": min_streak_years, "min_cagr": min_cagr,
+              "min_market_cap_usd": min_market_cap_usd, "max_market_cap_usd": max_market_cap_usd,
+              "order_by": order_by, "limit": _lim(limit, default=15, ceiling=50)}
+    return mdx()._get("/v1/stocks/dividends", params).data
 
 @mcp.tool(title="Find Megatrend", annotations=_RO)
 def resolve_themes(terms: List[str]) -> dict:
