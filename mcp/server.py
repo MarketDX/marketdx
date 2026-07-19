@@ -1037,12 +1037,14 @@ def screen_dividends(country: Optional[str] = None, gics: Optional[str] = None, 
       • `order_by` = `yield` (default) | `streak` (longest no-cut run — aristocrats) | `cagr` (fastest
         dividend growth). Filters: `min_yield`/`max_yield` (PERCENT, e.g. 3 = 3%; max guards against
         traps), `min_streak_years` (25 = Dividend Aristocrat), `min_cagr` (%), `min/max_market_cap_usd`.
-    Each row's `dividend` block DECOMPOSES the yield: `yield_pct`, `ttm_div_yoy_pct` (is the PAYMENT itself
-    up/flat/CUT), `no_cut_streak_yrs`, `last_cut_year`, `cagr_5y_pct` — plus `week52_high/low` (is the yield
-    high because the PRICE fell?) + `pe_ratio`/`eps` + a `news` block (net_direction + top_reason = what the
-    market fears). 🔴 NEVER rank on yield alone: a high yield + a recent `last_cut_year` + negative
-    `ttm_div_yoy_pct` + bad `news` = TRAP; a high yield from a price drop + intact/growing dividend + long
-    streak = possible VALUE. Read the payload's `_guide`. `limit` default 15 (max 50)."""
+    Each row's `dividend` block DECOMPOSES the yield: `yield_pct` (FORWARD/sustainable — what to quote),
+    `yield_trailing_pct` (if >> yield_pct, a SPECIAL one-time dividend inflated it — not repeatable),
+    `payout_ratio` (>1 = pays more than it earns = unsustainable), `ttm_div_yoy_pct` (is the PAYMENT up/flat/
+    CUT), `no_cut_streak_yrs`, `last_cut_year`, `cagr_5y_pct` — plus `week52_high/low` (is the yield high
+    because the PRICE fell?) + `pe_ratio`/`eps` + a `news` block. 🔴 NEVER rank on yield alone: high yield +
+    recent `last_cut_year` + negative `ttm_div_yoy_pct` + high payout + bad `news` = TRAP; high yield from a
+    price drop + intact/growing dividend + long streak = possible VALUE. Read the payload's `_guide`.
+    `limit` default 15 (max 50)."""
     if not (country or gics or sector):
         return {"error": "screen_dividends needs a scope: country, gics, or sector."}
     params = {"country": country, "gics": gics, "sector": sector,
