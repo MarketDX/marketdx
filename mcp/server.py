@@ -448,25 +448,50 @@ def stock_impact(ticker: str, direction: Optional[str] = None, limit: Optional[i
                                          from_=from_ or _win(window), to=to, limit=_lim(limit)).to_list())
 
 @mcp.tool(title="Options Sentiment", annotations=_RO)
-def options_sentiment(ticker: str, style: str = "plain", as_of: Optional[str] = None) -> dict:
-    """What the US OPTIONS MARKET is saying about `ticker` — the POSITIONING lens (~547 popular US
-    optionable names, stocks + ETFs). Pairs with the news→impact read: for "how is <X> doing?" fetch
-    THIS *and* `stock_impact`/`news_feed` and fuse them (news = what's happening + WHY; options = how the
-    market is positioned — direction lean via put/call, fear/greed via skew, IV level, dealer-gamma
-    stability, max-pain pinning, notable expiries). For a name the user HOLDS it shows how the market is
-    hedging that position. Broad-INDEX question → pass the liquid ETF proxy: S&P 500→`SPY`, Nasdaq 100→
-    `QQQ`, Dow→`DIA`, Russell 2000→`IWM`, 20y Treasuries→`TLT`, Gold→`GLD`. `ticker` = bare US symbol or
-    `SYMBOL.US` (`NVDA`/`NVDA.US`); US-only. `style` = `plain` (everyday language, default) | `technical`.
-    📅 HISTORICAL / COMPARE PERIODS: pass `as_of=<ISO date>` (e.g. `2026-07-15`) for the snapshot
-    AT-OR-BEFORE that instant. To answer "this week vs last week", call TWICE — once `as_of=<last week>`
-    and once WITHOUT `as_of` (latest) — then diff. Every response carries `available_from`/`available_to`
-    (the stored window); if `as_of` predates it you get `{covered:false, note}` with the range — relay
+def options_sentiment(
+    ticker: Optional[str] = None,
+    style: str = "plain",
+    as_of: Optional[str] = None,
+    tickers: Optional[List[str]] = None,
+    dates: Optional[List[str]] = None,
+) -> dict:
+    """What the US OPTIONS MARKET is saying — the POSITIONING lens (~547 popular US optionable names,
+    stocks + ETFs). Pairs with the news→impact read: for "how is <X> doing?" fetch THIS *and*
+    `stock_impact`/`news_feed` and fuse them (news = what's happening + WHY; options = how the market is
+    positioned — direction lean via put/call, fear/greed via skew, IV level, dealer-gamma stability,
+    max-pain pinning, notable expiries). For a name the user HOLDS it shows how the market is hedging that
+    position. Broad-INDEX question → pass the liquid ETF proxy: S&P 500→`SPY`, Nasdaq 100→`QQQ`, Dow→
+    `DIA`, Russell 2000→`IWM`, 20y Treasuries→`TLT`, Gold→`GLD`. Tickers = bare US symbol or `SYMBOL.US`
+    (`NVDA`/`NVDA.US`); US-only. `style` = `plain` (everyday language, default) | `technical`.
+
+    TWO MODES:
+    • SINGLE deep read — pass `ticker=<one>` (+ optional `as_of`). Returns the FULL narrative payload
+      (horizons, buckets, per-signal `read`+`because`, `_guide`). Use for a focused "how is NVDA doing".
+    • BATCH / COMPARE — pass `tickers=[...]` and/or `dates=[...]` → ONE call returns a COMPACT grid, one
+      small row per (ticker × date) cell: `spot`, `positioning_score` ([-1,+1], + bullish), per-horizon
+      positioning, and medium-term signal `reads`. THIS is how you answer "NVDA vs AAPL, last week vs
+      this week" — do NOT fire the single tool N×M times. `dates=[]` (omit) → a single "latest" column.
+
+    📅 HISTORICAL: `as_of`/`dates` = ISO date/timestamp; the snapshot AT-OR-BEFORE that instant. A bare
+    date (`2026-07-15`) is read as END of that day. Every response carries `available_from`/`available_to`
+    (the stored window); a cell whose date predates it comes back `covered:false` with the range — relay
     THAT honestly (say history only goes back to `available_from`), never invent an older reading.
-    ⚠️ Narrate from the payload's `sentiment._guide`: read straight off each signal's `read` + `because`,
-    DON'T recompute, DON'T compare raw O/S or IV across assets, `baseline_pending`/`level` ≠ "unusual"
-    (only a `_percentile`/`_rank` read flags unusual), and the VERDICT is YOURS (opana stops at
-    interpretation). Not covered → `{covered:false, note}`: say options data isn't available for it and
-    use the news/impact read instead — never fabricate an options view."""
+    ⚠️ Narrate from `read`+`because` (or the batch `reads`); DON'T recompute, DON'T compare raw O/S or IV
+    across assets, `baseline_pending`/`level` ≠ "unusual" (only a `_percentile`/`_rank` read flags
+    unusual), and the VERDICT is YOURS (opana stops at interpretation). Not covered → `{covered:false}`:
+    say options data isn't available and use the news/impact read instead — never fabricate."""
+    batch = bool(tickers) or bool(dates)
+    if batch:
+        syms = list(tickers) if tickers else ([ticker] if ticker else [])
+        cols = list(dates) if dates else ([as_of] if as_of else [])
+        if not syms:
+            return {"error": "batch mode needs `tickers=[...]` (and optionally `dates=[...]`)"}
+        body = {"tickers": syms, "as_of": [c for c in cols if c], "style": style}
+        resp = mdx()._http._client.post("/v1/options/sentiment", json=body)
+        resp.raise_for_status()
+        return resp.json()
+    if not ticker:
+        return {"error": "pass `ticker=<symbol>` for a single read, or `tickers=[...]` for a batch compare"}
     params = {"style": style}
     if as_of:
         params["as_of"] = as_of
