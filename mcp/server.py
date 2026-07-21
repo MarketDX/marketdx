@@ -448,7 +448,7 @@ def stock_impact(ticker: str, direction: Optional[str] = None, limit: Optional[i
                                          from_=from_ or _win(window), to=to, limit=_lim(limit)).to_list())
 
 @mcp.tool(title="Options Sentiment", annotations=_RO)
-def options_sentiment(ticker: str, style: str = "plain") -> dict:
+def options_sentiment(ticker: str, style: str = "plain", as_of: Optional[str] = None) -> dict:
     """What the US OPTIONS MARKET is saying about `ticker` — the POSITIONING lens (~547 popular US
     optionable names, stocks + ETFs). Pairs with the news→impact read: for "how is <X> doing?" fetch
     THIS *and* `stock_impact`/`news_feed` and fuse them (news = what's happening + WHY; options = how the
@@ -457,21 +457,33 @@ def options_sentiment(ticker: str, style: str = "plain") -> dict:
     hedging that position. Broad-INDEX question → pass the liquid ETF proxy: S&P 500→`SPY`, Nasdaq 100→
     `QQQ`, Dow→`DIA`, Russell 2000→`IWM`, 20y Treasuries→`TLT`, Gold→`GLD`. `ticker` = bare US symbol or
     `SYMBOL.US` (`NVDA`/`NVDA.US`); US-only. `style` = `plain` (everyday language, default) | `technical`.
+    📅 HISTORICAL / COMPARE PERIODS: pass `as_of=<ISO date>` (e.g. `2026-07-15`) for the snapshot
+    AT-OR-BEFORE that instant. To answer "this week vs last week", call TWICE — once `as_of=<last week>`
+    and once WITHOUT `as_of` (latest) — then diff. Every response carries `available_from`/`available_to`
+    (the stored window); if `as_of` predates it you get `{covered:false, note}` with the range — relay
+    THAT honestly (say history only goes back to `available_from`), never invent an older reading.
     ⚠️ Narrate from the payload's `sentiment._guide`: read straight off each signal's `read` + `because`,
     DON'T recompute, DON'T compare raw O/S or IV across assets, `baseline_pending`/`level` ≠ "unusual"
     (only a `_percentile`/`_rank` read flags unusual), and the VERDICT is YOURS (opana stops at
     interpretation). Not covered → `{covered:false, note}`: say options data isn't available for it and
     use the news/impact read instead — never fabricate an options view."""
+    params = {"style": style}
+    if as_of:
+        params["as_of"] = as_of
     try:
-        return mdx()._get(f"/v1/options/{ticker}/sentiment", {"style": style}).data
+        return mdx()._get(f"/v1/options/{ticker}/sentiment", params).data
     except NotFoundError as e:
         return {"covered": False, "symbol": ticker, "note": str(e) or (
             f"No options-sentiment for '{ticker}' — opana covers ~547 US-listed optionable names. Don't "
             "fabricate an options view; use news/impact for the read, and (if relevant) note options "
             "coverage isn't available for this name.")}
 
+_FIND_KEEP = ("ticker", "symbol", "name", "type", "country", "exchange", "market_cap_usd", "similarity",
+              "match_type", "mode")
+
 @mcp.tool(title="Find Stock / Resolve Ticker", annotations=_RO)
-def find_stock(q: str, country: Optional[str] = None, limit: Optional[int] = None) -> list:
+def find_stock(q: Optional[str] = None, queries: Optional[List[str]] = None,
+               country: Optional[str] = None, limit: Optional[int] = None):
     """Resolve ANY free-text — a company NAME, a ticker (full or prefix), an alias, a phrase, or a
     non-English name — to the EXACT MarketDX `ticker`. 🔴 Use this BEFORE asset_pulse / stock_impact
     whenever you're not 100% sure of the exact ticker — ESPECIALLY for NON-US companies: MarketDX uses
@@ -481,12 +493,26 @@ def find_stock(q: str, country: Optional[str] = None, limit: Optional[int] = Non
     SEMANTIC fallback so a phrase ('chip maker') or another language still resolves. Returns matches with
     a ready-to-use `ticker` (paste straight into asset_pulse/stock_impact), `type` (stock/etf/commodity/
     crypto/forex/private), `name`, `country`, `market_cap_usd`, `similarity`. `country` restricts to a
-    market. Take the top match; for a US mega-cap you already know the ticker (AAPL) you can skip this."""
+    market. Take the top match; for a US mega-cap you already know the ticker (AAPL) you can skip this.
+    🔴 BATCH — to resolve SEVERAL names in ONE call (e.g. adding many stocks to a playlist, or comparing
+    several names), pass `queries=["apple","ซัมซุง","xiaomi"]` instead of `q`. Returns
+    `{results:[{query, match_quality, matches}]}` where `match_quality` = `strong` (one dominant match →
+    auto-accept), `weak` (ambiguous/several close → disambiguate or ASK the user which), or `none`.
+    This saves N round-trips vs calling find_stock once per name."""
+    if queries:
+        resp = mdx()._http._client.post(
+            "/v1/stocks/resolve",
+            json={"queries": queries, "country": country, "limit": _lim(limit, default=5, ceiling=25)})
+        resp.raise_for_status()
+        data = resp.json()
+        for r in data.get("results", []):
+            r["matches"] = [{k: m[k] for k in _FIND_KEEP if k in m} for m in r.get("matches", [])]
+        return data
+    if not q:
+        raise ValueError("pass q=<name> (single) or queries=[…] (batch)")
     rows = mdx()._get("/v1/stocks", {"q": q, "country": country,
                                      "limit": _lim(limit, default=8, ceiling=25)}).data.get("matches", [])
-    keep = ("ticker", "symbol", "name", "type", "country", "exchange", "market_cap_usd", "similarity",
-            "match_type", "mode")
-    return [{k: m[k] for k in keep if k in m} for m in rows]
+    return [{k: m[k] for k in _FIND_KEEP if k in m} for m in rows]
 
 @mcp.tool(title="Theme Players", annotations=_RO)
 def theme_players(theme: str, country: str, exposure: Optional[str] = None,
@@ -688,6 +714,59 @@ def get_note(note_id: int) -> dict:
     """The FULL saved note (including its `body`) by id — owner-scoped. Use after `query_notes` when you
     need the complete content, not just the summary."""
     return mdx()._get(f"/v1/notes/{note_id}", {}).data
+
+# ── PLAYLISTS — a user-curated set of STOCKS they follow, which drives their news Feed ─────────
+def _pl_write(method: str, path: str, payload: Optional[dict] = None) -> dict:
+    c = mdx()._http._client
+    r = c.request(method, path, json=payload) if payload is not None else c.request(method, path)
+    if r.is_success:
+        try:
+            return r.json()
+        except Exception:
+            return {}
+    try:
+        j = r.json(); msg = j.get("error") or r.text
+    except Exception:
+        msg = r.text or f"HTTP {r.status_code}"
+    raise ValueError(f"playlist op failed: {msg}")
+
+@mcp.tool(title="List Playlists", annotations=_RO)
+def list_playlists() -> dict:
+    """List the user's OWN feed playlists (id, name, emoji, item_count, items[{kind,ref_id,label}]).
+    🔴 Call this FIRST whenever the user refers to a playlist BY NAME ("add X to My Tech List") — you
+    match the (possibly mistyped / mis-spaced) name against the REAL names yourself. If the user didn't
+    say WHICH and they own more than one, ASK which one (show the names). If they own NONE, offer to
+    create one. Owner-scoped — only ever the user's own playlists. A playlist drives their news Feed."""
+    return mdx()._get("/v1/playlists", {}).data
+
+@mcp.tool(title="Create Playlist", annotations=_WRITE)
+def create_playlist(name: str, emoji: Optional[str] = None) -> dict:
+    """🔴 WRITE — create a new feed playlist (owner-scoped). Do NOT auto-create from a possible typo:
+    call `list_playlists` FIRST and only create when the name genuinely doesn't exist, or the user
+    confirms a new one. Returns the created playlist {id, name, …}."""
+    return _pl_write("POST", "/v1/playlists",
+                     {k: v for k, v in {"name": name, "emoji": emoji}.items() if v is not None})
+
+@mcp.tool(title="Add to Playlist", annotations=_WRITE)
+def add_to_playlist(playlist_id: int, tickers: List[str]) -> dict:
+    """🔴 WRITE — add one or more STOCKS to a playlist (batch, idempotent).
+    🔴 RESOLVE FIRST: turn each name into an EXACT MarketDX ticker with `find_stock` BEFORE calling this
+    — ESPECIALLY non-US / crypto / foreign-language names ("btcusd"→`BTC-USD.CC`, "ซัมซุง"→pick the right
+    Samsung from find_stock's candidates); a US mega-cap you already know (AAPL) may be passed directly.
+    For several names, resolve them in ONE `find_stock(queries=[…])` call. `playlist_id` from
+    `list_playlists`. Re-adding an existing ticker is a harmless no-op. Returns
+    `{added, skipped, item_count}` — ⚠️ RELAY any `skipped` (e.g. a ticker that didn't resolve) to the
+    user; never drop it silently."""
+    items = [{"kind": "stock", "ref_id": t, "label": t} for t in tickers]
+    return _pl_write("POST", f"/v1/playlists/{playlist_id}/items", {"items": items})
+
+@mcp.tool(title="Remove from Playlist", annotations=_WRITE)
+def remove_from_playlist(playlist_id: int, tickers: List[str]) -> dict:
+    """🔴 WRITE — remove one or more stocks (by ticker) from a playlist (batch). `playlist_id` from
+    `list_playlists`. Returns `{removed, not_found, item_count}` — relay `not_found` (a ticker that
+    wasn't in the playlist) to the user."""
+    items = [{"kind": "stock", "ref_id": t} for t in tickers]
+    return _pl_write("DELETE", f"/v1/playlists/{playlist_id}/items", {"items": items})
 
 # NB: portfolio_card / portfolio_nav IMAGE tools (rendered PNG via /v1/portfolios/:id/{card,nav}) were
 # built + removed 2026-07-17 — Claude custom connectors DON'T render inline tool-result images (same gate
