@@ -30,7 +30,7 @@ Follow this skill for EVERY MarketDX answer.
 
 ## FLOW — every theme/impact question
 1. **Resolve the topic to a node via the server, don't guess.** For any trend term the user names
-   ("HBM", "foundry", "cancer drug", "robotaxi"), call `resolve_themes([term])` to get the exact taxonomy
+   ("HBM", "foundry", "cancer drug", "robotaxi"), call `find_megatrend([term])` to get the exact taxonomy
    node(s) — do NOT flatten "HBM" to "Semiconductors" yourself, and do NOT invent node ids. Then query at
    the resolved node.
 2. **Answer as the analyst** (VOICE above), from the tool data only.

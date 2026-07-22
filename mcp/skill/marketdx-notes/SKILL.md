@@ -43,10 +43,23 @@ so only investment/economic knowledge lands.
   with only one topic's entities and the rest become unretrievable. A genuine comparison ("NVDA vs AMD") is
   ONE note with both as subjects.
 - 🔴 **Tag COMPLETELY, reusing ids you already hold** (don't guess): `stocks` (the subject tickers) /
-  `mentioned_stocks` (merely referenced) / `megatrend_ids` (from `find_megatrend` or a theme tool's output)
-  / `gics` / `portfolio_id` / `note_type` (thesis | reference | snapshot | decision | watchlist) +
-  `summary` + `tags`. A pure CONCEPT note has no stocks — that's fine (`note_type: reference`). The server
-  resolves tickers→ids, derives GICS from the stocks, and stamps provenance automatically.
+  `mentioned_stocks` (merely referenced) / `megatrend_ids` / `gics` / `portfolio_id` / `note_type`
+  (thesis | reference | snapshot | decision | watchlist) + `summary` + `tags`. The server resolves
+  tickers→ids, derives GICS from the stocks, and stamps provenance automatically.
+- 🔴 **LINK THE THEME, not just the stocks — and don't skip it just because there's no stock subject.** A
+  note about a SECTOR, MECHANISM, or TREND belongs to a megatrend even when no single stock is its subject;
+  that theme link is how the note is later found by INTEREST ("my research on memory / AI hardware"), not
+  just by the tickers it happens to name. So:
+  - **Resolve the theme when the note's SUBJECT is broader than one ticker** — a concept/mechanism explainer
+    (what is HBM, how a foundry works, lithium refining), a sector/industry state, a trend thesis, or a
+    cross-company comparison within one theme (SK Hynix vs Samsung → memory). If you haven't already
+    resolved it this turn, make ONE `find_megatrend([...])` call at save time — send the trend words straight
+    from your answer (e.g. `["HBM","foundry"]` → per-term candidates; you don't need to know the taxonomy),
+    pick the id(s), pass `megatrend_ids`. This is the one resolve worth doing FOR the note.
+  - **Skip the theme only for a note truly about one specific stock with no broader angle** (a single-stock
+    read/thesis/snapshot, a portfolio note, a ticker-bound decision/watchlist) — there `stocks` alone is enough.
+  - A pure CONCEPT note having **no stocks is fine** (`note_type: reference`) — but a thematic note having
+    **no `megatrend_ids` is a miss**: it becomes findable only by the tickers it mentions, never by its trend.
 
 ## RECALL  (`query_notes` / `get_note`)
 - "what did I note about X / my notes on NVDA / my thesis on foundry" → `query_notes` (semantic `q` +
