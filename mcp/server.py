@@ -698,7 +698,8 @@ def write_note(subject: str, body: str, summary: Optional[str] = None,
 @mcp.tool(title="My Notes", annotations=_RO)
 def query_notes(q: Optional[str] = None, stock: Optional[str] = None, theme: Optional[str] = None,
                 gics: Optional[str] = None, tag: Optional[str] = None, note_type: Optional[str] = None,
-                since: Optional[str] = None, limit: Optional[int] = None) -> dict:
+                since: Optional[str] = None, limit: Optional[int] = None,
+                relation: Optional[str] = None) -> dict:
     """Recall the USER'S OWN saved notes — their personal investment knowledge base (owner-scoped, only
     ever their notes). Two combinable ways:
       • SEMANTIC recall via `q` — natural language ("what did I say about foundry manufacturing?"); results
@@ -706,6 +707,12 @@ def query_notes(q: Optional[str] = None, stock: Optional[str] = None, theme: Opt
       • Structured filters: `stock` (a ticker → their notes about it), `theme` (a sector/trend NAME →
         resolved to the megatrend, subtree included), `gics` (6-digit code), `tag`, `note_type`
         (thesis/reference/snapshot/decision/watchlist), `since` (e.g. '30d').
+    📌 `stock` + `relation` (direct|indirect|any, default any) splits how a note relates to that ticker —
+    same idea as newsfeed direct/indirect: `direct` = the note is ABOUT it (a subject); `indirect` = it's
+    only REFERENCED (e.g. a peer named in a note about ANOTHER stock — a "NVDA vs peers" note surfaces
+    under AMD as indirect). Every returned note carries a `relation` label when you filter by `stock`, so
+    you can say "1 note about AMD + 1 that only mentions it". Use `relation="direct"` for "notes really
+    about X".
     Returns note SUMMARIES + linked entities + `similarity` — NOT the full body (call `get_note(id)` for
     that). `limit` default 10 (max 50).
     🔴 FUSE personal + live: when the user asks about something they've likely noted, pair this with the
@@ -716,6 +723,8 @@ def query_notes(q: Optional[str] = None, stock: Optional[str] = None, theme: Opt
         params["q"] = q
     if stock:
         params["stock"] = stock
+    if relation:
+        params["relation"] = relation
     if theme:
         try:
             hits = resolve_themes([theme]).get(theme) or []
