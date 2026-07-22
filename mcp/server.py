@@ -65,13 +65,15 @@ _INSTRUCTIONS = (
     "'สรุปข่าว commodity' → news_type='commodity_supply'), a country/market, an impact channel (aspect), "
     "a GICS sector, a megatrend, or any AND-mix — use `brief` (the composed 'how is <X> doing right now?' "
     "picture), NOT search_news/news_feed (those return a raw article LIST, not a summary). Resolve a "
-    "trend term via resolve_themes; follow marketdx://policy for voice, scope, and the response stance. "
+    "trend term via find_megatrend; follow marketdx://policy for voice, scope, and the response stance. "
     "NOTES — the user keeps a personal INVESTMENT KNOWLEDGE BASE via `write_note` (their notes join this "
     "same graph and are retrievable by entity later — the point is to fight scattered knowledge). Act as a "
     "proactive librarian: after a SUBSTANTIVE investment answer — a sector/mechanism explainer, a dated "
     "market read (with its 'why'), a thesis, a comparison, a decision — briefly OFFER to keep it "
     "('เก็บเข้าโน้ตไหม?'), and save right away on any explicit 'save this / จดไว้'. When you save, pass the "
-    "tickers + megatrend ids you already used this turn so the note links to the graph. Do NOT offer on "
+    "tickers + megatrend ids you already resolved this turn so the note links to the graph — and if the note "
+    "is about a SECTOR/TREND/mechanism (e.g. 'what is HBM') rather than one specific stock, do one quick "
+    "`find_megatrend([...])` at save time to link the theme (that's how it's found by interest later). Do NOT offer on "
     "chit-chat, trivia lookups (e.g. 'what's NVDA's ticker'), or off-topic / non-investment turns; don't "
     "nag more than once, and never save pure filler."
 )
@@ -659,19 +661,26 @@ def write_note(subject: str, body: str, summary: Optional[str] = None,
       • `tags` — a few keywords for retrieval.
 
     ENTITY LINKS — this is what makes the note findable later by interest and joinable to the graph, so
-    fill them whenever the note is about specific things. Pass what you ALREADY resolved this turn; the
-    server canonicalizes and links them (and tells you what linked in the response):
-      Pass the identifiers you ALREADY picked this turn (same ones you used to answer) — do NOT re-resolve:
+    fill them whenever the note touches specific things. For identifiers you ALREADY resolved this turn,
+    REUSE them (don't re-resolve); the server canonicalizes and links them (and reports what linked):
       • `stocks` — the MarketDX ticker(s) this note is ABOUT (its subjects) — the one you PICKED from
         `find_stock` (e.g. `005930.KO`); a bare US symbol (`AAPL`) also works.
       • `mentioned_stocks` — tickers merely referenced, not the focus.
-      • `megatrend_ids` — the megatrend node id(s) you settled on: from `find_megatrend` (returns
-        {id,name,tier} candidates — YOU pick) or a theme tool's output (`theme_pulse` returns the resolved
-        `megatrend.id`). Reuse that id — never guess a number.
+      • `megatrend_ids` — the megatrend node id(s) this note sits under, from `find_megatrend` (returns
+        {id,name,tier} candidates — YOU pick) or a theme tool's output (`theme_pulse` → `megatrend.id`).
+        Reuse an id you already have — never guess a number.
       • `gics` — 6-digit GICS sector code(s), reused from a theme tool's output (`theme_pulse` → `gics_code`).
       • `portfolio_id` — if the note is about one of the user's portfolios (from `list_portfolios`).
-      If you're unsure of an entity, leave it out or just name it in `tags`/`body` — anything unresolved is
-      preserved verbatim, nothing is lost.
+
+    🧭 LINK THE THEME, not just the stocks. A note about a SECTOR, MECHANISM, or TREND (e.g. "what is HBM",
+    "why foundry pricing matters", "state of solid-state batteries") belongs to a megatrend even when no
+    single stock is its subject — that's how it's later found by INTEREST, not just by the tickers it
+    happens to name. If you haven't already resolved the theme this turn, it is WORTH one quick
+    `find_megatrend([...])` call at save time to get the id(s) — this is the ONE resolve you should do FOR
+    the note (send the trend words straight from your answer, e.g. `["HBM","foundry"]` → per-term
+    candidates; you don't need to know the taxonomy). Skip it only for a note truly about a single stock
+    with no thematic angle. Unresolved names are still preserved verbatim in `tags`/`body` — nothing is
+    lost — but a resolved `megatrend_ids` is what makes it retrievable by trend.
 
     WHEN TO SAVE — this is the investor's knowledge base; CAPTURE substantive investment content generously
     (reference/understanding, a dated market-read WITH its 'why', a thesis/decision, curated research). Value
@@ -1191,7 +1200,7 @@ def screen_dividends(country: Optional[str] = None, gics: Optional[str] = None, 
               "order_by": order_by, "limit": _lim(limit, default=15, ceiling=50)}
     return mdx()._get("/v1/stocks/dividends", params).data
 
-@mcp.tool(title="Find Megatrend", annotations=_RO)
+@mcp.tool(name="find_megatrend", title="Find Megatrend", annotations=_RO)
 def resolve_themes(terms: List[str]) -> dict:
     """🔴 The MEGATREND counterpart of `find_stock`: map trend-language ('HBM', 'foundry', 'robotaxi',
     'robotics') to the specific taxonomy node(s) — returns CANDIDATES for YOU to pick from (exactly like
