@@ -42,24 +42,32 @@ so only investment/economic knowledge lands.
   once PER topic (a lithium / semiconductor / gold chat → THREE notes), because a crammed note gets tagged
   with only one topic's entities and the rest become unretrievable. A genuine comparison ("NVDA vs AMD") is
   ONE note with both as subjects.
-- 🔴 **Tag COMPLETELY, reusing ids you already hold** (don't guess): `stocks` (the subject tickers) /
-  `mentioned_stocks` (merely referenced) / `megatrend_ids` / `gics` / `portfolio_id` / `note_type`
-  (thesis | reference | snapshot | decision | watchlist) + `summary` + `tags`. The server resolves
-  tickers→ids, derives GICS from the stocks, and stamps provenance automatically.
-- 🔴 **LINK THE THEME, not just the stocks — and don't skip it just because there's no stock subject.** A
-  note about a SECTOR, MECHANISM, or TREND belongs to a megatrend even when no single stock is its subject;
-  that theme link is how the note is later found by INTEREST ("my research on memory / AI hardware"), not
-  just by the tickers it happens to name. So:
-  - **Resolve the theme when the note's SUBJECT is broader than one ticker** — a concept/mechanism explainer
-    (what is HBM, how a foundry works, lithium refining), a sector/industry state, a trend thesis, or a
-    cross-company comparison within one theme (SK Hynix vs Samsung → memory). If you haven't already
-    resolved it this turn, make ONE `find_megatrend([...])` call at save time — send the trend words straight
-    from your answer (e.g. `["HBM","foundry"]` → per-term candidates; you don't need to know the taxonomy),
-    pick the id(s), pass `megatrend_ids`. This is the one resolve worth doing FOR the note.
-  - **Skip the theme only for a note truly about one specific stock with no broader angle** (a single-stock
-    read/thesis/snapshot, a portfolio note, a ticker-bound decision/watchlist) — there `stocks` alone is enough.
-  - A pure CONCEPT note having **no stocks is fine** (`note_type: reference`) — but a thematic note having
-    **no `megatrend_ids` is a miss**: it becomes findable only by the tickers it mentions, never by its trend.
+### 🔴 RESOLVE-THEN-WRITE — a REQUIRED procedure, not a suggestion
+`write_note` is the LAST step. BEFORE it, classify what the note is fundamentally about and RESOLVE its
+entities — the note is findable later only by what you link now. Run these checks IN ORDER; a note may hit
+more than one (link all that apply). The resolvers return CANDIDATES → **YOU pick the right one(s)** (e.g.
+"bank" → Regional Banks vs Investment Banking — decide from the note's meaning); never guess a number.
+
+1. **Specific companies?** (a read/thesis on named firms, "NVDA vs AMD") → you already resolved the
+   tickers via `find_stock` while answering → pass `stocks` (subjects) / `mentioned_stocks` (referenced).
+2. **An emerging TREND / technology / mechanism?** (HBM, robotaxi, lithium, rare earths, solid-state
+   batteries, "how a foundry works") → call **`find_megatrend([terms])`** (send the trend words straight
+   from your answer — you don't need to know the taxonomy), PICK the id(s) → `megatrend_ids`.
+3. **An established INDUSTRY / SECTOR?** (retail, airlines, banking, pharma, utilities, insurance) → call
+   **`find_gics([terms])`**, PICK the code(s) → `gics`. (Sectors are NOT megatrends — retail/airlines have
+   no megatrend node; this is their lane.)
+4. **Both a trend AND a sector?** ("AI in banking", "EVs and the auto industry") → resolve BOTH.
+5. **A general concept with no specific home?** (what is P/E, EBITDA, how bonds work) → link NOTHING; put
+   the keywords in `tags` + body. `find_megatrend`/`find_gics` returning `[]` CONFIRMS this — don't force a
+   match. It's still found later by semantic search + tags.
+
+Then call `write_note` with everything you resolved, plus `note_type` (thesis | reference | snapshot |
+decision | watchlist) + `summary` + `tags`. Do the resolve calls FIRST; the server canonicalizes tickers→
+ids, derives GICS from any stocks, and stamps provenance automatically.
+
+🔴 **A note whose subject is a trend or a sector, saved with an EMPTY `megatrend_ids`/`gics`, is a BUG —**
+it means you skipped step 2/3. The only correct empties are: a single-stock note (stocks only) or a
+general concept (step 5).
 
 ## RECALL  (`query_notes` / `get_note`)
 - "what did I note about X / my notes on NVDA / my thesis on foundry" → `query_notes` (semantic `q` +

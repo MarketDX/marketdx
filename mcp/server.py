@@ -669,18 +669,19 @@ def write_note(subject: str, body: str, summary: Optional[str] = None,
       • `megatrend_ids` — the megatrend node id(s) this note sits under, from `find_megatrend` (returns
         {id,name,tier} candidates — YOU pick) or a theme tool's output (`theme_pulse` → `megatrend.id`).
         Reuse an id you already have — never guess a number.
-      • `gics` — 6-digit GICS sector code(s), reused from a theme tool's output (`theme_pulse` → `gics_code`).
+      • `gics` — GICS code(s) for an established INDUSTRY/SECTOR the note is about, from `find_gics`
+        (returns {code,name,level} candidates — YOU pick) or a theme tool's output (`theme_pulse` → `gics_code`).
       • `portfolio_id` — if the note is about one of the user's portfolios (from `list_portfolios`).
 
-    🧭 LINK THE THEME, not just the stocks. A note about a SECTOR, MECHANISM, or TREND (e.g. "what is HBM",
-    "why foundry pricing matters", "state of solid-state batteries") belongs to a megatrend even when no
-    single stock is its subject — that's how it's later found by INTEREST, not just by the tickers it
-    happens to name. If you haven't already resolved the theme this turn, it is WORTH one quick
-    `find_megatrend([...])` call at save time to get the id(s) — this is the ONE resolve you should do FOR
-    the note (send the trend words straight from your answer, e.g. `["HBM","foundry"]` → per-term
-    candidates; you don't need to know the taxonomy). Skip it only for a note truly about a single stock
-    with no thematic angle. Unresolved names are still preserved verbatim in `tags`/`body` — nothing is
-    lost — but a resolved `megatrend_ids` is what makes it retrievable by trend.
+    🧭 RESOLVE THE NOTE'S HOME BEFORE SAVING — link the theme/sector, not just the stocks. Classify what the
+    note is about and resolve it FIRST (write_note is the last step): an emerging TREND/tech/mechanism ("what
+    is HBM", "how a foundry works", "solid-state batteries") → `find_megatrend([terms])` → pick → `megatrend_ids`;
+    an established INDUSTRY/SECTOR ("retail", "airlines", "banking", "pharma" — these have NO megatrend node) →
+    `find_gics([terms])` → pick → `gics`; both may apply. Each resolver returns CANDIDATES — YOU pick (send the
+    words straight from your answer; you don't need the taxonomy). A note whose subject is a trend or a sector,
+    saved with EMPTY `megatrend_ids`/`gics`, means you SKIPPED this step. The only correct empties: a single-
+    stock note (stocks only) or a general concept with no home (P/E, EBITDA — `find_*` returns `[]`, don't
+    force it; tags/body still make it findable by semantic search).
 
     WHEN TO SAVE — this is the investor's knowledge base; CAPTURE substantive investment content generously
     (reference/understanding, a dated market-read WITH its 'why', a thesis/decision, curated research). Value
@@ -1224,6 +1225,105 @@ def resolve_themes(terms: List[str]) -> dict:
         for t in m1:
             nodes += _solve(t, {2: m2, 3: m3})
         result[term] = [_node_out(i) for i in dict.fromkeys(nodes)]
+    return result
+
+# ── GICS resolver — the SECTOR counterpart of find_megatrend (established industries, not trends) ──────
+# Same 3-tier-deepseek shape as resolve_themes, but over the GICS hierarchy (sector→group→industry→sub,
+# 4 levels) loaded from /v1/gics. deepseek `_match` handles plurals (bank→"Banks"), cross-sector terms
+# (retail spans Consumer Disc + Staples), and ambiguity (retail-bank vs investment-bank) that a naive
+# name lookup gets wrong. A non-industry concept (a metric like 'P/E', a pure trend) → [] (correct).
+_GTAX = None
+_GLVL = {"sector": 1, "group": 2, "industry": 3, "sub_industry": 4}
+
+def _gics_tax() -> dict:
+    global _GTAX
+    if _GTAX is None:
+        nodes = mdx()._get("/v1/gics", {}).data.get("gics", [])
+        children: dict = {}
+        for n in nodes:
+            children.setdefault(n.get("parent_code"), []).append(n)
+        _GTAX = {"nodes": nodes, "by_code": {n["code"]: n for n in nodes}, "children": children}
+    return _GTAX
+
+def _gics_children(code: str) -> list:
+    return _gics_tax()["children"].get(code, [])
+
+def _gics_match(term: str, cands: list) -> list:
+    """deepseek: which GICS nodes does the concept belong under? (same classifier as _match, string codes)."""
+    if not cands:
+        return []
+    lines = "\n".join(f"{n['code']} | {n['name']}" for n in cands)
+    out = _deepseek(
+        "Which GICS classification nodes does the CONCEPT belong under? Match a node only if the concept "
+        f'clearly falls within it (an industry/sector concept, NOT a metric or a single company).\nCONCEPT: "{term}"\n'
+        f'NODES:\n{lines}\nReturn JSON: {{"match":[<code>,...]}} (codes as strings; empty if none fit).',
+        term, 0.1)
+    s = {str(x) for x in (out.get("match") or [])}
+    return [n["code"] for n in cands if n["code"] in s]
+
+def _gics_solve(code: str, matched: dict) -> list:
+    """all-or-none → this node; sector with no matched child → drop; subset → drill (mirror _solve)."""
+    node = _gics_tax()["by_code"][code]
+    kids = _gics_children(code)
+    if not kids:
+        return [code]
+    ns = matched.get(_GLVL[node["level"]] + 1, set())
+    mk = [k for k in kids if k["code"] in ns]
+    if not mk:
+        return [] if node["level"] == "sector" else [code]
+    if len(mk) == len(kids):
+        return [code]
+    res: list = []
+    for k in mk:
+        res += _gics_solve(k["code"], matched)
+    return res
+
+def _gics_gaz(term: str) -> list:
+    """Fast deterministic path: exact node-name hit → that node; else a TIGHT substring (1-4 hits that
+    all share a parent → unambiguous). Broad/cross-parent substrings fall through to the deepseek drill."""
+    tax = _gics_tax(); lc = str(term).strip().lower()
+    if not lc:
+        return []
+    exact = [n["code"] for n in tax["nodes"] if n["name"].lower() == lc]
+    if exact:
+        return exact
+    hits = [n for n in tax["nodes"] if lc in n["name"].lower()]
+    if 1 <= len(hits) <= 4 and len({n.get("parent_code") for n in hits}) == 1:
+        return [n["code"] for n in hits]
+    return []
+
+def _gics_out(code: str) -> dict:
+    n = _gics_tax()["by_code"][code]
+    return {"code": n["code"], "name": n["name"], "level": n["level"]}
+
+@mcp.tool(name="find_gics", title="Find GICS Sector", annotations=_RO)
+def find_gics(terms: List[str]) -> dict:
+    """🔴 The SECTOR/INDUSTRY counterpart of `find_megatrend` — map an established-industry concept
+    ('retail', 'airlines', 'banks', 'semiconductors', 'utilities', 'pharma') to its GICS node(s). Use this
+    when a note is about an INDUSTRY (not an emerging trend → that's `find_megatrend`, not a single company
+    → that's `find_stock`). Returns {term:[{code,name,level},...]} CANDIDATES for YOU to pick (may be
+    several: 'retail' legitimately spans Consumer-Discretionary + Staples; 'bank' spans commercial vs
+    investment). Reuse the picked `code`(s) as `gics` in `write_note` / as a `gics` filter — don't guess a
+    number. A concept that is NOT an industry (a metric like 'P/E', a company, a pure trend) → [] — correct,
+    don't force it. Gazetteer-first (deterministic), deepseek tier-drill (sector→sub) for the rest."""
+    sectors = [n for n in _gics_tax()["nodes"] if n["level"] == "sector"]
+    result: dict = {}
+    for term in terms:
+        g = _gics_gaz(term)
+        if g:
+            result[term] = [_gics_out(c) for c in g]
+            continue
+        m1 = _gics_match(term, sectors)
+        c2 = [k for s in m1 for k in _gics_children(s)]
+        m2 = set(_gics_match(term, c2))
+        c3 = [k for gr in m2 for k in _gics_children(gr)]
+        m3 = set(_gics_match(term, c3)) if c3 else set()
+        c4 = [k for ind in m3 for k in _gics_children(ind)]
+        m4 = set(_gics_match(term, c4)) if c4 else set()
+        nodes: list = []
+        for s in m1:
+            nodes += _gics_solve(s, {2: set(m2), 3: set(m3), 4: set(m4)})
+        result[term] = [_gics_out(c) for c in dict.fromkeys(nodes)]
     return result
 
 @mcp.tool(title="Suggest Explorations", annotations=_RO)
