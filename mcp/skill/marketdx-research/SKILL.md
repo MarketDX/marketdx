@@ -18,7 +18,8 @@ stocks, ETFs, indices (via ETF), forex, crypto, commodities, and private/off-cov
 serves options positioning, the megatrend taxonomy, the user's portfolios, and a personal notes layer.
 
 This skill governs ONE job: **route to the right mdx tool** (don't web-search what mdx answers better).
-(Saving/recalling notes is a separate concern — the `investment-notes` skill owns that.)
+Capturing and recalling the user's notes is a SEPARATE concern, owned entirely by the **`marketdx-notes`**
+skill — this skill says nothing about it.
 
 ---
 
@@ -41,7 +42,8 @@ answer these with only a web search.
 | Summarize a whole SCOPE — a news category ("commodity news"), a country/market, a GICS sector, a megatrend, or an AND-mix | **`brief(...)`** | The composed "how is <X> doing" picture. NOT `search_news`/`news_feed` (those return a raw list, not a summary). |
 | Resolve a company NAME or an unsure/foreign TICKER → exact mdx ticker | **`find_stock(name)`** FIRST | ⚠️ mdx uses its OWN suffixes (Korea `.KO` not `.KS`, Taiwan `.TW`, …) — guessing a non-US ticker 404s. Also resolves commodities (gold→`GOLD`), crypto (`BTC`), private (openai→`oc:52`). Take the top match's `ticker`. |
 | A **PRIVATE / off-coverage** company (OpenAI, Anthropic, SpaceX, Stripe, ByteDance, xAI, Databricks, …) — its status or news | **ALWAYS `find_stock(name)` FIRST**, then `stock_impact(<the oc: id>)` / `news_feed`; or `private_movers(theme)` | 🔴 CRITICAL mental-model fix: a private company has **NO public ticker — but MarketDX assigns it an INTERNAL id `oc:<n>`** that `find_stock` returns (openai→`oc:52`). So "it's private / has no ticker" does **NOT** mean "no data" and is **NEVER** a reason to web-search. Do NOT skip `find_stock` because you think there's no ticker — run it on the NAME, take the `oc:` id, and query mdx with it (mdx tracks their news→impact; OpenAI alone has 200+ scored articles). Web only to SUPPLEMENT, clearly labeled. |
-| Resolve a THEME/trend term → megatrend node id | **`resolve_themes(terms)`** (shown as "Find Megatrend") | The megatrend counterpart of find_stock — returns `{id,name,tier}` candidates; YOU pick, then reuse the id. |
+| Resolve a THEME/trend term → megatrend node id | **`find_megatrend(terms)`** | The megatrend counterpart of find_stock — returns `{id,name,tier}` candidates; YOU pick, then reuse the id. |
+| Resolve an INDUSTRY/SECTOR term → GICS code | **`find_gics(terms)`** | The sector counterpart (retail, airlines, banks, pharma have GICS but no megatrend node); returns `{code,name,level}` candidates; YOU pick. |
 | A raw LIST of news articles on a ticker/scope | **`news_feed`** / **`search_news`** | Use `brief` instead if they want a *summary*, not a list. |
 | Options positioning / dealer-gamma / fear-greed on a name | **`options_sentiment(ticker)`** | US underlyings only. `covered=false` → skip options for that name. |
 | Per-stock news impact timeline | **`stock_impact(ticker)`** | Drill-down; prefer `asset_pulse` first. |
