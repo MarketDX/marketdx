@@ -14,7 +14,7 @@ Deps: mcp (FastMCP), marketdx, openai (deepseek is OpenAI-compatible).
 from __future__ import annotations
 import os, json, pathlib, contextvars
 from dataclasses import asdict, is_dataclass
-from typing import Any, Optional, List
+from typing import Any, Optional, List, Literal
 
 from mcp.server.fastmcp import FastMCP, Context
 from mcp.server.transport_security import TransportSecuritySettings
@@ -78,6 +78,13 @@ _INSTRUCTIONS = (
     "nag more than once, and never save pure filler."
 )
 mcp = FastMCP("marketdx", instructions=_INSTRUCTIONS, website_url="https://marketdx.lab.ai",
+              # stateless_http + json_response: every request is fully self-contained (auth = per-request
+              # Bearer key; no in-memory session pinned to an instance) and returns a plain JSON body (no
+              # held-open SSE stream). Required for clean horizontal scaling — a stateful session breaks the
+              # moment Cloud Run routes a follow-up request to a different instance ("Session not found").
+              # Provenance that used to come from the session handshake now comes from write_note's `agent`.
+              stateless_http=True,
+              json_response=True,
               transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False))
 _HERE = pathlib.Path(__file__).parent
 # Served at /favicon.ico so clients (Claude's connector card) show the MarketDX mark for this host —
@@ -619,8 +626,16 @@ def portfolio_context(portfolio_id: int, from_: Optional[str] = None, to: Option
     • Facts, not advice. Observe; do NOT tell them to buy/sell/rebalance/time — hand the judgment back."""
     return mdx().portfolio_context(portfolio_id, from_=from_, to=to, window=window, snapshots=snapshots)
 
-# WHICH surface authored a note — read from the MCP `clientInfo` handshake, NEVER a model argument (an
-# LLM must not be trusted to self-report provenance). Known clients → a stable token; unknown → a safe slug.
+# WHICH surface authored a note. Historically read from the MCP `clientInfo` handshake — but under
+# stateless HTTP (required for horizontal scaling) the handshake context is not available at tool-call
+# time, so the caller declares it via the `agent` enum on write_note. A CLOSED enum (not a free string)
+# keeps the value clean & queryable — "Claude Code" always maps to the same token, no "Claude"/"claude"
+# drift. Unknown/other clients pick "Other". clientInfo stays as a best-effort fallback when present.
+AgentName = Literal["Claude", "Claude Code", "Claude Coworks", "ChatGPT", "Codex", "Gemini", "Other"]
+_AGENT_ENUM_TOKEN = {
+    "Claude": "claude", "Claude Code": "claude-code", "Claude Coworks": "claude-coworks",
+    "ChatGPT": "chatgpt", "Codex": "codex", "Gemini": "gemini", "Other": "other",
+}
 _AGENT_ALIASES = (("claude", "claude"), ("chatgpt", "chatgpt"), ("openai", "chatgpt"),
                   ("cursor", "cursor"), ("marketdx", "marketdx-web"))
 
@@ -637,6 +652,13 @@ def _client_agent(ctx: Optional[Context]) -> Optional[str]:
     slug = "".join(c if (c.isalnum() or c in "._-") else "-" for c in raw)[:40].strip("-")
     return slug or None
 
+def _resolve_agent(agent: Optional[str], ctx: Optional[Context]) -> Optional[str]:
+    """Prefer the caller-declared enum (stable token), else fall back to clientInfo (when a session
+    is present), else None. Stateless transport → the enum is the only reliable source."""
+    if agent:
+        return _AGENT_ENUM_TOKEN.get(agent, "other")
+    return _client_agent(ctx)
+
 @mcp.tool(title="Save Note", annotations=_WRITE)
 def write_note(subject: str, body: str, summary: Optional[str] = None,
                note_type: Optional[str] = None, category: Optional[str] = None,
@@ -646,6 +668,7 @@ def write_note(subject: str, body: str, summary: Optional[str] = None,
                megatrend_ids: Optional[List[int]] = None,
                gics: Optional[List[str]] = None,
                portfolio_id: Optional[int] = None,
+               agent: Optional[AgentName] = None,
                ctx: Context = None) -> dict:
     """🔴 WRITE — save a NOTE to the user's account (this PERSISTS data; it is NOT a read/lookup). Typical
     flow: FIRST give the user your complete answer as usual, THEN — as the final step of the turn — call
@@ -688,14 +711,22 @@ def write_note(subject: str, body: str, summary: Optional[str] = None,
     is realized on RETRIEVAL, so lean toward keeping. SKIP only the noise floor: chit-chat/thanks, trivial
     lookups ("what's the ticker?"), or off-topic non-investment content (save that only if explicitly asked).
     An explicit "save this / จดไว้" → always save. Otherwise, if the content is note-worthy, briefly OFFER to
-    keep it — don't nag on every turn, and don't save pure filler. Owner-scoped. Returns `{id, created_at,
-    linked}` where `linked` confirms what was tied to the graph (resolved ids + any `unresolved` names)."""
+    keep it — don't nag on every turn, and don't save pure filler.
+
+    🏷️ `agent` — ALWAYS set this to the app you are running in, chosen from the fixed list:
+    `Claude` (Claude apps / claude.ai / Desktop), `Claude Code`, `Claude Coworks`, `ChatGPT`, `Codex`,
+    `Gemini`, or `Other` (anything not listed). It stamps WHICH surface authored the note (provenance in
+    the user's knowledge base). Pick the single closest match; if genuinely unsure, use `Other`. Do not
+    invent values — only these are accepted.
+
+    Owner-scoped. Returns `{id, created_at, linked}` where `linked` confirms what was tied to the graph
+    (resolved ids + any `unresolved` names)."""
     payload = {k: v for k, v in {"subject": subject, "body": body, "summary": summary,
                                  "type": note_type, "category": category, "tags": tags,
                                  "stocks": stocks, "mentioned_stocks": mentioned_stocks,
                                  "megatrend_ids": megatrend_ids, "gics_codes": gics,
                                  "portfolio_id": portfolio_id,
-                                 "agent": _client_agent(ctx)}.items() if v is not None}
+                                 "agent": _resolve_agent(agent, ctx)}.items() if v is not None}
     r = mdx()._http._client.post("/v1/notes", json=payload)
     if r.is_success:
         return r.json()
