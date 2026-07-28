@@ -53,7 +53,7 @@ _INSTRUCTIONS = (
     "`theme_pulse(<concept>)` instead: it resolves the concept across the THREE independent taxonomies and "
     "returns every angle that applies, each SEPARATE — the MarketDX megatrend cohort, the GICS-sector "
     "cohort (a different membership), and the tradable ETF's options positioning (it does the concept→ETF "
-    "mapping for you; full 58-ETF set in marketdx://policy). So: a specific TICKER/company → `asset_pulse`; "
+    "mapping for you; full 64-ETF set in marketdx://policy). So: a specific TICKER/company → `asset_pulse`; "
     "a sector/theme CONCEPT → `theme_pulse`. ⚠️ For a NON-US company or when unsure of the exact ticker "
     "(esp. Asian/European names — we use our OWN suffixes, Korea=.KO not .KS, so a guess 404s), resolve it "
     "FIRST with `find_stock(<name>)` and use the returned `ticker`. Also resolves commodities/crypto/"
@@ -331,7 +331,7 @@ _NEWS_TYPES = {"product_tech", "ma_partnership", "industry_thematic", "earnings_
                "digital_finance_tokenization", "price_action_technical", "noise_other", "short_news",
                "crypto_related", "forex_related", "analyst_forecast"}
 
-# The 58 opana-covered ETFs → concept label (from ava_listings.asset_type='ETF'). Doubles as the asset-
+# The 64 opana-covered ETFs → concept label (from ava_listings.asset_type='ETF'). Doubles as the asset-
 # angle resolver vocabulary for theme_pulse and the authoritative "which ETF is covered" set.
 _COVERED_ETFS = {
     "SPY": "S&P 500", "QQQ": "Nasdaq 100", "IWM": "Russell 2000", "DIA": "Dow 30", "MDY": "S&P Midcap 400",
@@ -340,14 +340,20 @@ _COVERED_ETFS = {
     "XLB": "Materials", "XLRE": "Real Estate", "XLC": "Communication Services",
     "SMH": "Semiconductors", "SOXX": "Semiconductors", "XBI": "Biotech", "IBB": "Biotech",
     "KRE": "Regional Banks", "OIH": "Oil Services", "XOP": "Oil & Gas E&P", "XRT": "Retail",
-    "JETS": "Airlines", "TAN": "Solar", "GLD": "Gold", "SLV": "Silver", "USO": "Crude Oil",
+    "JETS": "Airlines", "TAN": "Solar", "ARKK": "ARK disruptive-innovation / high-growth tech",
+    "GLD": "Gold", "SLV": "Silver", "USO": "Crude Oil",
     "UNG": "Natural Gas", "GDX": "Gold Miners", "GDXJ": "Junior Gold Miners", "TLT": "20y+ Treasuries",
     "IEF": "7-10y Treasuries", "AGG": "US Aggregate Bonds", "LQD": "Investment-Grade Corp",
     "HYG": "High-Yield Corp", "TIP": "TIPS", "EMB": "EM Bonds", "EEM": "Emerging Markets",
-    "EFA": "Developed ex-US", "FXI": "China Large-Cap", "KWEB": "China Internet", "EWJ": "Japan",
-    "EWY": "South Korea", "EWZ": "Brazil", "INDA": "India", "VXX": "VIX Volatility", "UVXY": "VIX 2x",
+    "EFA": "Developed ex-US",
+    "FXI": "China Large-Cap", "MCHI": "China (broad, MSCI China incl. ADRs/HK)",
+    "ASHR": "China A-Shares (mainland CSI 300)", "KWEB": "China Internet / China tech",
+    "EWH": "Hong Kong", "EWT": "Taiwan", "THD": "Thailand",
+    "EWJ": "Japan", "EWY": "South Korea", "EWZ": "Brazil", "INDA": "India",
+    "VXX": "VIX Volatility", "UVXY": "VIX 2x",
     "IBIT": "Bitcoin", "ETHA": "Ethereum", "SPXL": "S&P 3x Bull", "SPXU": "S&P 3x Bear",
     "TQQQ": "Nasdaq 3x Bull", "SQQQ": "Nasdaq 3x Bear", "SOXL": "Semis 3x Bull", "TZA": "Small-Cap 3x Bear",
+    "YINN": "China 3x Bull (LEVERAGED)",
 }
 
 @mcp.tool(title="Theme Summary", annotations=_RO)
@@ -1076,7 +1082,12 @@ def theme_pulse(query: str, window: str = "30d") -> dict:
             "gics = the standard GICS code (e.g. semiconductors->'453010', energy->'10', banks->'4010', "
             "software->'451030'); null if the concept is NOT a GICS sector/industry (a single commodity "
             "like gold, a cross-sector trend like AI, a country). etf = the ticker whose theme matches the "
-            "concept; null if none fits well.",
+            "concept; null if none fits well. A country/region market IS a valid concept for etf even "
+            "though it has no gics (China->MCHI, Hong Kong->EWH, Taiwan->EWT, Thailand->THD, Japan->EWJ). "
+            "Prefer the PLAIN, unleveraged, broad fund; pick a LEVERAGED (2x/3x/bull/bear, e.g. YINN/SOXL/"
+            "SPXL/TQQQ) or a narrow sub-slice (China A-Shares->ASHR, China internet/tech->KWEB, "
+            "China large-cap->FXI) ONLY if the concept explicitly asks for leverage / A-shares / mainland / "
+            "internet / large-cap. Bare 'China'/'Chinese stocks'/'China market' -> MCHI.",
             f"Concept: {query}\nCovered ETFs: " + ", ".join(f"{k}={v}" for k, v in _COVERED_ETFS.items()),
             0.0)
         g = str(r.get("gics") or "").strip()

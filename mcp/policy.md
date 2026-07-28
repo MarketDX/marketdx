@@ -113,17 +113,17 @@ answer half-informed —
 3. `relationships` — competitors + peers → is the move **SECTOR-WIDE or IDIOSYNCRATIC**?
 (Drill with the individual tools — `stock_impact` / `options_sentiment` / `relationships` — only after.)
 
-**COVERED ETF MAP — opana covers EXACTLY these 58 ETFs (a single COMPANY you pass by its own ticker;
+**COVERED ETF MAP — opana covers EXACTLY these 64 ETFs (a single COMPANY you pass by its own ticker;
 world knowledge handles that. But an asset CLASS / non-single-stock topic → its covered ETF below, else
 options.covered=false):**
 - Indices: S&P 500→`SPY` · Nasdaq 100→`QQQ` · Russell 2000→`IWM` · Dow→`DIA` · S&P Midcap→`MDY`
 - Sectors (SPDR Select): tech→`XLK` · financials→`XLF` · energy→`XLE` · healthcare→`XLV` · discretionary→`XLY` · industrials→`XLI` · staples→`XLP` · utilities→`XLU` · materials→`XLB` · real-estate→`XLRE` · comms→`XLC`
-- Industries: semiconductors→`SMH`/`SOXX` · biotech→`XBI`/`IBB` · regional-banks→`KRE` · oil-services→`OIH` · oil&gas E&P→`XOP` · retail→`XRT` · airlines→`JETS` · solar→`TAN`
+- Industries: semiconductors→`SMH`/`SOXX` · biotech→`XBI`/`IBB` · regional-banks→`KRE` · oil-services→`OIH` · oil&gas E&P→`XOP` · retail→`XRT` · airlines→`JETS` · solar→`TAN` · disruptive-innovation/high-growth-tech→`ARKK`
 - Commodities: gold→`GLD` · silver→`SLV` · oil→`USO` · natgas→`UNG` · gold-miners→`GDX`/`GDXJ`
 - Bonds/rates: 20y+ Treasuries→`TLT` · 7-10y→`IEF` · aggregate→`AGG` · investment-grade→`LQD` · high-yield→`HYG` · TIPS→`TIP` · EM-bonds→`EMB`
-- International: emerging→`EEM` · developed/EAFE→`EFA` · China-large→`FXI` · China-internet→`KWEB` · Japan→`EWJ` · Korea→`EWY` · Brazil→`EWZ` · India→`INDA`
+- International: emerging→`EEM` · developed/EAFE→`EFA` · China-broad→`MCHI` (default for bare "China") · China-large-cap→`FXI` · China-A-shares/mainland→`ASHR` · China-internet/tech→`KWEB` · Hong Kong→`EWH` · Taiwan→`EWT` · Thailand→`THD` · Japan→`EWJ` · Korea→`EWY` · Brazil→`EWZ` · India→`INDA`
 - Volatility: VIX→`VXX` · VIX-2x→`UVXY`  ·  Crypto: Bitcoin→`IBIT` · Ethereum→`ETHA`
-- Leveraged/inverse (⚠️ geared — say so, NOT the plain index): S&P 3x→`SPXL`/-3x→`SPXU` · Nasdaq 3x→`TQQQ`/-3x→`SQQQ` · semis 3x→`SOXL` · smallcap -3x→`TZA`
+- Leveraged/inverse (⚠️ geared — say so, NOT the plain index): S&P 3x→`SPXL`/-3x→`SPXU` · Nasdaq 3x→`TQQQ`/-3x→`SQQQ` · semis 3x→`SOXL` · smallcap -3x→`TZA` · China 3x→`YINN`
 
 Synthesize ONE read; the sharpest insight is often where **news and positioning DIVERGE** (e.g. calm
 news but options paying up for downside protection). Rules for the options block: narrate from each
