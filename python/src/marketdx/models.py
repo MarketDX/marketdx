@@ -208,6 +208,11 @@ class StockNews:
     news_types: List[str]
     story_id: Optional[str] = None      # = dup_group_id — the story-cluster id (collapse ON, default)
     dup_count: Optional[int] = None     # articles in the cluster (outlet reach); 1 = singleton
+    # Curve-wide macro fallback (bonds/rates): a `.GB` tenor / `.MM` rate with no news of its own borrows
+    # its country's benchmark-10Y macro news. `scope='curve_macro'` flags a borrowed row; `macro_source`
+    # is the benchmark it came from (e.g. 'US-10Y.GB') → narrate as curve-wide, not this-tenor-specific.
+    scope: Optional[str] = None
+    macro_source: Optional[str] = None
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
 
     @classmethod
@@ -219,7 +224,8 @@ class StockNews:
             impact=Impact.from_dict(d.get("impact")),
             relevance=d.get("relevance"), trend=d.get("trend"), trend_id=d.get("trend_id"),
             impact_score=d.get("impact_score"), news_types=list(d.get("news_types") or []),
-            story_id=d.get("story_id") or d.get("dup_group_id"), dup_count=d.get("dup_count"), raw=d,
+            story_id=d.get("story_id") or d.get("dup_group_id"), dup_count=d.get("dup_count"),
+            scope=d.get("scope"), macro_source=d.get("macro_source"), raw=d,
         )
 
     def to_rows(self) -> List[Dict[str, Any]]:
@@ -227,6 +233,7 @@ class StockNews:
             "published_at": self.published_at, "title": self.title, "trend": self.trend,
             "relevance": self.relevance, "impact_score": self.impact_score, "dup_count": self.dup_count,
             "brief_text": self.brief_text, "publisher": self.publisher, "url": self.url,
+            "scope": self.scope, "macro_source": self.macro_source,
         }
         if self.impact and self.impact.aspects:
             return [{**base, "direction": a.direction, "aspect": a.aspect, "reason": a.reason}
