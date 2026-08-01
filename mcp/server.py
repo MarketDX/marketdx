@@ -29,12 +29,20 @@ from marketdx import MarketDX, NotFoundError
 _INSTRUCTIONS = (
     "MarketDX is a financial news→impact graph: it maps news to the assets and megatrends it actually "
     "moves — direction (+/−), the reason WHY, and the ripple to connected players — across STOCKS, "
-    "FOREX, CRYPTO, COMMODITIES (metals like copper & gold, energy like oil & gas, and agris), and "
+    "FOREX, CRYPTO, COMMODITIES (metals like copper & gold, energy like oil & gas, agris, carbon/EU-ETS "
+    "allowances, and LME-vs-onshore-China metal variants), GOVERNMENT-BOND YIELDS, MONEY-MARKET RATES, and "
     "PRIVATE / off-coverage companies. For ANY question about news, market impact, or what moved an "
     "asset or theme — INCLUDING commodities and metals (copper, gold, oil, …) — use THESE tools, not a "
     "web search: MarketDX returns scored per-article impact + the causal 'why' + the ripple that a web "
-    "search cannot. Commodities use a `SYMBOL.COMM` ticker (COPPER.COMM, GOLD.COMM) with stock_impact, "
-    "or just search_news('copper'). News tools accept a time range (`from_`/`to` ISO or `window` like "
+    "search cannot. Commodities use a `SYMBOL.COMM` ticker (COPPER.COMM, GOLD.COMM, CARBON_EU.COMM, "
+    "NICKEL_LME.COMM) with stock_impact, or just search_news('copper'); some metals have BOTH an "
+    "onshore-China (CNY) and an LME (USD) contract, and palm oil a USD (PALMOIL) vs Bursa-MYR (PALMOIL_MY) "
+    "variant. Government-bond YIELDS use `<ISO2>-<TENOR>.GB` (US-10Y.GB, JP-10Y.GB, DE-2Y.GB) and money-"
+    "market RATES `<TOKEN>.MM` (SOFR.MM, EFFR.MM, EURIBOR3M.MM); a yield/rate MOVE reads in BASIS POINTS "
+    "(`change_bps`), never as a % of the yield — and a yield has no options/PE/market-cap, so those lenses "
+    "being absent for a `.GB`/`.MM` ticker is EXPECTED, not a failure. Resolve any of these with find_stock "
+    "(US 10-year treasury→US-10Y.GB, SOFR→SOFR.MM) then asset_pulse/stock_prices. "
+    "News tools accept a time range (`from_`/`to` ISO or `window` like "
     "'90d'/'qtd'/'1y'); to compare periods, call the tool once per period and compare. "
     "⚠️ NEWS coverage starts 2026-01-01 — there is NO news before 2026; for an older period say so "
     "plainly, never fabricate or present an empty result as 'nothing happened'. PRICE / volatility "
@@ -458,9 +466,17 @@ def stock_impact(ticker: str, direction: Optional[str] = None, limit: Optional[i
     = one story + `dup_count`); `collapse=false` for the raw feed. `limit` = how many (default 20, max 50)
     — heavily-covered assets have HUNDREDS, so keep it small + narrow. TIME-SCOPE with `from_`/`to` (ISO)
     or `window` ('90d','qtd','1y'); to COMPARE periods, call once per period. ⚠️ News starts 2026-01-01 —
-    older ranges return nothing (no coverage, not 'no news'; price/volatility history goes back decades)."""
-    return _ser(mdx().stock(ticker).news(direction=direction, collapse=collapse,
-                                         from_=from_ or _win(window), to=to, limit=_lim(limit)).to_list())
+    older ranges return nothing (no coverage, not 'no news'; price/volatility history goes back decades).
+    🔵 BONDS/RATES: a specific tenor/rate (`US-2Y.GB`, `SOFR.MM`) with no news of its own returns the
+    country's benchmark-10Y macro news tagged `scope:'curve_macro'` + `macro_source` — narrate those as
+    curve-wide central-bank context, not tenor-specific."""
+    # RAW endpoint (not the SDK StockNews model — it drops the `scope`/`macro_source` curve-macro tags a
+    # bond/rate borrows from its benchmark 10Y); slim to narratable fields (which now keep those tags).
+    params = {"direction": direction, "from": from_ or _win(window), "to": to, "limit": _lim(limit)}
+    if collapse is not None:
+        params["collapse"] = "true" if collapse else "false"
+    params = {k: v for k, v in params.items() if v is not None}
+    return _slim_articles(mdx()._get(f"/v1/stocks/{ticker}/news", params).data.get("results", []), _lim(limit))
 
 @mcp.tool(title="Options Sentiment", annotations=_RO)
 def options_sentiment(
@@ -518,8 +534,8 @@ def options_sentiment(
             "fabricate an options view; use news/impact for the read, and (if relevant) note options "
             "coverage isn't available for this name.")}
 
-_FIND_KEEP = ("ticker", "symbol", "name", "type", "country", "exchange", "market_cap_usd", "similarity",
-              "match_type", "mode")
+_FIND_KEEP = ("ticker", "symbol", "name", "type", "country", "domicile", "region", "region_iso2",
+              "exchange", "market_cap_usd", "similarity", "match_type", "mode")
 
 @mcp.tool(title="Find Stock / Resolve Ticker", annotations=_RO)
 def find_stock(q: Optional[str] = None, queries: Optional[List[str]] = None,
@@ -532,13 +548,30 @@ def find_stock(q: Optional[str] = None, queries: Optional[List[str]] = None,
     PRIVATE companies (openai→`oc:52`). Matching = lexical first (symbol/prefix/alias/name), then a
     SEMANTIC fallback so a phrase ('chip maker') or another language still resolves. Returns matches with
     a ready-to-use `ticker` (paste straight into asset_pulse/stock_impact), `type` (stock/etf/commodity/
-    crypto/forex/private), `name`, `country`, `market_cap_usd`, `similarity`. `country` restricts to a
+    crypto/forex/private), `name`, `country`/`region`, `market_cap_usd`, `similarity`. Also resolves
+    government-bond YIELDS (US 10-year treasury→`US-10Y.GB`, `<ISO2>-<TENOR>.GB`) and money-market RATES
+    (SOFR→`SOFR.MM`, `<TOKEN>.MM`) — feed the returned `.GB`/`.MM` ticker into asset_pulse/stock_prices, and
+    note commodities have no country (a `region` is served instead). `country` restricts to a
     market. Take the top match; for a US mega-cap you already know the ticker (AAPL) you can skip this.
     🔴 BATCH — to resolve SEVERAL names in ONE call (e.g. adding many stocks to a playlist, or comparing
     several names), pass `queries=["apple","ซัมซุง","xiaomi"]` instead of `q`. Returns
     `{results:[{query, match_quality, matches}]}` where `match_quality` = `strong` (one dominant match →
     auto-accept), `weak` (ambiguous/several close → disambiguate or ASK the user which), or `none`.
-    This saves N round-trips vs calling find_stock once per name."""
+    This saves N round-trips vs calling find_stock once per name. 🔴 DISAMBIGUATE even on `strong`: if 2+
+    matches share ≈equal top similarity but are DIFFERENT entities — different asset TYPE (a company vs a
+    same-named commodity, e.g. `AAPL.US` vs `APPLE.COMM`) or different COUNTRY (`KBANK.BK` 🇹🇭 vs a Korean
+    `Kbank`) — that tie IS the ambiguity: ASK the user which they mean rather than blind-picking match #1
+    (never silently return a commodity when a mega-cap company shares the word). 🔴 An exact ticker-SYMBOL
+    match does NOT override this: symbol-match only orders the display, it does NOT settle which same-named
+    REAL company (in another country) the user meant — still ASK. Auto-pick only when the others are clearly
+    not the same kind of thing, or context settles it. The QUERY'S OWN wording often settles it → then
+    ANSWER, don't over-ask: an asset-TYPE word ("stock"/หุ้น excludes a commodity; "commodity" picks it), a
+    COUNTRY word (Thai vs Korean), or a more-specific name (กสิกร=Kasikorn) mapping to ONE candidate. Ask
+    ONLY when the wording is bare/generic and 2+ real different-entity candidates remain. 🧵 CONVERSATIONAL
+    context is a prior too — apply it SYMMETRICALLY, even against the exact-symbol default: after discussing
+    KOREAN names, a bare "KBANK" more likely means the Korean Kbank than the Thai KBANK.BK — don't silently
+    default to the symbol match; ASK, surfacing the context-implied one first. (Don't use context only when
+    it agrees with the symbol match.)"""
     if queries:
         resp = mdx()._http._client.post(
             "/v1/stocks/resolve",
@@ -858,7 +891,7 @@ def remove_from_playlist(playlist_id: int, tickers: List[str]) -> dict:
 # Composites bundle several endpoints → keep each row APPROPRIATELY light so the bundle stays
 # context-friendly (the raw impact row carries a huge `raw` blob; options a big per_bucket audit).
 _ART_KEEP = ("title", "brief_text", "url", "publisher", "published_at", "impact", "news_types",
-             "impact_score", "dup_count")
+             "impact_score", "dup_count", "trend", "trend_id", "scope", "macro_source")
 def _slim_articles(rows, n=6):
     """Keep only the narratable fields of an impact-article row (drop the big `raw` blob + ids) + cap N."""
     return [{k: a[k] for k in _ART_KEEP if k in a} for a in (rows or [])[:n]]
@@ -920,8 +953,11 @@ def asset_pulse(ticker: str, window: Optional[str] = None, limit: Optional[int] 
     cli = mdx()  # bind the caller's client in THIS thread — the contextvar key isn't set inside workers
     frm = _win(window)
     def _impact():
-        try:
-            rows = _ser(cli.stock(ticker).news(collapse=True, from_=frm, limit=_lim(limit, default=6)).to_list())
+        try:  # RAW endpoint (not the SDK StockNews model, which drops `scope`/`macro_source` — the
+            params = {"collapse": "true", "limit": _lim(limit, default=6)}  # curve-macro fallback tags)
+            if frm:
+                params["from"] = frm
+            rows = cli._get(f"/v1/stocks/{ticker}/news", params).data.get("results", [])
             return {"articles": _slim_articles(rows, 6)}
         except Exception as e:  # unknown ticker / no impact rows — degrade, don't kill the bundle
             return {"error": str(e), "articles": []}
@@ -965,7 +1001,15 @@ def asset_pulse(ticker: str, window: Optional[str] = None, limit: Optional[int] 
                    "translate EVERY options term (put/call, IV, gamma, skew, max-pain, O/S) into plain "
                    "everyday words, keep a number only if it helps a layperson; do NOT dump jargon. If "
                    "`options.covered` is false, answer from `impact`+`price`; `price.note` present → say "
-                   "price isn't available; never fabricate."),
+                   "price isn't available; never fabricate. 🔵 If `price.metric_kind` == 'yield' (a `.GB` "
+                   "bond yield or `.MM` rate): narrate the move in BASIS POINTS (`change_bps`), NOT % (a % "
+                   "of a yield is sign-inverted); use `price_proxy_pct`/`mod_duration` for a bond-PRICE "
+                   "estimate (label it an estimate); yield↑ ⇒ bond price↓. A yield has NO options/PE/market-"
+                   "cap, so `options.covered=false` here is EXPECTED — don't flag it as a gap, just read "
+                   "price + news. If an `impact` article carries `scope:'curve_macro'`, it was BORROWED from "
+                   "the country's benchmark 10Y (`macro_source`) because this specific tenor/rate has no news "
+                   "of its own — narrate it as curve-wide central-bank/macro context, NOT specific to this "
+                   "tenor."),
     }
 
 @mcp.tool(title="Stock Prices", annotations=_RO)
@@ -978,7 +1022,14 @@ def stock_prices(ticker: str, to: Optional[str] = None, from_: Optional[str] = N
     "is it cheap/extended / how has it moved / why is it dropping" — the LEVEL that makes a news+options read
     actionable (or use `asset_pulse` to get price + news + options in one). `to` = as-of date (point-in-time,
     YYYY-MM-DD, features as of that day); `from_` bounds history (narrowing below ~1y nulls the long windows).
-    For a SECTOR/theme (not one ticker) use `theme_pulse`, not this."""
+    For a SECTOR/theme (not one ticker) use `theme_pulse`, not this. 🔵 BONDS/RATES: if `metric_kind` ==
+    "yield" (a `.GB` govt-bond yield like US-10Y.GB or a `.MM` rate like SOFR.MM) the stored value is a
+    LEVEL, not a price — narrate each window's `change_bps` in BASIS POINTS, NOT `change_pct` (a % of a
+    yield is sign-inverted + the wrong unit; e.g. US-10Y 1y = "+52 bps", not "+12%"). Bonds also carry
+    per-window `price_proxy_pct` + top-level `mod_duration` = an L1 bond-PRICE estimate (≈ −ModDur×Δy) for
+    "the bond fell ~4%" narration (label it an ESTIMATE; for an exact bond return point to a bond ETF like
+    TLT/IEF). Volume fields (`rvol`, `up_down_volume_ratio_1mo`, …) are `null` for a yield — don't present
+    volume conviction; and yield↑ ⇒ bond price↓."""
     return mdx()._get(f"/v1/stocks/{ticker}/prices", {"to": to, "from": from_}).data
 
 @mcp.tool(title="Batch Stock Prices", annotations=_RO)
