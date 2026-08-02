@@ -1003,8 +1003,11 @@ def remove_from_playlist(playlist_id: Annotated[int, _d("The playlist's id.")],
 # ── COMPOSITE tools (whole multi-step pipeline server-side, ONE call) ─────────
 # Composites bundle several endpoints → keep each row APPROPRIATELY light so the bundle stays
 # context-friendly (the raw impact row carries a huge `raw` blob; options a big per_bucket audit).
-_ART_KEEP = ("title", "brief_text", "url", "publisher", "published_at", "impact", "news_types",
+_ART_KEEP = ("title", "brief_text", "url", "publisher", "article_published_at", "impact", "news_types",
              "impact_score", "dup_count", "trend", "trend_id", "scope", "macro_source")
+# NOTE: the news-api emits the date as `article_published_at` (not `published_at`) and the per-article
+# DIRECTION lives inside `impact.net_direction` (there is no free-text `why`/`reason` field — the "why" is
+# `brief_text` + `impact.aspects`). Keep the real key names so the date isn't silently dropped.
 def _slim_articles(rows, n=6):
     """Keep only the narratable fields of an impact-article row (drop the big `raw` blob + ids) + cap N."""
     return [{k: a[k] for k in _ART_KEEP if k in a} for a in (rows or [])[:n]]
@@ -1816,6 +1819,10 @@ def find_hs(q: Annotated[str, _d(
         concept → don't force it.
       • AMBIGUOUS top candidates that are genuinely DIFFERENT concepts (pet food 230910 vs livestock feed
         230990) → ASK the user which, before spending a trade call.
+      • MULTI-STAGE commodities — candidates may be different SUPPLY-CHAIN STAGES of one material (uranium:
+        ore 261210 vs natural/processed 284410 vs enriched; steel: semi-finished vs hot-rolled coil; copper:
+        ore 2603 vs refined 7403). These are DIFFERENT markets with different country rankings → pick the
+        stage the user means (or ask), and state which stage your answer covers.
       • ENUMERATE a conglomerate's material lines and call once per line (a whole-description search lands on
         the dominant line only). FREE — enumerate broadly, then pull metered trade data selectively.
     Feeds the `codes` of `search_trade` / `top_partners` / `top_traders` / `trade_balance`."""
@@ -1835,7 +1842,9 @@ def search_trade(reporter: Annotated[str, _d("Reporting country — name / ISO /
     price-features: value / volume / unit-price each with trend / cagr_pct / peak / trough / biggest_swing, +
     a `decomposition` = is a change price- or volume-driven). LEAD with `analysis`; don't re-derive from the
     raw series. `mirror=true` adds the partner's figure + discrepancy. A GAP in old years may be an HS-revision
-    break, NOT zero trade. Surface `_license_note` when showing data. ~1 req/sec server-paced — don't fan out.
+    break, NOT zero trade. `netweight_kg`/`qty` are often NULL for the LATEST year (value reported first) — that
+    is NORMAL, read value-only, don't re-fetch. Pass ONE product line per call (merging unlike codes muddies the
+    decomposition/`analysis`). Surface `_license_note` when showing data. ~1 req/sec server-paced — don't fan out.
     BYOK: no key → an `error`/`note` with a connect CTA (relay it; you may answer from general knowledge
     meanwhile)."""
     return _ext("/v1/ext/comtrade/search",
