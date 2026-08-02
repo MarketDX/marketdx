@@ -1884,7 +1884,9 @@ def trade_balance(reporter: Annotated[str, _d("Reporting country — name / ISO 
                   period: Annotated[Optional[str], _d("Default `latest`; a year / list / range / `lastN`. Dynamic.")] = None) -> dict:
     """Exports vs imports vs NET balance (BYOK, 5cr; GOODS only) — "is <A> a net exporter to <B> (of <X>)?".
     Returns `rows:[{year, exports_usd, imports_usd, balance_usd}]` (balance = exports − imports; + = surplus).
-    `codes` defaults to TOTAL (all commodities) for a macro/country read; pass HS codes for one product.
+    `codes` defaults to TOTAL (all commodities) for a macro/country read; pass HS codes (from find_hs) for one
+    product. 🔎 CHECK the `basis` field in the response — it says whether you got a `commodity-specific` balance
+    or the all-commodity `TOTAL`; if you meant a product balance but `basis` says TOTAL, you forgot `codes`.
     ⭐ Signature use for TARIFF / trade-war news (US↔China): pull the actual balance to quantify what the
     news sentiment only gestures at. BYOK note relayed on 402."""
     return _ext("/v1/ext/comtrade/balance",
