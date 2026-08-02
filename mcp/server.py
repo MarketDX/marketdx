@@ -14,7 +14,8 @@ Deps: mcp (FastMCP), marketdx, openai (deepseek is OpenAI-compatible).
 from __future__ import annotations
 import os, json, pathlib, contextvars
 from dataclasses import asdict, is_dataclass
-from typing import Any, Optional, List, Literal
+from typing import Annotated, Any, Optional, List, Literal
+from pydantic import Field
 
 from mcp.server.fastmcp import FastMCP, Context
 from mcp.server.transport_security import TransportSecuritySettings
@@ -105,6 +106,29 @@ _RO = ToolAnnotations(readOnlyHint=True)
 # WRITE tools persist user data → readOnlyHint=False so a client can prompt/confirm before running.
 # additive (a new note), not an update/delete → not destructive, not idempotent.
 _WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False)
+
+# ── Per-parameter descriptions (the AUTHORITATIVE layer — a tool must be precise ON ITS OWN, not lean on a
+# skill). `_d(desc)` returns a FRESH pydantic Field per param (never share a FieldInfo across fields).
+# Reusable strings keep the common params (window/limit/ticker/…) consistent across all 32 tools. ──
+def _d(desc: str):  # noqa: ANN201
+    return Field(description=desc)
+_TICKER = "A MarketDX ticker (resolve via find_stock if unsure — mdx uses its OWN suffixes: Korea `.KO`, " \
+    "Taiwan `.TW`, commodities `.COMM`, bonds `<ISO2>-<TENOR>.GB`, rates `.MM`). US mega-caps: bare `AAPL`."
+_WINDOW = "News-recency window: `7d`/`30d`/`90d`/`180d`/`1y` or `mtd`/`qtd`/`ytd`. Omit → a sensible default. " \
+    "(Price history is unaffected — this only scopes the NEWS lens.)"
+_LIMIT = "Max rows (default 20, hard cap 50). Keep SMALL + narrow the scope; page/refine rather than dump — " \
+    "heavily-covered assets have hundreds of articles."
+_FROM = "Lower time bound, ISO date `YYYY-MM-DD`. ⚠️ mdx NEWS coverage starts 2026-01-01 (nothing before)."
+_TO = "Upper time bound, ISO date `YYYY-MM-DD`."
+_DIRECTION = "Filter by impact direction: `pos` | `neg` | `ambiguous`. Omit → all."
+_COLLAPSE = "Merge near-duplicate stories (same article from many outlets) into one row + `dup_count`. " \
+    "Default ON; pass `false` for the raw un-deduped feed."
+_COUNTRY_CSV = "Market filter — CSV of ISO-2 codes (e.g. `US` or `CN,TW,HK`). For a REGION pass every member."
+_ASPECT = "Impact CHANNEL filter (e.g. `demand`, `competition`, `tariff`, `monetary`). Omit → all channels."
+_MEGATREND = "A megatrend node — a name/slug (resolved for you, e.g. `foundry`) or an int node id. CSV for several."
+_GICS = "GICS code prefix(es), CSV — sector `25` / industry-group `2550` / industry `255010` (from your knowledge)."
+_NEWS_TYPE = "News CATEGORY (exact names only, e.g. `macro_economic`, `commodity_supply`, `earnings_results`)."
+_PID = "The portfolio's id (call list_portfolios first if the user says 'my portfolio' without a number)."
 
 def _lim(n: Optional[int], default: int = 20, ceiling: int = 50) -> int:
     """Bound a list tool's page size so the result stays context-friendly. Heavily-covered assets
@@ -365,17 +389,24 @@ _COVERED_ETFS = {
 }
 
 @mcp.tool(title="Theme Summary", annotations=_RO)
-def theme_summary(theme: str, window: str = "30d", country: Optional[str] = None) -> dict:
+def theme_summary(theme: Annotated[str, _d("A megatrend theme — name/slug (resolved for you) or node id.")],
+                  window: Annotated[str, _d(_WINDOW)] = "30d",
+                  country: Annotated[Optional[str], _d("Optional market ISO-2 filter.")] = None) -> dict:
     """Pre-composed analyst brief for a megatrend theme: pulse, winners/losers, top entities, aspect
     heatmap, ripple. `theme` = a theme name or id/slug; `window` = 7d/30d/90d/1y/mtd/qtd/ytd."""
     return mdx().theme(_to_node(theme)).summary(window=window, country=country)
 
 @mcp.tool(title="Brief", annotations=_RO)
-def brief(news_type: Optional[str] = None, country: Optional[str] = None,
-          aspect: Optional[str] = None, gics: Optional[str] = None,
-          megatrend: Optional[str] = None, window: str = "30d",
-          from_: Optional[str] = None, to: Optional[str] = None,
-          interval: Optional[str] = None, lang: Optional[str] = None) -> dict:
+def brief(news_type: Annotated[Optional[str], _d(_NEWS_TYPE)] = None,
+          country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
+          aspect: Annotated[Optional[str], _d(_ASPECT)] = None,
+          gics: Annotated[Optional[str], _d(_GICS)] = None,
+          megatrend: Annotated[Optional[str], _d(_MEGATREND)] = None,
+          window: Annotated[str, _d(_WINDOW)] = "30d",
+          from_: Annotated[Optional[str], _d(_FROM)] = None,
+          to: Annotated[Optional[str], _d(_TO)] = None,
+          interval: Annotated[Optional[str], _d("Time-bucketing of the pulse series: `day`|`week`|`month`.")] = None,
+          lang: Annotated[Optional[str], _d("Translate title/brief_text: `en`|`th`|`ja`.")] = None) -> dict:
     """The generalized ANALYST BRIEF — one composed "how is <scope> doing right now?" picture (pulse +
     net direction, top_stories, winners/losers, aspect_heatmap, top_entities, top_assets) for ANY
     AND-combination of scopes. ⭐ Use this to SUMMARIZE a SCOPE — a THEME, a news CATEGORY, a COUNTRY, a
@@ -416,9 +447,14 @@ _SIM_STRONG = 0.68   # cosine ≥ this = a solid semantic match. ⚠️ CALIBRAT
 _SIM_WEAK = 0.58     # below this = essentially no match
 
 @mcp.tool(title="Search News", annotations=_RO)
-def search_news(q: str, entity_type: Optional[str] = None, collapse: Optional[bool] = None,
-                limit: Optional[int] = None, from_: Optional[str] = None, to: Optional[str] = None,
-                window: Optional[str] = None) -> dict:
+def search_news(q: Annotated[str, _d("Free-text SEMANTIC news query — a topic/event/asset in any language "
+                                      "('copper', 'oil shock', 'Fed rate hike', 'ข่าวทองคำ').")],
+                entity_type: Annotated[Optional[str], _d("Keep only hits of one kind: `stock`|`forex`|`crypto`|`commodity`|`private`. Omit → all.")] = None,
+                collapse: Annotated[Optional[bool], _d(_COLLAPSE)] = None,
+                limit: Annotated[Optional[int], _d(_LIMIT)] = None,
+                from_: Annotated[Optional[str], _d(_FROM)] = None,
+                to: Annotated[Optional[str], _d(_TO)] = None,
+                window: Annotated[Optional[str], _d(_WINDOW)] = None) -> dict:
     """SEMANTIC news search across ALL covered asset classes — stocks, FX, crypto, COMMODITIES (metals
     like copper/gold, energy like oil), and private companies. Articles matched by MEANING, impact-labeled
     (title, publisher, entities, direction, why). USE THIS for 'copper news', 'metals', 'gold', etc.
@@ -440,12 +476,18 @@ def search_news(q: str, entity_type: Optional[str] = None, collapse: Optional[bo
     return {"match_quality": quality, "top_similarity": round(top, 3), "note": note, "results": results}
 
 @mcp.tool(title="News Feed", annotations=_RO)
-def news_feed(megatrend: Optional[str] = None, country: Optional[str] = None,
-              aspect: Optional[str] = None, direction: Optional[str] = None,
-              news_type: Optional[str] = None, only_scored: Optional[bool] = None,
-              min_relevance: Optional[float] = None, limit: Optional[int] = None,
-              collapse: Optional[bool] = None, from_: Optional[str] = None,
-              to: Optional[str] = None, window: Optional[str] = None) -> list:
+def news_feed(megatrend: Annotated[Optional[str], _d(_MEGATREND)] = None,
+              country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
+              aspect: Annotated[Optional[str], _d(_ASPECT)] = None,
+              direction: Annotated[Optional[str], _d(_DIRECTION)] = None,
+              news_type: Annotated[Optional[str], _d(_NEWS_TYPE)] = None,
+              only_scored: Annotated[Optional[bool], _d("Keep only articles carrying a judged per-entity impact. Omit → all gated articles.")] = None,
+              min_relevance: Annotated[Optional[float], _d("Minimum impact relevance, 0–1.")] = None,
+              limit: Annotated[Optional[int], _d(_LIMIT)] = None,
+              collapse: Annotated[Optional[bool], _d(_COLLAPSE)] = None,
+              from_: Annotated[Optional[str], _d(_FROM)] = None,
+              to: Annotated[Optional[str], _d(_TO)] = None,
+              window: Annotated[Optional[str], _d(_WINDOW)] = None) -> list:
     """The filtered impact feed — news by megatrend/country/aspect/direction/news_type, across stocks,
     FX, crypto, COMMODITIES (metals/energy) and private cos. Use for 'negative tariff news on
     Semiconductors', 'macro news moving European stocks', 'copper / metals news', etc. Near-duplicate
@@ -458,9 +500,13 @@ def news_feed(megatrend: Optional[str] = None, country: Optional[str] = None,
                           collapse=collapse, from_=from_ or _win(window), to=to, limit=_lim(limit)).to_list())
 
 @mcp.tool(title="Stock Impact", annotations=_RO)
-def stock_impact(ticker: str, direction: Optional[str] = None, limit: Optional[int] = None,
-                 collapse: Optional[bool] = None, from_: Optional[str] = None,
-                 to: Optional[str] = None, window: Optional[str] = None) -> list:
+def stock_impact(ticker: Annotated[str, _d(_TICKER)],
+                 direction: Annotated[Optional[str], _d(_DIRECTION)] = None,
+                 limit: Annotated[Optional[int], _d(_LIMIT)] = None,
+                 collapse: Annotated[Optional[bool], _d(_COLLAPSE)] = None,
+                 from_: Annotated[Optional[str], _d(_FROM)] = None,
+                 to: Annotated[Optional[str], _d(_TO)] = None,
+                 window: Annotated[Optional[str], _d(_WINDOW)] = None) -> list:
     """How news moved a specific company/asset (incl commodities like GOLD.COMM) — per-article impact
     (direction + aspect + why), most recent first. Near-duplicate stories are MERGED by default (each row
     = one story + `dup_count`); `collapse=false` for the raw feed. `limit` = how many (default 20, max 50)
@@ -480,11 +526,12 @@ def stock_impact(ticker: str, direction: Optional[str] = None, limit: Optional[i
 
 @mcp.tool(title="Options Sentiment", annotations=_RO)
 def options_sentiment(
-    ticker: Optional[str] = None,
-    style: str = "plain",
-    as_of: Optional[str] = None,
-    tickers: Optional[List[str]] = None,
-    dates: Optional[List[str]] = None,
+    ticker: Annotated[Optional[str], _d("A US-listed OPTIONABLE ticker (~547 names) or an index-ETF proxy (S&P→SPY, "
+                                        "Nasdaq→QQQ). Non-US / uncovered → `covered:false` (not an error).")] = None,
+    style: Annotated[str, _d("Narration style: `plain` (layperson, default) | `technical`.")] = "plain",
+    as_of: Annotated[Optional[str], _d("As-of date YYYY-MM-DD (point-in-time positioning).")] = None,
+    tickers: Annotated[Optional[List[str]], _d("Batch form — several tickers at once (instead of `ticker`).")] = None,
+    dates: Annotated[Optional[List[str]], _d("Specific expiry dates YYYY-MM-DD to focus the read on.")] = None,
 ) -> dict:
     """What the US OPTIONS MARKET is saying — the POSITIONING lens (~547 popular US optionable names,
     stocks + ETFs). Pairs with the news→impact read: for "how is <X> doing?" fetch THIS *and*
@@ -538,8 +585,18 @@ _FIND_KEEP = ("ticker", "symbol", "name", "type", "country", "domicile", "region
               "exchange", "market_cap_usd", "similarity", "match_type", "mode")
 
 @mcp.tool(title="Find Stock / Resolve Ticker", annotations=_RO)
-def find_stock(q: Optional[str] = None, queries: Optional[List[str]] = None,
-               country: Optional[str] = None, limit: Optional[int] = None):
+def find_stock(q: Annotated[Optional[str], _d("Free-text to resolve to ONE exact ticker — a company NAME, a ticker "
+                   "(full/prefix), an alias, a phrase, or a non-English name. 🌐 translate a generic COMMODITY/SECTOR "
+                   "concept to English first (ทองคำ→'gold'); a COMPANY name passes as-is (茅台/トヨタ resolve).")] = None,
+               queries: Annotated[Optional[List[str]], _d("BATCH form — resolve SEVERAL names in ONE call (e.g. building a "
+                   "playlist). Returns per-query `match_quality`. Use instead of `q`.")] = None,
+               country: Annotated[Optional[str], Field(description=(
+                   "OPTIONAL market filter. Pass ONLY to disambiguate a same-name company across countries "
+                   "(the Thai vs Korean 'KBANK') — omit it for a distinctive name (an unneeded/mismatched "
+                   "country silently 0-matches). Accepts a country NAME or an ISO-2 code; the server "
+                   "normalizes ('South Korea'->KR, 'UK'/'England'->GB, 'Switzerland'->CH), so pass the NAME "
+                   "when unsure. NEVER guess a 2-letter code ('CH' is Switzerland not China)."))] = None,
+               limit: Annotated[Optional[int], _d("Max candidate matches per query (small is fine — take the top).")] = None):
     """Resolve ANY free-text — a company NAME, a ticker (full or prefix), an alias, a phrase, or a
     non-English name — to the EXACT MarketDX `ticker`. 🔴 Use this BEFORE asset_pulse / stock_impact
     whenever you're not 100% sure of the exact ticker — ESPECIALLY for NON-US companies: MarketDX uses
@@ -552,7 +609,20 @@ def find_stock(q: Optional[str] = None, queries: Optional[List[str]] = None,
     government-bond YIELDS (US 10-year treasury→`US-10Y.GB`, `<ISO2>-<TENOR>.GB`) and money-market RATES
     (SOFR→`SOFR.MM`, `<TOKEN>.MM`) — feed the returned `.GB`/`.MM` ticker into asset_pulse/stock_prices, and
     note commodities have no country (a `region` is served instead). `country` restricts to a
-    market. Take the top match; for a US mega-cap you already know the ticker (AAPL) you can skip this.
+    market. 🌐 **Speak the user's language, but RESOLVE in ENGLISH:** for a generic ASSET-CLASS concept —
+    a COMMODITY (ทองคำ/黄金/金→"gold", น้ำมัน/原油→"crude oil", ทองแดง/铜→"copper", คาร์บอน/碳→"carbon"), a
+    SECTOR (半導体→"semiconductors"), an INDEX — pass the ENGLISH canonical term to `q` (the resolver is
+    English-canonical; a raw non-English concept word MISSES — "ทองคำ" resolved to a Lao BANK). A COMPANY
+    proper name you can pass AS-IS (the DB carries native names: 茅台→Kweichow Moutai, トヨタ→Toyota,
+    英伟达→NVIDIA all resolve). Then answer in the user's language.
+    🌍 **`country` is OPTIONAL — pass it ONLY to disambiguate a market**, keeping `q` to the INSTRUMENT: a
+    same-name company across countries (the Thai vs Korean "KBANK"), or a same-shape parametric ticker
+    (JP-30s10s vs GB-30s10s). Do NOT add it routinely — a distinctive name ("SK Hynix", "Toyota") resolves
+    fine WITHOUT it, and an unneeded/mismatched country filter silently 0-matches. It accepts a country
+    NAME **or** an ISO-2 code — the server normalizes ("South Korea"→KR, "UK"/"England"→GB, "Switzerland"→
+    CH, "Germany"→DE) — so when unsure of the code, just pass the NAME. ⚠️ never GUESS a 2-letter code
+    ("CH" is Switzerland, not China; "GE" is Georgia, not Germany) — pass the name and let the server map it.
+    Take the top match; for a US mega-cap you already know the ticker (AAPL) you can skip this.
     🔴 BATCH — to resolve SEVERAL names in ONE call (e.g. adding many stocks to a playlist, or comparing
     several names), pass `queries=["apple","ซัมซุง","xiaomi"]` instead of `q`. Returns
     `{results:[{query, match_quality, matches}]}` where `match_quality` = `strong` (one dominant match →
@@ -588,8 +658,10 @@ def find_stock(q: Optional[str] = None, queries: Optional[List[str]] = None,
     return [{k: m[k] for k in _FIND_KEEP if k in m} for m in rows]
 
 @mcp.tool(title="Theme Players", annotations=_RO)
-def theme_players(theme: str, country: str, exposure: Optional[str] = None,
-                  limit: Optional[int] = None) -> dict:
+def theme_players(theme: Annotated[str, _d("A megatrend theme — name/slug (resolved for you) or node id.")],
+                  country: Annotated[str, _d("Market ISO-2 (REQUIRED) — the theme's member companies in that country.")],
+                  exposure: Annotated[Optional[str], _d("Filter by exposure tier (e.g. `core`). Omit → all members.")] = None,
+                  limit: Annotated[Optional[int], _d(_LIMIT)] = None) -> dict:
     """Investable MEMBER companies of a theme (curated membership) in a country. Different from
     top_entities (which are news-derived). `limit` = how many (default 20, max 50; big themes have many).
     Returns {stocks, count, total, note?} — if `total` > `count`, the list is a TOP SLICE: say so and
@@ -598,7 +670,9 @@ def theme_players(theme: str, country: str, exposure: Optional[str] = None,
                                                       max_items=_lim(limit)), key="stocks")
 
 @mcp.tool(title="Private Movers", annotations=_RO)
-def private_movers(theme: str, country: Optional[str] = None, limit: Optional[int] = None) -> dict:
+def private_movers(theme: Annotated[str, _d("A megatrend theme — name/slug (resolved for you) or node id.")],
+                   country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
+                   limit: Annotated[Optional[int], _d(_LIMIT)] = None) -> dict:
     """Off-coverage / private companies the news moved within a theme — the 'beyond tickers' surface.
     `limit` = how many (default 20, max 50). Returns {companies, count, total, note?} — honor `note` when
     `total` > `count` (it's a top slice, not the whole set)."""
@@ -606,7 +680,8 @@ def private_movers(theme: str, country: Optional[str] = None, limit: Optional[in
                   key="companies")
 
 @mcp.tool(title="Company Relationships", annotations=_RO)
-def relationships(ticker: str, limit: Optional[int] = None) -> dict:
+def relationships(ticker: Annotated[str, _d(_TICKER)],
+                  limit: Annotated[Optional[int], _d("Max competitors + peers each (default/cap per _lim).")] = None) -> dict:
     """Competitors + peers of a company (news-derived relationship graph). `limit` caps EACH list
     (default 15, max 50). Each side carries `total`/`count`/`note` — a big `total` (peers often run to
     hundreds) means you're seeing a TOP slice; say so rather than implying it's the complete set."""
@@ -616,7 +691,7 @@ def relationships(ticker: str, limit: Optional[int] = None) -> dict:
             "peers": _paged(ref.peers(limit=n), key="items")}
 
 @mcp.tool(title="List Megatrends", annotations=_RO)
-def list_themes(query: Optional[str] = None) -> list:
+def list_themes(query: Annotated[Optional[str], _d("Optional free-text filter over the megatrend taxonomy; omit → the browsable tree.")] = None) -> list:
     """Browse / discover the megatrend taxonomy (25 tier-1 families + sub-nodes) — resolve a theme id."""
     return _ser(mdx().megatrends().to_list())
 
@@ -631,8 +706,11 @@ def list_portfolios() -> dict:
     return mdx().portfolios()
 
 @mcp.tool(title="Portfolio Context", annotations=_RO)
-def portfolio_context(portfolio_id: int, from_: Optional[str] = None, to: Optional[str] = None,
-                      window: Optional[str] = None, snapshots: Optional[str] = None) -> dict:
+def portfolio_context(portfolio_id: Annotated[int, _d(_PID)],
+                      from_: Annotated[Optional[str], _d("Window start YYYY-MM-DD — re-scopes performance/attribution/composition together.")] = None,
+                      to: Annotated[Optional[str], _d("Window end YYYY-MM-DD.")] = None,
+                      window: Annotated[Optional[str], _d("Re-scope perf+attribution+composition to a period: `7d`/…/`ytd`. Omit → lifetime + recent(12mo).")] = None,
+                      snapshots: Annotated[Optional[str], _d("Point-in-time composition cadence: `year|quarter|month|week|day|off` (default quarter); auto-coarsens over long spans.")] = None) -> dict:
     """An LLM-ready snapshot of ONE of the user's OWN portfolios (owner-scoped) — analyze it directly.
     NO window → default: `meta` · `summary` · a `lifetime`(all-time) + `recent`(~12mo) block, EACH with
     `performance` (return/cagr/sharpe/sortino/calmar/drawdown/vol/win_rate) + `attribution` · `positions`
@@ -699,15 +777,19 @@ def _resolve_agent(agent: Optional[str], ctx: Optional[Context]) -> Optional[str
     return _client_agent(ctx)
 
 @mcp.tool(title="Save Note", annotations=_WRITE)
-def write_note(subject: str, body: str, summary: Optional[str] = None,
-               note_type: Optional[str] = None, category: Optional[str] = None,
-               tags: Optional[List[str]] = None,
-               stocks: Optional[List[str]] = None,
-               mentioned_stocks: Optional[List[str]] = None,
-               megatrend_ids: Optional[List[int]] = None,
-               gics: Optional[List[str]] = None,
-               portfolio_id: Optional[int] = None,
-               agent: Optional[AgentName] = None,
+def write_note(subject: Annotated[str, _d("Short title / subject line of the note.")],
+               body: Annotated[str, _d("The note's full text — the distilled answer/observation/thesis to persist.")],
+               summary: Annotated[Optional[str], _d("One-line summary (shown when the note is collapsed).")] = None,
+               note_type: Annotated[Optional[str], _d("`reference` (concept/understanding) | `tracking` (dated market read) | `thesis` | `decision`.")] = None,
+               category: Annotated[Optional[str], _d("Optional free-text category.")] = None,
+               tags: Annotated[Optional[List[str]], _d("Free-text tags for retrieval.")] = None,
+               stocks: Annotated[Optional[List[str]], _d("PRIMARY tickers the note is ABOUT (MarketDX tickers you already resolved this turn). Server maps → canonical ids.")] = None,
+               mentioned_stocks: Annotated[Optional[List[str]], _d("Secondary tickers merely referenced (a peer named in passing).")] = None,
+               megatrend_ids: Annotated[Optional[List[int]], _d("Megatrend node ids (from find_megatrend) — REQUIRED to link a theme/sector note to the graph.")] = None,
+               gics: Annotated[Optional[List[str]], _d("GICS codes to tag a sector note (derived free if the note names representative stocks).")] = None,
+               portfolio_id: Annotated[Optional[int], _d("Link the note to one of the user's portfolios, if relevant.")] = None,
+               agent: Annotated[Optional[AgentName], _d("Which app is writing the note — set to the surface you run in "
+                   "(e.g. `claude` | `chatgpt` | `marketdx-web`); the server falls back to the connection's client info.")] = None,
                ctx: Context = None) -> dict:
     """🔴 WRITE — save a NOTE to the user's account (this PERSISTS data; it is NOT a read/lookup). Typical
     flow: FIRST give the user your complete answer as usual, THEN — as the final step of the turn — call
@@ -776,10 +858,15 @@ def write_note(subject: str, body: str, summary: Optional[str] = None,
     raise ValueError(f"save failed: {msg}{' — ' + note if note else ''}")
 
 @mcp.tool(title="My Notes", annotations=_RO)
-def query_notes(q: Optional[str] = None, stock: Optional[str] = None, theme: Optional[str] = None,
-                gics: Optional[str] = None, tag: Optional[str] = None, note_type: Optional[str] = None,
-                since: Optional[str] = None, limit: Optional[int] = None,
-                relation: Optional[str] = None) -> dict:
+def query_notes(q: Annotated[Optional[str], _d("Semantic query text — recall notes by MEANING (cross-language).")] = None,
+                stock: Annotated[Optional[str], _d("Filter to notes about a ticker (name/ticker → resolved).")] = None,
+                theme: Annotated[Optional[str], _d("Filter to a theme (name → megatrend, incl. subtree rollup).")] = None,
+                gics: Annotated[Optional[str], _d("GICS code filter.")] = None,
+                tag: Annotated[Optional[str], _d("Tag filter.")] = None,
+                note_type: Annotated[Optional[str], _d("Filter by type (reference/tracking/thesis/decision).")] = None,
+                since: Annotated[Optional[str], _d("Only notes since this date/window (e.g. `30d` or YYYY-MM-DD).")] = None,
+                limit: Annotated[Optional[int], _d(_LIMIT)] = None,
+                relation: Annotated[Optional[str], _d("With `stock=`: `direct` (note ABOUT it) | `indirect` (merely referenced) | `any` (default).")] = None) -> dict:
     """Recall the USER'S OWN saved notes — their personal investment knowledge base (owner-scoped, only
     ever their notes). Two combinable ways:
       • SEMANTIC recall via `q` — natural language ("what did I say about foundry manufacturing?"); results
@@ -824,7 +911,7 @@ def query_notes(q: Optional[str] = None, stock: Optional[str] = None, theme: Opt
     return mdx()._get("/v1/notes", params).data
 
 @mcp.tool(title="Read Note", annotations=_RO)
-def get_note(note_id: int) -> dict:
+def get_note(note_id: Annotated[int, _d("The note's id (from query_notes results). Owner-scoped → 404 if not yours.")]) -> dict:
     """The FULL saved note (including its `body`) by id — owner-scoped. Use after `query_notes` when you
     need the complete content, not just the summary."""
     return mdx()._get(f"/v1/notes/{note_id}", {}).data
@@ -854,7 +941,8 @@ def list_playlists() -> dict:
     return mdx()._get("/v1/playlists", {}).data
 
 @mcp.tool(title="Create Playlist", annotations=_WRITE)
-def create_playlist(name: str, emoji: Optional[str] = None) -> dict:
+def create_playlist(name: Annotated[str, _d("The new playlist's display name.")],
+                    emoji: Annotated[Optional[str], _d("Optional emoji icon for the playlist.")] = None) -> dict:
     """🔴 WRITE — create a new feed playlist (owner-scoped). Do NOT auto-create from a possible typo:
     call `list_playlists` FIRST and only create when the name genuinely doesn't exist, or the user
     confirms a new one. Returns the created playlist {id, name, …}."""
@@ -862,7 +950,8 @@ def create_playlist(name: str, emoji: Optional[str] = None) -> dict:
                      {k: v for k, v in {"name": name, "emoji": emoji}.items() if v is not None})
 
 @mcp.tool(title="Add to Playlist", annotations=_WRITE)
-def add_to_playlist(playlist_id: int, tickers: List[str]) -> dict:
+def add_to_playlist(playlist_id: Annotated[int, _d("The playlist's id (from list_playlists).")],
+                    tickers: Annotated[List[str], _d("MarketDX tickers to add (resolve names via find_stock first).")]) -> dict:
     """🔴 WRITE — add one or more STOCKS to a playlist (batch, idempotent).
     🔴 RESOLVE FIRST: turn each name into an EXACT MarketDX ticker with `find_stock` BEFORE calling this
     — ESPECIALLY non-US / crypto / foreign-language names ("btcusd"→`BTC-USD.CC`, "ซัมซุง"→pick the right
@@ -875,7 +964,8 @@ def add_to_playlist(playlist_id: int, tickers: List[str]) -> dict:
     return _pl_write("POST", f"/v1/playlists/{playlist_id}/items", {"items": items})
 
 @mcp.tool(title="Remove from Playlist", annotations=_WRITE)
-def remove_from_playlist(playlist_id: int, tickers: List[str]) -> dict:
+def remove_from_playlist(playlist_id: Annotated[int, _d("The playlist's id.")],
+                         tickers: Annotated[List[str], _d("MarketDX tickers to remove from the playlist.")]) -> dict:
     """🔴 WRITE — remove one or more stocks (by ticker) from a playlist (batch). `playlist_id` from
     `list_playlists`. Returns `{removed, not_found, item_count}` — relay `not_found` (a ticker that
     wasn't in the playlist) to the user."""
@@ -927,8 +1017,11 @@ def _slim_context(ctx: dict) -> dict:
     return c
 
 @mcp.tool(title="Asset Pulse", annotations=_RO)
-def asset_pulse(ticker: str, window: Optional[str] = None, limit: Optional[int] = None,
-                style: str = "plain") -> dict:
+def asset_pulse(ticker: Annotated[str, _d(_TICKER + " ⚠️ a COMPANY/ETF/index-ETF/crypto — for a COMMODITY use "
+                                   "commodity_pulse, for a BOND/RATE use bond_pulse.")],
+                window: Annotated[Optional[str], _d(_WINDOW)] = None,
+                limit: Annotated[Optional[int], _d(_LIMIT)] = None,
+                style: Annotated[str, _d("Options narration style: `plain` (layperson, default) | `technical`.")] = "plain") -> dict:
     """⭐ THE tool for "how is <ticker> doing right now?" — gathers EVERY lens in ONE call so the answer
     is never half-informed (the whole point: you decide ONCE, the server guarantees completeness). Fans
     out server-side, in parallel, to:
@@ -1013,7 +1106,9 @@ def asset_pulse(ticker: str, window: Optional[str] = None, limit: Optional[int] 
     }
 
 @mcp.tool(title="Stock Prices", annotations=_RO)
-def stock_prices(ticker: str, to: Optional[str] = None, from_: Optional[str] = None) -> dict:
+def stock_prices(ticker: Annotated[str, _d(_TICKER)],
+                 to: Annotated[Optional[str], _d("As-of date `YYYY-MM-DD` — features computed as of that day (point-in-time). Omit → latest.")] = None,
+                 from_: Annotated[Optional[str], _d("Lower bound of price history `YYYY-MM-DD`. Narrowing below ~1y nulls the long windows. Price history goes back DECADES (unlike news, 2026+).")] = None) -> dict:
     """Price context for a tradable ticker (stock / ETF / index-ETF / forex / crypto / commodity), split &
     dividend-ADJUSTED — a DIGESTED read, NOT a raw bar series: windowed changes (1w/1mo/3mo/ytd/1y), 52-week
     range + `drawdown_from_52w_high_pct` (how far below the peak), realized vol + `realized_vol_percentile_1y`
@@ -1033,7 +1128,9 @@ def stock_prices(ticker: str, to: Optional[str] = None, from_: Optional[str] = N
     return mdx()._get(f"/v1/stocks/{ticker}/prices", {"to": to, "from": from_}).data
 
 @mcp.tool(title="Batch Stock Prices", annotations=_RO)
-def stock_prices_batch(tickers: List[str], to: Optional[str] = None, from_: Optional[str] = None) -> dict:
+def stock_prices_batch(tickers: Annotated[List[str], _d("UP TO 50 MarketDX tickers (a watchlist/cohort). Returns `results` in input order + `unresolved`.")],
+                       to: Annotated[Optional[str], _d("As-of date `YYYY-MM-DD` (point-in-time). Omit → latest.")] = None,
+                       from_: Annotated[Optional[str], _d("Lower bound of price history `YYYY-MM-DD` (below ~1y nulls the long windows).")] = None) -> dict:
     """The same digested price context for UP TO 50 tickers in ONE call — a watchlist / cohort snapshot
     ("which of these names are most extended, or deepest in drawdown"). Returns `results` (in input order)
     + `unresolved` (unknown / no-price-history tickers). `to`/`from_` as in `stock_prices`."""
@@ -1061,7 +1158,9 @@ def _options_brief(o: Optional[dict]) -> dict:
                            "because": d.get("because")} for d in (s.get("key_dates") or [])]}
 
 @mcp.tool(title="Portfolio Pulse", annotations=_RO)
-def portfolio_pulse(portfolio_id: int, top_n: int = 3, window: Optional[str] = None) -> dict:
+def portfolio_pulse(portfolio_id: Annotated[int, _d(_PID)],
+                    top_n: Annotated[int, _d("How many top holdings (by value) to analyze with market lenses (default 3, cap 5).")] = 3,
+                    window: Annotated[Optional[str], _d(_WINDOW)] = None) -> dict:
     """⭐ THE tool for "how is my portfolio doing?" / "how is my <holding> doing?" — the owner-scoped
     portfolio snapshot FUSED with the market lenses on its biggest positions, in ONE call. Returns
     `context` (holdings / performance / attribution / composition / flags — == portfolio_context) PLUS
@@ -1106,7 +1205,10 @@ def portfolio_pulse(portfolio_id: int, top_n: int = 3, window: Optional[str] = N
     }
 
 @mcp.tool(title="Theme Pulse", annotations=_RO)
-def theme_pulse(query: str, window: str = "30d") -> dict:
+def theme_pulse(query: Annotated[str, _d("A SECTOR / INDUSTRY / THEME concept (semiconductors, AI, energy, banks, "
+                                          "clean energy, gold). NOT a single company/ticker (→ asset_pulse) and NOT a "
+                                          "bond/rate (→ bond_pulse). Fans out to megatrend/GICS/ETF/commodity angles.")],
+                window: Annotated[str, _d(_WINDOW)] = "30d") -> dict:
     """⭐ THE tool for "how is <a SECTOR / INDUSTRY / THEME> doing?" (semiconductors, tech, energy, banks,
     AI, clean energy, …) — a concept that spans MULTIPLE INDEPENDENT taxonomies. It resolves the concept
     and fans out, in ONE call, to EVERY angle that applies (skipping ones that don't), each a SEPARATE
@@ -1116,8 +1218,12 @@ def theme_pulse(query: str, window: str = "30d") -> dict:
       • `gics` — the standard GICS SECTOR cohort → a brief. A DIFFERENT membership (strict sector
         classification) → genuinely different winners/losers than the megatrend.
       • `asset` — the tradable ETF's OPTIONS positioning (SMH/XLK/GLD/…) — fear-greed / dealer-gamma.
-    Applicable angles VARY: 'semiconductors' → all 3; 'gold' → asset only (GLD, no GICS/megatrend for a
-    commodity); 'AI' → theme (no single AI ETF covered). `skipped` lists the angles that didn't resolve.
+      • `commodity` — if the concept IS/HAS a tradable COMMODITY (gold, carbon, copper, oil), its digested
+        PRICE read (level, windowed change, description, trend/vol). Fires even when there's NO options ETF
+        (carbon/most metals) — that's the lens `asset` couldn't give. Narrate a `metric_kind:yield` in bps.
+    Applicable angles VARY: 'semiconductors' → theme+gics+asset; 'carbon' → theme (Carbon-Removal cohort) +
+    commodity (the EUA price); 'gold' → asset (GLD options) + commodity (GOLD.COMM price); 'AI' → theme (no
+    single AI ETF). `skipped` lists the angles that didn't resolve.
     ⚠️ Use `asset_pulse(ticker)` for a SINGLE company/ETF; use `theme_pulse` for a sector/theme CONCEPT.
     `window` = 7d/30d/90d/1y/…"""
     cli = mdx()
@@ -1171,31 +1277,217 @@ def theme_pulse(query: str, window: str = "30d") -> dict:
             return {"etf": etf, "covered": False}
         except Exception as e:
             return {"error": str(e)}
+    def _commodity():
+        # A concept that IS / HAS a tradable COMMODITY (gold, carbon, copper, oil) → its PRICE read. The
+        # `asset` angle above only fires for a concept with a COVERED OPTIONS ETF (GLD…); carbon/most
+        # metals have NO options ETF, so their price was invisible. Resolve via the (alias/embed-seeded)
+        # resolver — no deepseek — and pull the digested /prices for the first commodity match.
+        try:
+            ms = cli._get("/v1/stocks", {"q": query, "asset_class": "commodity", "limit": 5}).data.get("matches", [])
+            cm = next((m for m in ms if m.get("type") == "commodity"), None)
+            if not cm:
+                return None
+            p = cli._get(f"/v1/stocks/{cm['ticker']}/prices", {}).data
+            kw = {k: {x: v[x] for x in ("change_pct", "change_bps") if x in v}
+                  for k, v in (p.get("windows") or {}).items() if k in ("1w", "1mo", "3mo", "1y", "ytd")}
+            return {"ticker": cm["ticker"], "name": cm.get("name"), "region": p.get("region"),
+                    "currency": p.get("currency"), "description": p.get("description"),
+                    "metric_kind": p.get("metric_kind"), "last_close": p.get("last_close"),
+                    "range_read": p.get("range_read"), "trend_read": p.get("trend_read"),
+                    "realized_vol_percentile_1y": p.get("realized_vol_percentile_1y"), "windows": kw}
+        except Exception:
+            return None
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=3) as ex:
-        ft, fg, fa = ex.submit(_theme), ex.submit(_gics), ex.submit(_asset)
-        angles = {k: v for k, v in {"theme": ft.result(), "gics": fg.result(), "asset": fa.result()}.items()
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        ft, fg, fa, fc = ex.submit(_theme), ex.submit(_gics), ex.submit(_asset), ex.submit(_commodity)
+        angles = {k: v for k, v in {"theme": ft.result(), "gics": fg.result(),
+                                    "asset": fa.result(), "commodity": fc.result()}.items()
                   if v is not None}
     return {
         "query": query, "window": window, "angles": angles,
-        "skipped": [k for k in ("theme", "gics", "asset") if k not in angles],
-        "_guide": ("Present each angle SEPARATELY — they are DIFFERENT cohorts: `theme` = MarketDX "
+        "skipped": [k for k in ("theme", "gics", "asset", "commodity") if k not in angles],
+        "_guide": ("Present each angle SEPARATELY — they are DIFFERENT cohorts/lenses: `theme` = MarketDX "
                    "megatrend membership (trend-exposed, may cross sectors); `gics` = standard GICS sector "
                    "classification (different winners/losers); `asset` = the tradable ETF's options "
-                   "positioning. Do NOT merge them. `skipped` angles don't apply to this concept. Lead "
+                   "positioning; `commodity` = the underlying COMMODITY's PRICE (level/change/trend — the "
+                   "price lens for a concept like carbon/gold/copper that has no options ETF; narrate a "
+                   "`metric_kind:yield` move in bps). Do NOT merge them. `skipped` angles don't apply. Lead "
                    "with the sharpest cross-angle read (e.g. where the megatrend and the GICS sector "
                    "diverge, or where options positioning contradicts the news breadth). Narrate options "
                    "from its read/because for a non-expert."),
     }
 
+@mcp.tool(title="Commodity Pulse", annotations=_RO)
+def commodity_pulse(name: Annotated[str, _d("A COMMODITY concept, in ENGLISH — translate first (ทองคำ/黄金→'gold', "
+                                             "天然ガス/原油→'natural gas'/'crude oil', 铜→'copper'). Or pass a `SYMBOL.COMM` "
+                                             "ticker to skip resolution. For a COMPANY use asset_pulse; a SECTOR → theme_pulse.")],
+                    window: Annotated[Optional[str], _d(_WINDOW)] = None) -> dict:
+    """⭐ "How is <a COMMODITY> doing?" — gold, oil, natural gas, copper, carbon, metals, agris, LME-vs-
+    onshore-China variants. Resolves the NAME **within the commodity universe** (no company noise — a bare
+    "natural gas" via the general resolver returns gas UTILITIES, not the commodity) and returns the digested
+    PRICE + supply/demand & geopolitics NEWS + onshore/offshore VARIANTS. 🌐 Pass the ENGLISH concept
+    (translate ทองคำ/黄金→"gold", 天然ガス/原油→"natural gas"/"crude oil" first). ⚠️ A COMMODITY has NO
+    options / PE / competitors — don't expect them. For a COMPANY use `asset_pulse`; a SECTOR/theme →
+    `theme_pulse`. `window` scopes the news recency (7d/30d/90d/…). You may also pass a `SYMBOL.COMM` ticker
+    directly to skip resolution."""
+    cli = mdx()
+    frm = _win(window)
+    # resolve WITHIN the commodity scope (asset_class=commodity → WHERE exchange_code='COMM')
+    if name.upper().endswith(".COMM"):
+        comms = [{"ticker": name.upper(), "name": None, "region": None, "currency": None}]
+    else:
+        ms = cli._get("/v1/stocks", {"q": name, "asset_class": "commodity", "limit": 6}).data.get("matches", [])
+        comms = [m for m in ms if m.get("type") == "commodity"]
+    if not comms:
+        return {"error": f"no commodity matches '{name}'. Translate to the English concept (gold/crude oil/…); "
+                         "for a COMPANY use asset_pulse, a SECTOR use theme_pulse."}
+    t = comms[0]["ticker"]
+    def _price():
+        try:
+            return cli._get(f"/v1/stocks/{t}/prices", {}).data
+        except Exception as e:
+            return {"note": f"price unavailable: {e}"}
+    def _impact():
+        try:
+            params = {"collapse": "true", "limit": _lim(None, default=6)}
+            if frm:
+                params["from"] = frm
+            return {"articles": _slim_articles(cli._get(f"/v1/stocks/{t}/news", params).data.get("results", []), 6)}
+        except Exception as e:
+            return {"error": str(e), "articles": []}
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        fp, fi = ex.submit(_price), ex.submit(_impact)
+        p, impact = fp.result(), fi.result()
+    kw = {k: {x: v[x] for x in ("change_pct", "change_bps") if x in v}
+          for k, v in (p.get("windows") or {}).items() if k in ("1w", "1mo", "3mo", "1y", "ytd")}
+    price = {"last_close": p.get("last_close"), "metric_kind": p.get("metric_kind"), "windows": kw,
+             "range_read": p.get("range_read"), "trend_read": p.get("trend_read"),
+             "drawdown_from_52w_high_pct": p.get("drawdown_from_52w_high_pct"),
+             "realized_vol_percentile_1y": p.get("realized_vol_percentile_1y"),
+             "volume_conviction_read": p.get("volume_conviction_read")}
+    # variants = SAME-BASE siblings only (onshore/offshore, currency): NICKEL↔NICKEL_LME, CARBON_EU↔
+    # CARBON_UK — the base is the symbol before the first '_'. Filters out unrelated commodities that the
+    # scoped search merely ranked nearby (e.g. SODAASH sneaking into a "carbon" query).
+    _base = (comms[0].get("symbol") or "").split("_")[0]
+    variants = [{"ticker": m["ticker"], "name": m.get("name"), "region": m.get("region")}
+                for m in comms[1:] if (m.get("symbol") or "").split("_")[0] == _base][:5]
+    return {
+        "ticker": t, "name": comms[0].get("name") or p.get("name"), "region": p.get("region"),
+        "currency": p.get("currency"), "description": p.get("description"),
+        "price": price, "impact": impact, "variants": variants,
+        "_guide": ("Lead with the PRICE level + trend (quote the `*_read` labels). Explain the WHY from "
+                   "`impact` — supply/demand, geopolitics, inventories. If `variants` exist (onshore vs "
+                   "offshore, e.g. LME vs Shanghai; USD vs CNY/MYR), COMPARE them — an onshore-offshore "
+                   "divergence is the insight (different currency → convert before comparing levels). A "
+                   "commodity has NO options / PE / competitors — do not mention or flag them as missing. "
+                   "`impact` empty = no news in coverage (2026-01-01+), say so plainly; price still stands."),
+    }
+
+_CURVE_TENORS = ("3M", "2Y", "5Y", "10Y", "30Y")
+
+@mcp.tool(title="Bond Pulse", annotations=_RO)
+def bond_pulse(query: Annotated[str, _d("A COUNTRY ('US rates', 'US yield curve'), a TENOR ('US 10Y', 'JGB 2Y', "
+                                         "'DE 30Y'), or a RATE ('SOFR', 'EURIBOR 3M'). Returns the whole curve + 2s10s "
+                                         "slope + macro news. Covers govt-bond yields, money-market rates, and the curve.")],
+               window: Annotated[Optional[str], _d(_WINDOW)] = None) -> dict:
+    """⭐ "How are BONDS / RATES / the YIELD CURVE doing?" — government-bond yields (`.GB`), money-market
+    rates (`.MM`), and the curve's shape (2s10s inversion). Rates are a CURVE, not a point, so this returns
+    the whole picture. Give it a COUNTRY ("US rates", "US yield curve"), a TENOR ("US 10Y", "JGB 2Y"), or a
+    RATE ("SOFR", "EURIBOR 3M"). Returns: the `curve` (key tenors + their yields & **bps** moves), the
+    `slope` (2s10s / 10Y3M — negative = INVERTED = a classic recession signal), and central-bank / macro
+    `news`. 🔵 A yield is a LEVEL — narrate moves in BASIS POINTS, never as a % of the yield; `yield↑ ⇒ bond
+    price↓`. NO options / PE / market-cap on a yield. Country names → translate to ISO-2 mentally (the tool
+    resolves them). `window` scopes news recency."""
+    cli = mdx()
+    frm = _win(query and window)
+    ms = cli._get("/v1/stocks", {"q": query, "asset_class": "bond", "limit": 8}).data.get("matches", [])
+    if not ms:
+        return {"error": f"no bond/rate matches '{query}'. Try 'US 10Y', 'US yield curve', 'SOFR', 'JGB 2Y'."}
+    rate = next((m for m in ms if m["ticker"].endswith(".MM")), None)
+    bond = next((m for m in ms if m["ticker"].endswith(".GB")), None)
+
+    def _news_for(ticker):
+        try:
+            params = {"collapse": "true", "limit": 6}
+            if frm:
+                params["from"] = frm
+            return _slim_articles(cli._get(f"/v1/stocks/{ticker}/news", params).data.get("results", []), 6)
+        except Exception:
+            return []
+
+    # ── RATE mode: a money-market rate with no bond in the mix (SOFR, EURIBOR) ──
+    if rate and not bond:
+        t = rate["ticker"]
+        try:
+            p = cli._get(f"/v1/stocks/{t}/prices", {}).data
+        except Exception as e:
+            return {"error": f"price unavailable for {t}: {e}"}
+        w = {k: {x: v[x] for x in ("change_bps",) if x in v} for k, v in (p.get("windows") or {}).items()
+             if k in ("1w", "1mo", "3mo", "ytd", "1y")}
+        return {"mode": "rate", "ticker": t, "name": rate.get("name"), "level": p.get("last_close"),
+                "windows_bps": w, "range_read": p.get("range_read"), "news": _news_for(t),
+                "_guide": ("A policy/reference RATE. Narrate the level + move in BASIS POINTS (`change_bps`), "
+                           "never % of the rate. Tie it to the central-bank stance in `news`. No options/PE.")}
+
+    # ── CURVE mode: pick the country (prefer a pure .GB bond's issuer) and pull the whole curve ──
+    iso = (bond or ms[0]).get("domicile") or (bond or ms[0]).get("country")
+    if not iso or len(iso) != 2:
+        return {"error": f"couldn't pin a country from '{query}'. Try 'US yield curve' / 'Germany 10Y'.",
+                "matches": [{"ticker": m["ticker"], "name": m.get("name")} for m in ms[:5]]}
+    tickers = [f"{iso}-{tn}.GB" for tn in _CURVE_TENORS]
+    def _curve():
+        try:
+            res = cli._get("/v1/stocks/prices", {"tickers": ",".join(tickers)}).data.get("results", [])
+            out = []
+            for tn, r in zip(_CURVE_TENORS, res):
+                if not isinstance(r, dict) or r.get("last_close") is None:
+                    continue
+                out.append({"tenor": tn, "ticker": r.get("ticker"), "yield": r.get("last_close"),
+                            "change_bps": {k: (v or {}).get("change_bps") for k, v in (r.get("windows") or {}).items()
+                                           if k in ("1w", "1mo", "ytd", "1y")}})
+            return out
+        except Exception:
+            return []
+    def _slopes():
+        sl = {}
+        for sp in ("2s10s", "10Y3M"):
+            try:
+                p = cli._get(f"/v1/stocks/{iso}-{sp}.SPREAD/prices", {}).data
+                v = p.get("last_close")
+                sl[sp] = {"value_bps": round(v * 100, 1) if v is not None else None,
+                          "inverted": (v is not None and v < 0), "read": p.get("range_read")}
+            except Exception:
+                pass
+        return sl
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        fc, fs, fn = ex.submit(_curve), ex.submit(_slopes), ex.submit(_news_for, f"{iso}-10Y.GB")
+        curve, slopes, news = fc.result(), fs.result(), fn.result()
+    return {
+        "mode": "curve", "country": iso, "curve": curve, "slope": slopes, "news": news,
+        "_guide": ("Rates are a CURVE. LEAD with the curve's SHAPE: read `slope.2s10s` — negative = INVERTED "
+                   "(a classic recession signal); positive = normal. Then the level + recent MOVE of the key "
+                   "tenors in BASIS POINTS (`curve[].change_bps`, NOT %). Explain the DRIVER from `news` "
+                   "(central-bank stance / inflation). `yield↑ ⇒ bond price↓`. A yield has NO options/PE — "
+                   "don't mention them. `news` empty = no coverage, say so; the curve still stands."),
+    }
+
 @mcp.tool(title="Screen Stocks", annotations=_RO)
-def screen_stocks(megatrend: Optional[str] = None, gics: Optional[str] = None,
-                  country: Optional[str] = None, direction: Optional[str] = None,
-                  aspect: Optional[str] = None, order_by: Optional[str] = None,
-                  min_impact: Optional[int] = None, min_relevance: Optional[float] = None,
-                  min_market_cap_usd: Optional[float] = None, since: Optional[str] = None,
-                  from_: Optional[str] = None, to: Optional[str] = None,
-                  gate: Optional[str] = None, limit: Optional[int] = None) -> dict:
+def screen_stocks(megatrend: Annotated[Optional[str], _d(_MEGATREND)] = None,
+                  gics: Annotated[Optional[str], _d(_GICS)] = None,
+                  country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
+                  direction: Annotated[Optional[str], _d("`pos` → winners only · `neg` → losers/at-risk only · omit → all.")] = None,
+                  aspect: Annotated[Optional[str], _d(_ASPECT)] = None,
+                  order_by: Annotated[Optional[str], _d("`news_count` (default, most attention) | `relevance` | `market_cap`.")] = None,
+                  min_impact: Annotated[Optional[int], _d("Min article importance, 1–5.")] = None,
+                  min_relevance: Annotated[Optional[float], _d("Min centrality to its news, 0–1.")] = None,
+                  min_market_cap_usd: Annotated[Optional[float], _d("Min market cap, USD.")] = None,
+                  since: Annotated[Optional[str], _d("Trailing window, e.g. `7d` ('this week'=7d, 'this month'=30d).")] = None,
+                  from_: Annotated[Optional[str], _d("Start date YYYY-MM-DD. ⚠️ per-stock impact scoring only exists from ~2026-07-03 (earlier → empty).")] = None,
+                  to: Annotated[Optional[str], _d(_TO)] = None,
+                  gate: Annotated[Optional[str], _d("megatrend scope only: `both` (default, strict member AND epicenter) | `membership` (looser).")] = None,
+                  limit: Annotated[Optional[int], _d(_LIMIT)] = None) -> dict:
     """⭐ "Which stocks in <a group> are INTERESTING / winning / losing / most-talked-about?" — the
     news-driven impact SCREENER. Ranks the companies in a scope by how the news is hitting them, so you
     can lead with the WINNERS-vs-LOSERS split, not a flat list.
@@ -1259,11 +1551,17 @@ def screen_stocks(megatrend: Optional[str] = None, gics: Optional[str] = None,
     }
 
 @mcp.tool(title="Screen Dividends", annotations=_RO)
-def screen_dividends(country: Optional[str] = None, gics: Optional[str] = None, sector: Optional[str] = None,
-                     min_yield: Optional[float] = None, max_yield: Optional[float] = None,
-                     min_streak_years: Optional[int] = None, min_cagr: Optional[float] = None,
-                     min_market_cap_usd: Optional[float] = None, max_market_cap_usd: Optional[float] = None,
-                     order_by: Optional[str] = None, limit: Optional[int] = None) -> dict:
+def screen_dividends(country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
+                     gics: Annotated[Optional[str], _d(_GICS)] = None,
+                     sector: Annotated[Optional[str], _d("A sector NAME (alternative scope to `gics`).")] = None,
+                     min_yield: Annotated[Optional[float], _d("Min dividend yield in PERCENT (3 = 3%).")] = None,
+                     max_yield: Annotated[Optional[float], _d("Max yield % — guards against trap-tier yields.")] = None,
+                     min_streak_years: Annotated[Optional[int], _d("Min no-cut streak years (bounded 0–10).")] = None,
+                     min_cagr: Annotated[Optional[float], _d("Min 5-year dividend CAGR, %.")] = None,
+                     min_market_cap_usd: Annotated[Optional[float], _d("Min market cap, USD.")] = None,
+                     max_market_cap_usd: Annotated[Optional[float], _d("Max market cap, USD.")] = None,
+                     order_by: Annotated[Optional[str], _d("`yield` (default) | `streak` | `cagr`.")] = None,
+                     limit: Annotated[Optional[int], _d(_LIMIT)] = None) -> dict:
     """💰 THE income screener — "which stocks in <a group> pay a high / reliable / growing DIVIDEND?"
     ("retail names with high dividend", "dividend aristocrats in the US", "Thai high-yield stocks"). Ranks
     the DIVIDEND-PAYING universe (all payers, NOT just news-covered) and — the whole point — hands you the
@@ -1295,7 +1593,7 @@ def screen_dividends(country: Optional[str] = None, gics: Optional[str] = None, 
     return mdx()._get("/v1/stocks/dividends", params).data
 
 @mcp.tool(name="find_megatrend", title="Find Megatrend", annotations=_RO)
-def resolve_themes(terms: List[str]) -> dict:
+def resolve_themes(terms: Annotated[List[str], _d("One or more THEME/trend terms to map to megatrend node candidates — YOU pick from the returned `{id,name,tier}` candidates, then reuse the id.")]) -> dict:
     """🔴 The MEGATREND counterpart of `find_stock`: map trend-language ('HBM', 'foundry', 'robotaxi',
     'robotics') to the specific taxonomy node(s) — returns CANDIDATES for YOU to pick from (exactly like
     `find_stock` returns candidate tickers). May be tier-1/-2/-3; may be several for a polysemous term.
@@ -1390,7 +1688,7 @@ def _gics_out(code: str) -> dict:
     return {"code": n["code"], "name": n["name"], "level": n["level"]}
 
 @mcp.tool(name="find_gics", title="Find GICS Sector", annotations=_RO)
-def find_gics(terms: List[str]) -> dict:
+def find_gics(terms: Annotated[List[str], _d("One or more INDUSTRY/SECTOR terms (retail, airlines, banks, pharma) to map to GICS code candidates — YOU pick from the returned `{code,name,level}` candidates.")]) -> dict:
     """🔴 The SECTOR/INDUSTRY counterpart of `find_megatrend` — map an established-industry concept
     ('retail', 'airlines', 'banks', 'semiconductors', 'utilities', 'pharma') to its GICS node(s). Use this
     when a note is about an INDUSTRY (not an emerging trend → that's `find_megatrend`, not a single company
@@ -1420,7 +1718,8 @@ def find_gics(terms: List[str]) -> dict:
     return result
 
 @mcp.tool(title="Suggest Explorations", annotations=_RO)
-def suggest_cta(theme: str, window: str = "30d") -> dict:
+def suggest_cta(theme: Annotated[str, _d("A theme/scope to suggest a next-step call-to-action for.")],
+                window: Annotated[str, _d(_WINDOW)] = "30d") -> dict:
     """After answering, propose 1-2 data-backed 'explore further' hooks that pull the user into the
     graph's moat (ripple/relations/commodity/off-coverage). Server-side: theme_summary(has ripple/
     entities/aspects) + a semantic news search, then deepseek curates ONLY data-backed hooks.
