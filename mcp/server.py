@@ -14,7 +14,7 @@ Deps: mcp (FastMCP), marketdx, openai (deepseek is OpenAI-compatible).
 from __future__ import annotations
 import os, json, pathlib, contextvars
 from dataclasses import asdict, is_dataclass
-from typing import Annotated, Any, Optional, List, Literal
+from typing import Annotated, Any, Optional, List, Literal, Union
 from pydantic import Field
 
 from mcp.server.fastmcp import FastMCP, Context
@@ -1009,8 +1009,25 @@ _ART_KEEP = ("title", "brief_text", "url", "publisher", "article_published_at", 
 # DIRECTION lives inside `impact.net_direction` (there is no free-text `why`/`reason` field — the "why" is
 # `brief_text` + `impact.aspects`). Keep the real key names so the date isn't silently dropped.
 def _slim_articles(rows, n=6):
-    """Keep only the narratable fields of an impact-article row (drop the big `raw` blob + ids) + cap N."""
-    return [{k: a[k] for k in _ART_KEEP if k in a} for a in (rows or [])[:n]]
+    """Keep only the narratable fields of an impact-article row (drop the big `raw` blob + ids) + cap N.
+    Renames `article_published_at` → `published_at` so the date field name is consistent with search_news
+    and the rest of the API (asset_pulse used to expose the raw longer name)."""
+    out = []
+    for a in (rows or [])[:n]:
+        d = {k: a[k] for k in _ART_KEEP if k in a}
+        if "article_published_at" in d:
+            d["published_at"] = d.pop("article_published_at")
+        out.append(d)
+    return out
+
+def _codes(v):
+    """Coerce a `codes` argument to a list — accept a real list, a bare single code, or a comma-joined
+    string (LLM-friendly: a model that passes "8542" or "0207,0203" instead of ["8542"] still works)."""
+    if v is None:
+        return None
+    if isinstance(v, str):
+        return [c.strip() for c in v.split(",") if c.strip()]
+    return v
 
 _REL_KEEP = ("name", "symbol", "exchange", "country", "gic_code")
 def _slim_relations(rows, n=5):
@@ -1830,7 +1847,7 @@ def find_hs(q: Annotated[str, _d(
 
 @mcp.tool(name="search_trade", title="Trade Flows Over Time", annotations=_RO)
 def search_trade(reporter: Annotated[str, _d("Reporting country — name / ISO / M49 (`Thailand`/`THA`/`764`); resolved server-side.")],
-                 codes: Annotated[List[str], _d("HS/EBOPS code(s) from find_hs (never guess). Several = merged; a 4-digit code aggregates the family.")],
+                 codes: Annotated[Union[List[str], str], _d("HS/EBOPS code(s) from find_hs (never guess). Several = merged; a 4-digit code aggregates the family.")],
                  partner: Annotated[Optional[str], _d("Partner country, or `World` (default) = all combined.")] = None,
                  flow: Annotated[Optional[str], _d("`export` (default) | `import` | `both`.")] = None,
                  period: Annotated[Optional[str], _d("`last10` annual / `last12` monthly (default) · a year `2023` · list `2020,2021` · range `2015:2024` · `latest`. DYNAMIC — never hardcode a year.")] = None,
@@ -1848,12 +1865,12 @@ def search_trade(reporter: Annotated[str, _d("Reporting country — name / ISO /
     BYOK: no key → an `error`/`note` with a connect CTA (relay it; you may answer from general knowledge
     meanwhile)."""
     return _ext("/v1/ext/comtrade/search",
-                {"reporter": reporter, "codes": codes, "partner": partner, "flow": flow,
+                {"reporter": reporter, "codes": _codes(codes), "partner": partner, "flow": flow,
                  "period": period, "type": type, "freq": freq, "mirror": mirror})
 
 @mcp.tool(name="top_partners", title="Top Trade Partners", annotations=_RO)
 def top_partners(reporter: Annotated[str, _d("Reporting country — name / ISO / M49.")],
-                 codes: Annotated[List[str], _d("HS/EBOPS code(s) from find_hs.")],
+                 codes: Annotated[Union[List[str], str], _d("HS/EBOPS code(s) from find_hs.")],
                  flow: Annotated[Optional[str], _d("`export` (default) → biggest BUYERS · `import` → biggest SUPPLIERS · `both`.")] = None,
                  period: Annotated[Optional[str], _d("Default `latest`; a year / list / range / `lastN`. Dynamic.")] = None,
                  type: Annotated[str, _d("`goods` (default) | `services`.")] = "goods",
@@ -1863,11 +1880,11 @@ def top_partners(reporter: Annotated[str, _d("Reporting country — name / ISO /
     biggest SUPPLIERS. (Ranks the PARTNERS of ONE country — vs `top_traders`, which ranks the countries
     themselves.) BYOK note relayed on 402."""
     return _ext("/v1/ext/comtrade/top-partners",
-                {"reporter": reporter, "codes": codes, "flow": flow, "period": period,
+                {"reporter": reporter, "codes": _codes(codes), "flow": flow, "period": period,
                  "type": type, "limit": _lim(limit, default=10, ceiling=50)})
 
 @mcp.tool(name="top_traders", title="Rank Countries by Trade", annotations=_RO)
-def top_traders(codes: Annotated[List[str], _d("HS code(s) from find_hs — SUMMED per country (0207,0203 = chicken+pork combined). GOODS only.")],
+def top_traders(codes: Annotated[Union[List[str], str], _d("HS code(s) from find_hs — SUMMED per country (0207,0203 = chicken+pork combined). GOODS only.")],
                 flow: Annotated[Optional[str], _d("`import` (default) | `export` | `both`.")] = None,
                 scope: Annotated[Optional[str], _d("`world` (default) · continent (`asia`/`europe`/`africa`/`americas`/`oceania`) · subregion · econ group (`asean`/`eu`/`g7`) · CSV of ISO-2. (Region is OUR layer.)")] = None,
                 rank_by: Annotated[Optional[str], _d("`value` (default, period sum) · `growth` (CAGR, ≥2 periods) · `streak` (consecutive-move run, ≥2).")] = None,
@@ -1883,13 +1900,13 @@ def top_traders(codes: Annotated[List[str], _d("HS code(s) from find_hs — SUMM
     `from`/`to` years from the payload. "#2 exporter" = the rank:2 row. "BOTH X and Y up 5y" → call per
     commodity and INTERSECT the lists yourself. An empty/short list = a real answer; relay it, don't fabricate."""
     return _ext("/v1/ext/comtrade/top-traders",
-                {"codes": codes, "flow": flow, "scope": scope, "rank_by": rank_by, "order": order,
+                {"codes": _codes(codes), "flow": flow, "scope": scope, "rank_by": rank_by, "order": order,
                  "period": period, "limit": _lim(limit, default=10, ceiling=50), "min_value_usd": min_value_usd})
 
 @mcp.tool(name="trade_balance", title="Trade Balance", annotations=_RO)
 def trade_balance(reporter: Annotated[str, _d("Reporting country — name / ISO / M49.")],
                   partner: Annotated[Optional[str], _d("Partner country, or `World` (default).")] = None,
-                  codes: Annotated[Optional[List[str]], _d("HS code(s) for a PRODUCT balance; omit → `TOTAL` (all commodities, a macro read). GOODS only.")] = None,
+                  codes: Annotated[Optional[Union[List[str], str]], _d("HS code(s) for a PRODUCT balance; omit → `TOTAL` (all commodities, a macro read). GOODS only.")] = None,
                   period: Annotated[Optional[str], _d("Default `latest`; a year / list / range / `lastN`. Dynamic.")] = None) -> dict:
     """Exports vs imports vs NET balance (BYOK, 5cr; GOODS only) — "is <A> a net exporter to <B> (of <X>)?".
     Returns `rows:[{year, exports_usd, imports_usd, balance_usd}]` (balance = exports − imports; + = surplus).
@@ -1899,7 +1916,7 @@ def trade_balance(reporter: Annotated[str, _d("Reporting country — name / ISO 
     ⭐ Signature use for TARIFF / trade-war news (US↔China): pull the actual balance to quantify what the
     news sentiment only gestures at. BYOK note relayed on 402."""
     return _ext("/v1/ext/comtrade/balance",
-                {"reporter": reporter, "partner": partner, "codes": codes or "TOTAL", "period": period})
+                {"reporter": reporter, "partner": partner, "codes": _codes(codes) or "TOTAL", "period": period})
 
 @mcp.tool(title="Suggest Explorations", annotations=_RO)
 def suggest_cta(theme: Annotated[str, _d("A theme/scope to suggest a next-step call-to-action for.")],
