@@ -1395,10 +1395,12 @@ def bond_pulse(query: Annotated[str, _d("A COUNTRY ('US rates', 'US yield curve'
     rates (`.MM`), and the curve's shape (2s10s inversion). Rates are a CURVE, not a point, so this returns
     the whole picture. Give it a COUNTRY ("US rates", "US yield curve"), a TENOR ("US 10Y", "JGB 2Y"), or a
     RATE ("SOFR", "EURIBOR 3M"). Returns: the `curve` (key tenors + their yields & **bps** moves), the
-    `slope` (2s10s / 10Y3M — negative = INVERTED = a classic recession signal), and central-bank / macro
-    `news`. 🔵 A yield is a LEVEL — narrate moves in BASIS POINTS, never as a % of the yield; `yield↑ ⇒ bond
-    price↓`. NO options / PE / market-cap on a yield. Country names → translate to ISO-2 mentally (the tool
-    resolves them). `window` scopes news recency."""
+    `slope` (2s10s / 10Y3M — negative = INVERTED = a classic recession signal), central-bank / macro
+    `news`, and (US) `rate_positioning` — the options market on the Treasury ETFs (TLT/IEF) as a read on
+    where rates are headed (ETF price↓ = yields↑, so a NEGATIVE score = positioned for HIGHER yields). 🔵 A
+    yield is a LEVEL — narrate moves in BASIS POINTS, never as a % of the yield; `yield↑ ⇒ bond price↓`. The
+    yield itself has no options/PE, but `rate_positioning` (bond-ETF options) answers "will rates rise?".
+    Country names → translate to ISO-2 mentally (the tool resolves them). `window` scopes news recency."""
     cli = mdx()
     frm = _win(query and window)
     ms = cli._get("/v1/stocks", {"q": query, "asset_class": "bond", "limit": 8}).data.get("matches", [])
@@ -1460,17 +1462,45 @@ def bond_pulse(query: Annotated[str, _d("A COUNTRY ('US rates', 'US yield curve'
             except Exception:
                 pass
         return sl
+    # ── rate_positioning: a yield has no options, but the US-listed Treasury ETFs (TLT 20y+, IEF 7-10y)
+    #    DO — their options positioning IS the market's stance on where rates go. US-only (no clean proxy
+    #    for other sovereigns in the ~547 optionable set). This is what makes "will yields rise?" answerable
+    #    with a positioning lens, not just LLM cleverness reaching for TLT on its own. ──
+    def _rate_positioning():
+        proxies = {"US": [("TLT", "20y+ Treasuries (long end)"), ("IEF", "7-10y Treasuries (belly)")]}.get(iso)
+        if not proxies:
+            return {"covered": False,
+                    "note": f"bond-ETF options positioning is US-only (TLT/IEF); no optionable proxy for {iso} rates."}
+        etfs = []
+        for sym, label in proxies:
+            try:
+                o = _options_brief(cli._get(f"/v1/options/{sym}/sentiment", {"style": "plain"}).data)
+            except Exception as e:
+                o = {"covered": False, "note": str(e)}
+            etfs.append({"etf": sym, "tracks": label, **o})
+        return {"covered": True,
+                "note": "Bond-ETF price DOWN = long-end yields UP. So a NEGATIVE positioning_score = the "
+                        "options market leaning toward HIGHER yields (bond prices falling); positive = lower.",
+                "etfs": etfs}
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=3) as ex:
-        fc, fs, fn = ex.submit(_curve), ex.submit(_slopes), ex.submit(_news_for, f"{iso}-10Y.GB")
-        curve, slopes, news = fc.result(), fs.result(), fn.result()
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        fc, fs, fn, fp = (ex.submit(_curve), ex.submit(_slopes),
+                          ex.submit(_news_for, f"{iso}-10Y.GB"), ex.submit(_rate_positioning))
+        curve, slopes, news, rate_pos = fc.result(), fs.result(), fn.result(), fp.result()
     return {
         "mode": "curve", "country": iso, "curve": curve, "slope": slopes, "news": news,
+        "rate_positioning": rate_pos,
         "_guide": ("Rates are a CURVE. LEAD with the curve's SHAPE: read `slope.2s10s` — negative = INVERTED "
                    "(a classic recession signal); positive = normal. Then the level + recent MOVE of the key "
                    "tenors in BASIS POINTS (`curve[].change_bps`, NOT %). Explain the DRIVER from `news` "
-                   "(central-bank stance / inflation). `yield↑ ⇒ bond price↓`. A yield has NO options/PE — "
-                   "don't mention them. `news` empty = no coverage, say so; the curve still stands."),
+                   "(central-bank stance / inflation). `yield↑ ⇒ bond price↓`. The yield itself has no "
+                   "options — but for a FORWARD 'will rates rise/fall?' read, use `rate_positioning`: it's "
+                   "the options market on the Treasury ETFs (TLT/IEF), where ETF price DOWN = yields UP, so a "
+                   "NEGATIVE `positioning_score` = the market positioned for HIGHER yields (confirm/contrast "
+                   "it against the curve's recent move + the `news` driver — agreement strengthens the read, "
+                   "divergence is the insight). Explain any options term in plain words. `rate_positioning."
+                   "covered=false` (non-US) → just say a bond-ETF positioning proxy isn't available there. "
+                   "`news` empty = no coverage, say so; the curve still stands."),
     }
 
 @mcp.tool(title="Screen Stocks", annotations=_RO)
