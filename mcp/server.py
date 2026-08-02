@@ -209,7 +209,8 @@ def mdx() -> MarketDX:
     if cli is None:
         if len(_clients) > 512:   # coarse bound — MVP; swap for an LRU if it ever matters
             _clients.clear()
-        cli = _clients[key] = MarketDX(api_key=key)
+        base = os.environ.get("MARKETDX_BASE_URL")   # local/staging override; unset in prod → SDK default
+        cli = _clients[key] = MarketDX(api_key=key, base_url=base) if base else MarketDX(api_key=key)
     return cli
 
 def _ext(path: str, params: dict) -> dict:
