@@ -1124,7 +1124,17 @@ def asset_pulse(ticker: Annotated[str, _d(_TICKER + " ⚠️ a COMPANY/ETF/index
                    "price + news. If an `impact` article carries `scope:'curve_macro'`, it was BORROWED from "
                    "the country's benchmark 10Y (`macro_source`) because this specific tenor/rate has no news "
                    "of its own — narrate it as curve-wide central-bank/macro context, NOT specific to this "
-                   "tenor."),
+                   "tenor. 🌐 TRADE LENS: `price` also carries `related_assets` (materiality-weighted COMM/FX "
+                   "links — `channel` = the angle: output_price=its product, input_cost=a cost, demand=a "
+                   "backdrop; not listed = not material, don't invent a supply chain), `revenue_by_region` "
+                   "(where it sells — the WHERE for trade + the cross-border gate) and `currency_exposures`. "
+                   "For a GOODS/exporter or a policy/tariff-exposed name, you MAY deepen with the trade tools "
+                   "(find_hs→search_trade/top_traders/trade_balance): enumerate the firm's material product "
+                   "lines from `description`, resolve each via find_hs, and pull flows for the regions in "
+                   "`revenue_by_region`. 🔴 But GATE it: Comtrade is cross-border EXIM only (no domestic "
+                   "consumption) — a DOMESTIC-demand business (revenue_by_region home-only) has NO trade "
+                   "angle; say so, don't force one. Empty `related_assets`/`revenue_by_region` = no "
+                   "idiosyncratic driver (normal) OR not-yet-mapped — don't fabricate."),
     }
 
 @mcp.tool(title="Stock Prices", annotations=_RO)
@@ -1403,7 +1413,13 @@ def commodity_pulse(name: Annotated[str, _d("A COMMODITY concept, in ENGLISH —
                    "offshore, e.g. LME vs Shanghai; USD vs CNY/MYR), COMPARE them — an onshore-offshore "
                    "divergence is the insight (different currency → convert before comparing levels). A "
                    "commodity has NO options / PE / competitors — do not mention or flag them as missing. "
-                   "`impact` empty = no news in coverage (2026-01-01+), say so plainly; price still stands."),
+                   "`impact` empty = no news in coverage (2026-01-01+), say so plainly; price still stands. "
+                   "🌐 TRADE LENS: a commodity IS a traded good → for the PHYSICAL supply/demand behind the "
+                   "price you MAY deepen with the trade tools: find_hs(this commodity) → `top_traders` (who "
+                   "produces/exports the most, or whose exports are growing/streaking), `top_partners` / "
+                   "`search_trade` on the swing buyer (China imports rising/falling), `trade_balance`. Adds "
+                   "the flow substrate news+price can't (e.g. 'global import demand +X%, China −2 quarters, "
+                   "Chile exports +5y CAGR 14%'). BYOK — relay the connect CTA if no key."),
     }
 
 _CURVE_TENORS = ("3M", "2Y", "5Y", "10Y", "30Y")

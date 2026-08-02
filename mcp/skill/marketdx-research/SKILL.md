@@ -46,6 +46,7 @@ LEVEL is at most ONE supplementary number, never the whole answer.
 | resolve a THEME/trend → node id · an INDUSTRY/SECTOR → GICS code | **`find_megatrend`** · **`find_gics`** | Return candidates; YOU pick and reuse the id/code. |
 | DRILL-DOWNS | `stock_impact` (per-stock news), `options_sentiment` (US names), `relationships` (peers), `theme_players`/`private_movers` (theme members), `news_feed`/`search_news` (raw list) | Prefer the composites (`asset_pulse`/`theme_pulse`/`commodity_pulse`/`bond_pulse`) first; use singles to drill afterward. `theme_players`/`private_movers`/`relationships` return a TOP SLICE — if `total > count` say "N of M", don't imply the full roster. |
 | the user's OWN portfolio | **`list_portfolios`** → **`portfolio_pulse`** (market read) / **`portfolio_context`** (numbers) | Owner-scoped; call list first if they say "my portfolio" without a number. |
+| INTERNATIONAL TRADE — exports/imports, "who exports/imports the most / fastest-growing / N years straight", trade balance, a country's trade partners | **`find_hs`** (FREE, resolve concept→code) → **`search_trade`** / **`top_traders`** / **`top_partners`** / **`trade_balance`** | See **§4**. ALWAYS `find_hs` first (never guess a code). Merchandise = `type=goods` (HS); services (travel/IT/financial) = `type=services` (EBOPS). BYOK: no key → relay the connect CTA, answer from general knowledge meanwhile. |
 
 ---
 
@@ -97,3 +98,48 @@ knowledge — answer it directly, don't force a tool or a web search.
 
 **Gotcha:** the connector caches its tool list + descriptions at connect-time — after an mdx update the user
 must DISCONNECT and reconnect (a new chat is not enough).
+
+---
+
+## 4. Trade lens (UN Comtrade) — physical import/export flows
+
+The trade tools add the one substrate news+price+options lack: **how much of a good/service actually flows
+between which countries, over time** — decomposed (value/volume/price), ranked, trended. Two uses:
+
+**(a) A DIRECT trade question** ("who exports the most soybeans", "coffee imports down 3y straight", "Thai
+vs Vietnamese rice exports", "is Thailand a net exporter to China") → the tools in the §1 row.
+`find_hs` (FREE) FIRST → pick the code from its evidence (`score` ~0.7+ = clean; `excludes` name the
+siblings; ambiguous *different* concepts like pet-food 230910 vs livestock-feed 230990 → **ask** which) →
+`search_trade` (a flow over time, read its `analysis` block) / `top_traders` (rank countries — value /
+growth / **streak**) / `top_partners` (a country's buyers/sellers) / `trade_balance`. Pass the **specific
+tradable form** ("hot-rolled steel coil", not "steel" → which drifts to finished articles). "#2 exporter" =
+the rank:2 row; "both X and Y up 5y" = call per commodity and intersect yourself; an empty list is a real
+answer — relay it.
+
+**(b) A HIDDEN lens** on a stock / commodity / theme / tariff-news question — reach for it only after the
+**gate**, in order:
+1. 🔴 **Cross-border?** Comtrade sees ONLY goods/services crossing borders — we have EXIM, **no domestic
+   consumption/sales data**. A domestic-demand business (CPALL/7-Eleven, domestic utilities/telecom/retail
+   banks) → **ABSTAIN**: say "trade data can't speak to this (cross-border only)", don't force a weak angle.
+   The signal: `price.revenue_by_region` foreign share (home-only → domestic). The border test is subtle for
+   services — *does a flow cross the border / serve foreign demand?*, not goods-vs-services: a hotel serving
+   FOREIGN tourists = travel-services **export** ✅; a domestic convenience chain ❌.
+2. **Goods or services** → set `type`.
+3. **Materiality** → for the input/output COMMODITY angle, TRUST `price.related_assets` (materiality-
+   weighted; `channel` = the analytical angle: `output_price` = its product, `input_cost` = a cost driver,
+   `demand` = a demand backdrop — all valid). NOT listed = not material — don't free-associate a supply
+   chain (a GPU's copper is immaterial; a battery's lithium is not).
+
+**Deriving the keyword (your world knowledge does this — read what's in the payload, don't guess codes):**
+`price.description` + `gics` say what the firm makes/does → **enumerate ALL material lines** (a conglomerate
+like MINT = hotels **and** restaurants; don't stop at the gics headline — verify/web-search if unsure), then
+`find_hs` per line. `price.revenue_by_region` = the WHERE (which reporter/partner). Enumerate broadly (find_hs
+is FREE), pull metered trade data only on the material lines.
+
+**Signature uses:** a MINER (BHP → output = iron ore/copper; is demand in its destination markets rising or
+FALLING? the divergence is the insight) · a policy-exposed name (NVDA → China revenue + tariff/export-control
+news → chip HS 8542 US↔China flow, NOT a materials chain) · **tariff / trade-war news** (US-China → pull the
+actual `trade_balance` to quantify what the sentiment only gestures at).
+
+**Voice/limits:** quote the `analysis`/`reason` (sourced); surface `_license_note`; data goes back to 1962
+(older than news); a gap in old years = an HS-revision break, not zero trade. Same research-analyst voice.
