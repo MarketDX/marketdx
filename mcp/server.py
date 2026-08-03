@@ -82,7 +82,12 @@ _INSTRUCTIONS = (
     "('เก็บเข้าโน้ตไหม?'), and save right away on any explicit 'save this / จดไว้'. When you save, pass the "
     "tickers + megatrend ids you already resolved this turn so the note links to the graph — and if the note "
     "is about a SECTOR/TREND/mechanism (e.g. 'what is HBM') rather than one specific stock, do one quick "
-    "`find_megatrend([...])` at save time to link the theme (that's how it's found by interest later). Do NOT offer on "
+    "`find_megatrend([...])` at save time to link the theme (that's how it's found by interest later). 🔴 "
+    "LIKEWISE for a COMMODITY / asset you discussed only via the TRADE tools or keyword news: `find_hs` / "
+    "`search_trade` give an HS code (e.g. rice→1006), NOT a MarketDX ticker, and `search_news` keyword doesn't "
+    "resolve one either — so at save time do a quick `find_stock` to get the real ticker (rice→RICE.COMM, "
+    "copper→COPPER.COMM) and pass it, or the note won't link to the commodity in the graph. (A stock chat "
+    "usually resolved the ticker already; a commodity/trade chat often has NOT — this is the easy miss.) Do NOT offer on "
     "chit-chat, trivia lookups (e.g. 'what's NVDA's ticker'), or off-topic / non-investment turns; don't "
     "nag more than once, and never save pure filler."
 )
@@ -806,7 +811,7 @@ def write_note(subject: Annotated[str, _d("Short title / subject line of the not
                note_type: Annotated[Optional[str], _d("`reference` (concept/understanding) | `tracking` (dated market read) | `thesis` | `decision`.")] = None,
                category: Annotated[Optional[str], _d("Optional free-text category.")] = None,
                tags: Annotated[Optional[List[str]], _d("Free-text tags for retrieval.")] = None,
-               stocks: Annotated[Optional[List[str]], _d("PRIMARY tickers the note is ABOUT (MarketDX tickers you already resolved this turn). Server maps → canonical ids.")] = None,
+               stocks: Annotated[Optional[List[str]], _d("PRIMARY tickers the note is ABOUT (MarketDX tickers you already resolved this turn). Server maps → canonical ids. ⚠️ A COMMODITY discussed via the trade tools has only an HS code (rice→1006), NOT a ticker — resolve it with find_stock first (rice→RICE.COMM) so the note links to the commodity.")] = None,
                mentioned_stocks: Annotated[Optional[List[str]], _d("Secondary tickers merely referenced (a peer named in passing).")] = None,
                megatrend_ids: Annotated[Optional[List[int]], _d("Megatrend node ids (from find_megatrend) — REQUIRED to link a theme/sector note to the graph.")] = None,
                gics: Annotated[Optional[List[str]], _d("GICS codes to tag a sector note (derived free if the note names representative stocks).")] = None,
