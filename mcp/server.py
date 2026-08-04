@@ -1988,8 +1988,8 @@ _MACRO_DASH = {
     "housing": [("HOUST", "lin", "housing starts"), ("PERMIT", "lin", "building permits"),
                 ("CSUSHPINSA", "pc1", "home prices"), ("EXHOSLUSM495S", "lin", "existing home sales"),
                 ("MORTGAGE30US", "lin", "30y mortgage rate")],
-    "recession-risk": [("T10Y2Y", "lin", "2s10s curve"), ("UNRATE", "lin", "unemployment (Sahm)"),
-                       ("ICSA", "lin", "initial jobless claims"), ("USSLIND", "lin", "leading index"),
+    "recession-risk": [("T10Y2Y", "lin", "2s10s yield curve"), ("SAHMREALTIME", "lin", "Sahm-rule trigger"),
+                       ("ICSA", "lin", "initial jobless claims"), ("CFNAI", "lin", "Chicago Fed activity index"),
                        ("RECPROUSM156N", "lin", "recession probability")],
 }
 _MACRO_ALIASES = {"regime": "economy", "gdp": "economy", "growth": "economy", "us economy": "economy",
