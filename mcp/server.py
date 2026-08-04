@@ -15,7 +15,7 @@ from __future__ import annotations
 import os, json, pathlib, contextvars
 from dataclasses import asdict, is_dataclass
 from typing import Annotated, Any, Optional, List, Literal, Union
-from pydantic import Field
+from pydantic import Field, AliasChoices
 
 from mcp.server.fastmcp import FastMCP, Context
 from mcp.server.transport_security import TransportSecuritySettings
@@ -117,6 +117,20 @@ _WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHi
 # Reusable strings keep the common params (window/limit/ticker/…) consistent across all 32 tools. ──
 def _d(desc: str):  # noqa: ANN201
     return Field(description=desc)
+# One consistent name for the free-text identifier across the whole tool family — canonical `q`.
+# validation_alias makes the schema expose ONLY `q`, but silently ACCEPTS the names an LLM's prior
+# tends to reach for (query/name/commodity/symbol/…), so the client never trips on the param NAME.
+# Includes tool-name-derived tokens (theme_pulse→`theme`, bond_pulse→`bond`/`rate`, commodity_pulse→
+# `commodity`) — the tool's own name primes the LLM to reach for that word as the param. NONE of these may
+# collide with a REAL param of a tool that uses _dq (checked: `country`/`queries`/`type`/`entity_type` are
+# real params → deliberately NOT aliased).
+_Q_ALIASES = ("q", "query", "name", "commodity", "symbol", "keyword", "concept", "term",
+              "theme", "sector", "industry", "bond", "rate", "topic", "asset")
+_TICKER_ALIASES = ("ticker", "symbol", "q", "query", "stock", "asset", "name", "company")
+def _dq(desc: str):  # noqa: ANN201 — free-text concept/search field
+    return Field(description=desc, validation_alias=AliasChoices(*_Q_ALIASES))
+def _dt(desc: str):  # noqa: ANN201 — exact-ticker field
+    return Field(description=desc, validation_alias=AliasChoices(*_TICKER_ALIASES))
 _TICKER = "A MarketDX ticker (resolve via find_stock if unsure — mdx uses its OWN suffixes: Korea `.KO`, " \
     "Taiwan `.TW`, commodities `.COMM`, bonds `<ISO2>-<TENOR>.GB`, rates `.MM`). US mega-caps: bare `AAPL`."
 _WINDOW = "News-recency window: `7d`/`30d`/`90d`/`180d`/`1y` or `mtd`/`qtd`/`ytd`. Omit → a sensible default. " \
@@ -475,7 +489,7 @@ _SIM_STRONG = 0.68   # cosine ≥ this = a solid semantic match. ⚠️ CALIBRAT
 _SIM_WEAK = 0.58     # below this = essentially no match
 
 @mcp.tool(title="Search News", annotations=_RO)
-def search_news(q: Annotated[str, _d("Free-text SEMANTIC news query — a topic/event/asset in any language "
+def search_news(q: Annotated[str, _dq("Free-text SEMANTIC news query — a topic/event/asset in any language "
                                       "('copper', 'oil shock', 'Fed rate hike', 'ข่าวทองคำ').")],
                 entity_type: Annotated[Optional[str], _d("Keep only hits of one kind: `stock`|`forex`|`crypto`|`commodity`|`private`. Omit → all.")] = None,
                 collapse: Annotated[Optional[bool], _d(_COLLAPSE)] = None,
@@ -528,7 +542,7 @@ def news_feed(megatrend: Annotated[Optional[str], _d(_MEGATREND)] = None,
                           collapse=collapse, from_=from_ or _win(window), to=to, limit=_lim(limit)).to_list())
 
 @mcp.tool(title="Stock Impact", annotations=_RO)
-def stock_impact(ticker: Annotated[str, _d(_TICKER)],
+def stock_impact(ticker: Annotated[str, _dt(_TICKER)],
                  direction: Annotated[Optional[str], _d(_DIRECTION)] = None,
                  limit: Annotated[Optional[int], _d(_LIMIT)] = None,
                  collapse: Annotated[Optional[bool], _d(_COLLAPSE)] = None,
@@ -554,8 +568,8 @@ def stock_impact(ticker: Annotated[str, _d(_TICKER)],
 
 @mcp.tool(title="Options Sentiment", annotations=_RO)
 def options_sentiment(
-    ticker: Annotated[Optional[str], _d("A US-listed OPTIONABLE ticker (~547 names) or an index-ETF proxy (S&P→SPY, "
-                                        "Nasdaq→QQQ). Non-US / uncovered → `covered:false` (not an error).")] = None,
+    ticker: Annotated[Optional[str], _dt("A US-listed OPTIONABLE ticker (~547 names) or an index-ETF proxy (S&P→SPY, "
+                                         "Nasdaq→QQQ). Non-US / uncovered → `covered:false` (not an error).")] = None,
     style: Annotated[str, _d("Narration style: `plain` (layperson, default) | `technical`.")] = "plain",
     as_of: Annotated[Optional[str], _d("As-of date YYYY-MM-DD (point-in-time positioning).")] = None,
     tickers: Annotated[Optional[List[str]], _d("Batch form — several tickers at once (instead of `ticker`).")] = None,
@@ -613,7 +627,7 @@ _FIND_KEEP = ("ticker", "symbol", "name", "type", "country", "domicile", "region
               "exchange", "market_cap_usd", "similarity", "match_type", "mode")
 
 @mcp.tool(title="Find Stock / Resolve Ticker", annotations=_RO)
-def find_stock(q: Annotated[Optional[str], _d("Free-text to resolve to ONE exact ticker — a company NAME, a ticker "
+def find_stock(q: Annotated[Optional[str], _dq("Free-text to resolve to ONE exact ticker — a company NAME, a ticker "
                    "(full/prefix), an alias, a phrase, or a non-English name. 🌐 translate a generic COMMODITY/SECTOR "
                    "concept to English first (ทองคำ→'gold'); a COMPANY name passes as-is (茅台/トヨタ resolve).")] = None,
                queries: Annotated[Optional[List[str]], _d("BATCH form — resolve SEVERAL names in ONE call (e.g. building a "
@@ -708,7 +722,7 @@ def private_movers(theme: Annotated[str, _d("A megatrend theme — name/slug (re
                   key="companies")
 
 @mcp.tool(title="Company Relationships", annotations=_RO)
-def relationships(ticker: Annotated[str, _d(_TICKER)],
+def relationships(ticker: Annotated[str, _dt(_TICKER)],
                   limit: Annotated[Optional[int], _d("Max competitors + peers each (default/cap per _lim).")] = None) -> dict:
     """Competitors + peers of a company (news-derived relationship graph). `limit` caps EACH list
     (default 15, max 50). Each side carries `total`/`count`/`note` — a big `total` (peers often run to
@@ -1065,7 +1079,7 @@ def _slim_context(ctx: dict) -> dict:
     return c
 
 @mcp.tool(title="Asset Pulse", annotations=_RO)
-def asset_pulse(ticker: Annotated[str, _d(_TICKER + " ⚠️ a COMPANY/ETF/index-ETF/crypto — for a COMMODITY use "
+def asset_pulse(ticker: Annotated[str, _dt(_TICKER + " ⚠️ a COMPANY/ETF/index-ETF/crypto — for a COMMODITY use "
                                    "commodity_pulse, for a BOND/RATE use bond_pulse.")],
                 window: Annotated[Optional[str], _d(_WINDOW)] = None,
                 limit: Annotated[Optional[int], _d(_LIMIT)] = None,
@@ -1164,7 +1178,7 @@ def asset_pulse(ticker: Annotated[str, _d(_TICKER + " ⚠️ a COMPANY/ETF/index
     }
 
 @mcp.tool(title="Stock Prices", annotations=_RO)
-def stock_prices(ticker: Annotated[str, _d(_TICKER)],
+def stock_prices(ticker: Annotated[str, _dt(_TICKER)],
                  to: Annotated[Optional[str], _d("As-of date `YYYY-MM-DD` — features computed as of that day (point-in-time). Omit → latest.")] = None,
                  from_: Annotated[Optional[str], _d("Lower bound of price history `YYYY-MM-DD`. Narrowing below ~1y nulls the long windows. Price history goes back DECADES (unlike news, 2026+).")] = None) -> dict:
     """Price context for a tradable ticker (stock / ETF / index-ETF / forex / crypto / commodity), split &
@@ -1263,7 +1277,7 @@ def portfolio_pulse(portfolio_id: Annotated[int, _d(_PID)],
     }
 
 @mcp.tool(title="Theme Pulse", annotations=_RO)
-def theme_pulse(query: Annotated[str, _d("A SECTOR / INDUSTRY / THEME concept (semiconductors, AI, energy, banks, "
+def theme_pulse(q: Annotated[str, _dq("A SECTOR / INDUSTRY / THEME concept (semiconductors, AI, energy, banks, "
                                           "clean energy, gold). NOT a single company/ticker (→ asset_pulse) and NOT a "
                                           "bond/rate (→ bond_pulse). Fans out to megatrend/GICS/ETF/commodity angles.")],
                 window: Annotated[str, _d(_WINDOW)] = "30d") -> dict:
@@ -1286,7 +1300,7 @@ def theme_pulse(query: Annotated[str, _d("A SECTOR / INDUSTRY / THEME concept (s
     `window` = 7d/30d/90d/1y/…"""
     cli = mdx()
     # ── resolve the concept into its (up to 3) angle keys — skip any that don't resolve ──
-    mt = _to_node(query)
+    mt = _to_node(q)
     megatrend = mt if isinstance(mt, int) else None
     gics = etf = None
     try:
@@ -1303,7 +1317,7 @@ def theme_pulse(query: Annotated[str, _d("A SECTOR / INDUSTRY / THEME concept (s
             "SPXL/TQQQ) or a narrow sub-slice (China A-Shares->ASHR, China internet/tech->KWEB, "
             "China large-cap->FXI) ONLY if the concept explicitly asks for leverage / A-shares / mainland / "
             "internet / large-cap. Bare 'China'/'Chinese stocks'/'China market' -> MCHI.",
-            f"Concept: {query}\nCovered ETFs: " + ", ".join(f"{k}={v}" for k, v in _COVERED_ETFS.items()),
+            f"Concept: {q}\nCovered ETFs: " + ", ".join(f"{k}={v}" for k, v in _COVERED_ETFS.items()),
             0.0)
         g = str(r.get("gics") or "").strip()
         gics = g if (g.isdigit() and 2 <= len(g) <= 8) else None
@@ -1341,7 +1355,7 @@ def theme_pulse(query: Annotated[str, _d("A SECTOR / INDUSTRY / THEME concept (s
         # metals have NO options ETF, so their price was invisible. Resolve via the (alias/embed-seeded)
         # resolver — no deepseek — and pull the digested /prices for the first commodity match.
         try:
-            ms = cli._get("/v1/stocks", {"q": query, "asset_class": "commodity", "limit": 5}).data.get("matches", [])
+            ms = cli._get("/v1/stocks", {"q": q, "asset_class": "commodity", "limit": 5}).data.get("matches", [])
             cm = next((m for m in ms if m.get("type") == "commodity"), None)
             if not cm:
                 return None
@@ -1362,7 +1376,7 @@ def theme_pulse(query: Annotated[str, _d("A SECTOR / INDUSTRY / THEME concept (s
                                     "asset": fa.result(), "commodity": fc.result()}.items()
                   if v is not None}
     return {
-        "query": query, "window": window, "angles": angles,
+        "query": q, "window": window, "angles": angles,
         "skipped": [k for k in ("theme", "gics", "asset", "commodity") if k not in angles],
         "_guide": ("Present each angle SEPARATELY — they are DIFFERENT cohorts/lenses: `theme` = MarketDX "
                    "megatrend membership (trend-exposed, may cross sectors); `gics` = standard GICS sector "
@@ -1376,7 +1390,7 @@ def theme_pulse(query: Annotated[str, _d("A SECTOR / INDUSTRY / THEME concept (s
     }
 
 @mcp.tool(title="Commodity Pulse", annotations=_RO)
-def commodity_pulse(name: Annotated[str, _d("A COMMODITY concept, in ENGLISH — translate first (ทองคำ/黄金→'gold', "
+def commodity_pulse(q: Annotated[str, _dq("A COMMODITY concept, in ENGLISH — translate first (ทองคำ/黄金→'gold', "
                                              "天然ガス/原油→'natural gas'/'crude oil', 铜→'copper'). Or pass a `SYMBOL.COMM` "
                                              "ticker to skip resolution. For a COMPANY use asset_pulse; a SECTOR → theme_pulse.")],
                     window: Annotated[Optional[str], _d(_WINDOW)] = None) -> dict:
@@ -1391,13 +1405,13 @@ def commodity_pulse(name: Annotated[str, _d("A COMMODITY concept, in ENGLISH —
     cli = mdx()
     frm = _win(window)
     # resolve WITHIN the commodity scope (asset_class=commodity → WHERE exchange_code='COMM')
-    if name.upper().endswith(".COMM"):
-        comms = [{"ticker": name.upper(), "name": None, "region": None, "currency": None}]
+    if q.upper().endswith(".COMM"):
+        comms = [{"ticker": q.upper(), "name": None, "region": None, "currency": None}]
     else:
-        ms = cli._get("/v1/stocks", {"q": name, "asset_class": "commodity", "limit": 6}).data.get("matches", [])
+        ms = cli._get("/v1/stocks", {"q": q, "asset_class": "commodity", "limit": 6}).data.get("matches", [])
         comms = [m for m in ms if m.get("type") == "commodity"]
     if not comms:
-        return {"error": f"no commodity matches '{name}'. Translate to the English concept (gold/crude oil/…); "
+        return {"error": f"no commodity matches '{q}'. Translate to the English concept (gold/crude oil/…); "
                          "for a COMPANY use asset_pulse, a SECTOR use theme_pulse."}
     t = comms[0]["ticker"]
     def _price():
@@ -1451,7 +1465,7 @@ def commodity_pulse(name: Annotated[str, _d("A COMMODITY concept, in ENGLISH —
 _CURVE_TENORS = ("3M", "2Y", "5Y", "10Y", "30Y")
 
 @mcp.tool(title="Bond Pulse", annotations=_RO)
-def bond_pulse(query: Annotated[str, _d("A COUNTRY ('US rates', 'US yield curve'), a TENOR ('US 10Y', 'JGB 2Y', "
+def bond_pulse(q: Annotated[str, _dq("A COUNTRY ('US rates', 'US yield curve'), a TENOR ('US 10Y', 'JGB 2Y', "
                                          "'DE 30Y'), or a RATE ('SOFR', 'EURIBOR 3M'). Returns the whole curve + 2s10s "
                                          "slope + macro news. Covers govt-bond yields, money-market rates, and the curve.")],
                window: Annotated[Optional[str], _d(_WINDOW)] = None) -> dict:
@@ -1466,10 +1480,10 @@ def bond_pulse(query: Annotated[str, _d("A COUNTRY ('US rates', 'US yield curve'
     yield itself has no options/PE, but `rate_positioning` (bond-ETF options) answers "will rates rise?".
     Country names → translate to ISO-2 mentally (the tool resolves them). `window` scopes news recency."""
     cli = mdx()
-    frm = _win(query and window)
-    ms = cli._get("/v1/stocks", {"q": query, "asset_class": "bond", "limit": 8}).data.get("matches", [])
+    frm = _win(q and window)
+    ms = cli._get("/v1/stocks", {"q": q, "asset_class": "bond", "limit": 8}).data.get("matches", [])
     if not ms:
-        return {"error": f"no bond/rate matches '{query}'. Try 'US 10Y', 'US yield curve', 'SOFR', 'JGB 2Y'."}
+        return {"error": f"no bond/rate matches '{q}'. Try 'US 10Y', 'US yield curve', 'SOFR', 'JGB 2Y'."}
     rate = next((m for m in ms if m["ticker"].endswith(".MM")), None)
     bond = next((m for m in ms if m["ticker"].endswith(".GB")), None)
 
@@ -1499,7 +1513,7 @@ def bond_pulse(query: Annotated[str, _d("A COUNTRY ('US rates', 'US yield curve'
     # ── CURVE mode: pick the country (prefer a pure .GB bond's issuer) and pull the whole curve ──
     iso = (bond or ms[0]).get("domicile") or (bond or ms[0]).get("country")
     if not iso or len(iso) != 2:
-        return {"error": f"couldn't pin a country from '{query}'. Try 'US yield curve' / 'Germany 10Y'.",
+        return {"error": f"couldn't pin a country from '{q}'. Try 'US yield curve' / 'Germany 10Y'.",
                 "matches": [{"ticker": m["ticker"], "name": m.get("name")} for m in ms[:5]]}
     tickers = [f"{iso}-{tn}.GB" for tn in _CURVE_TENORS]
     def _curve():
@@ -1829,7 +1843,7 @@ def find_gics(terms: Annotated[List[str], _d("One or more INDUSTRY/SECTOR terms 
 # mcp-trade-tools-design.md (Ava repo) for the full entity→trade bridge + gate hierarchy.
 
 @mcp.tool(name="find_hs", title="Find HS / Trade Code", annotations=_RO)
-def find_hs(q: Annotated[str, _d(
+def find_hs(q: Annotated[str, _dq(
                 "The tradable GOOD or SERVICE to resolve — a concept in ANY language (crude oil, รถยนต์ไฟฟ้า, "
                 "semiconductors, tourism). Derive it from what the entity actually DEALS IN (read its "
                 "description/gics: a company's PRODUCTS for goods, its SERVICE type for a services firm). Pass "
@@ -1940,7 +1954,7 @@ def trade_balance(reporter: Annotated[str, _d("Reporting country — name / ISO 
 # Centralized key + cross-user cache server-side (no BYOK). Design: docs/product/macro-pulse-design.md.
 
 @mcp.tool(name="find_series", title="Find Macro Series (FRED)", annotations=_RO)
-def find_series(q: Annotated[str, _d("A macro concept in ANY language — 'US inflation', 'อัตราว่างงาน', 'core PCE', "
+def find_series(q: Annotated[str, _dq("A macro concept in ANY language — 'US inflation', 'อัตราว่างงาน', 'core PCE', "
                                      "'fed funds', '10y yield', 'housing starts'. Returns the canonical FRED series + the "
                                      "RIGHT default transform.")],
                 country: Annotated[Optional[str], _d("OPTIONAL ISO-2 to bias to a country's series (JP, DE) — FRED intl coverage is uneven; omit for US.")] = None,
