@@ -1555,8 +1555,8 @@ def bond_pulse(query: Annotated[str, _d("A COUNTRY ('US rates', 'US yield curve'
                ("PAYEMS", "chg", "nonfarm payrolls"), ("UNRATE", "lin", "unemployment"),
                ("FEDFUNDS", "lin", "fed funds")]
         from concurrent.futures import ThreadPoolExecutor as _TPE
-        with _TPE(max_workers=5) as ex2:
-            return {"covered": True, "drivers": list(ex2.map(lambda t: _fred_slim(t[0], t[1], t[2], "10y"), drv))}
+        with _TPE(max_workers=5) as ex2:  # `cli` captured from bond_pulse's main thread (contextvar-safe)
+            return {"covered": True, "drivers": list(ex2.map(lambda t: _fred_slim(cli, t[0], t[1], t[2], "10y"), drv))}
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=5) as ex:
         fc, fs, fn, fp, fm = (ex.submit(_curve), ex.submit(_slopes), ex.submit(_news_for, f"{iso}-10Y.GB"),
@@ -1997,10 +1997,13 @@ _MACRO_ALIASES = {"regime": "economy", "gdp": "economy", "growth": "economy", "u
                   "prices": "inflation", "cpi": "inflation", "recession": "recession-risk",
                   "recession risk": "recession-risk", "housing market": "housing", "real estate": "housing"}
 
-def _fred_slim(sid: str, tf: str, label: str, frm: str = "10y") -> dict:
-    """One FRED series → slim feature-extract for a dashboard (latest + percentile + trend + read)."""
+def _fred_slim(cli, sid: str, tf: str, label: str, frm: str = "10y") -> dict:
+    """One FRED series → slim feature-extract for a dashboard (latest + percentile + trend + read).
+    ⚠️ Takes `cli` (the MarketDX client) explicitly — callers run this in ThreadPoolExecutor workers, and the
+    per-request auth key lives in a contextvar that does NOT propagate into worker threads. Resolve `cli` via
+    mdx() in the MAIN thread and pass it in (same pattern the other composites use)."""
     try:
-        d = mdx()._get("/v1/ext/fred/series", {"series_id": sid, "transform": tf, "from": frm}).data
+        d = cli._get("/v1/ext/fred/series", {"series_id": sid, "transform": tf, "from": frm}).data
         a = d.get("analysis") or {}
         return {"indicator": label, "series_id": sid, "transform": tf,
                 "title": (d.get("meta") or {}).get("title"), "latest": a.get("latest"),
@@ -2038,9 +2041,10 @@ def macro_pulse(scope: Annotated[str, _d("A macro DASHBOARD: `economy` (overall 
         return {"scope": key, "note": f"macro_pulse dashboards are US-only in v0; for {country} resolve each "
                 "indicator via find_series?country=… then fred_series (FRED intl coverage is uneven)."}
     frm = window or "10y"
+    cli = mdx()   # resolve in the MAIN thread — the auth contextvar doesn't cross into worker threads
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=min(8, len(dash))) as ex:
-        rows = list(ex.map(lambda t: _fred_slim(t[0], t[1], t[2], frm), dash))
+        rows = list(ex.map(lambda t: _fred_slim(cli, t[0], t[1], t[2], frm), dash))
     return {
         "scope": key, "window": frm, "country": "US", "indicators": rows,
         "_guide": ("SYNTHESIZE a regime read, don't list. For `economy`/`recession-risk`: place it on the "
