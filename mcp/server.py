@@ -1546,25 +1546,37 @@ def bond_pulse(query: Annotated[str, _d("A COUNTRY ('US rates', 'US yield curve'
                 "note": "Bond-ETF price DOWN = long-end yields UP. So a NEGATIVE positioning_score = the "
                         "options market leaning toward HIGHER yields (bond prices falling); positive = lower.",
                 "etfs": etfs}
+    # ── macro_drivers: the FRED macro series that DRIVE the curve (CPI/core-PCE/jobs/unemployment/fed funds).
+    #    Always relevant to "will rates rise?" → embed (US only; centralized-key + cache make it cheap). ──
+    def _macro_drivers():
+        if iso != "US":
+            return {"covered": False, "note": "rate-drivers (CPI/jobs/fed funds) are US macro; not shown for non-US curves."}
+        drv = [("CPIAUCSL", "pc1", "CPI inflation"), ("PCEPILFE", "pc1", "core PCE"),
+               ("PAYEMS", "chg", "nonfarm payrolls"), ("UNRATE", "lin", "unemployment"),
+               ("FEDFUNDS", "lin", "fed funds")]
+        from concurrent.futures import ThreadPoolExecutor as _TPE
+        with _TPE(max_workers=5) as ex2:
+            return {"covered": True, "drivers": list(ex2.map(lambda t: _fred_slim(t[0], t[1], t[2], "10y"), drv))}
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=4) as ex:
-        fc, fs, fn, fp = (ex.submit(_curve), ex.submit(_slopes),
-                          ex.submit(_news_for, f"{iso}-10Y.GB"), ex.submit(_rate_positioning))
-        curve, slopes, news, rate_pos = fc.result(), fs.result(), fn.result(), fp.result()
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        fc, fs, fn, fp, fm = (ex.submit(_curve), ex.submit(_slopes), ex.submit(_news_for, f"{iso}-10Y.GB"),
+                              ex.submit(_rate_positioning), ex.submit(_macro_drivers))
+        curve, slopes, news, rate_pos, macro = fc.result(), fs.result(), fn.result(), fp.result(), fm.result()
     return {
         "mode": "curve", "country": iso, "curve": curve, "slope": slopes, "news": news,
-        "rate_positioning": rate_pos,
+        "rate_positioning": rate_pos, "macro_drivers": macro,
         "_guide": ("Rates are a CURVE. LEAD with the curve's SHAPE: read `slope.2s10s` — negative = INVERTED "
                    "(a classic recession signal); positive = normal. Then the level + recent MOVE of the key "
-                   "tenors in BASIS POINTS (`curve[].change_bps`, NOT %). Explain the DRIVER from `news` "
-                   "(central-bank stance / inflation). `yield↑ ⇒ bond price↓`. The yield itself has no "
+                   "tenors in BASIS POINTS (`curve[].change_bps`, NOT %). Explain the DRIVER from `macro_drivers` "
+                   "(the FRED macro that moves rates: CPI/core-PCE hot or cooling, jobs strong/weak, fed funds "
+                   "stance — quote each `read`) + `news`. `yield↑ ⇒ bond price↓`. The yield itself has no "
                    "options — but for a FORWARD 'will rates rise/fall?' read, use `rate_positioning`: it's "
                    "the options market on the Treasury ETFs (TLT/IEF), where ETF price DOWN = yields UP, so a "
-                   "NEGATIVE `positioning_score` = the market positioned for HIGHER yields (confirm/contrast "
-                   "it against the curve's recent move + the `news` driver — agreement strengthens the read, "
-                   "divergence is the insight). Explain any options term in plain words. `rate_positioning."
-                   "covered=false` (non-US) → just say a bond-ETF positioning proxy isn't available there. "
-                   "`news` empty = no coverage, say so; the curve still stands."),
+                   "NEGATIVE `positioning_score` = the market positioned for HIGHER yields. FUSE all three — "
+                   "curve move + macro_drivers + positioning: agreement strengthens the read, divergence is the "
+                   "insight. Explain any options term in plain words. `covered=false` (non-US) on rate_positioning/"
+                   "macro_drivers → say the US-macro/ETF proxy isn't available there. `news` empty = say so; the "
+                   "curve still stands. For the FULL economy/recession read, hand off to macro_pulse."),
     }
 
 @mcp.tool(title="Screen Stocks", annotations=_RO)
@@ -1922,6 +1934,125 @@ def trade_balance(reporter: Annotated[str, _d("Reporting country — name / ISO 
     news sentiment only gestures at. BYOK note relayed on 402."""
     return _ext("/v1/ext/comtrade/balance",
                 {"reporter": reporter, "partner": partner, "codes": _codes(codes) or "TOTAL", "period": period})
+
+# ── Macro (FRED) — economic time series + regime/dashboard reads ─────────────────────────────────────
+# find_series (FREE resolver) → fred_series (one series + analysis) → macro_pulse (curated dashboards).
+# Centralized key + cross-user cache server-side (no BYOK). Design: docs/product/macro-pulse-design.md.
+
+@mcp.tool(name="find_series", title="Find Macro Series (FRED)", annotations=_RO)
+def find_series(q: Annotated[str, _d("A macro concept in ANY language — 'US inflation', 'อัตราว่างงาน', 'core PCE', "
+                                     "'fed funds', '10y yield', 'housing starts'. Returns the canonical FRED series + the "
+                                     "RIGHT default transform.")],
+                country: Annotated[Optional[str], _d("OPTIONAL ISO-2 to bias to a country's series (JP, DE) — FRED intl coverage is uneven; omit for US.")] = None,
+                limit: Annotated[Optional[int], _d("Candidates (default 8, max 25).")] = None) -> dict:
+    """⭐ FREE resolver — a macro concept → the exact FRED `series_id` (+ the transform to apply). ALWAYS step 1;
+    never guess a series_id (cryptic: CPIAUCSL, PCEPILFE, LRHUTTTTJPM156S). Returns ranked `candidates` with
+    `series_id`, `title`, `units`, `frequency`, `seasonal_adjustment`, `coverage`, and — crucially —
+    `suggested_transform` (+reason): a price INDEX reads as YoY % (`pc1`), real GDP as annualized % (`pca`), a
+    rate/ratio as its level (`lin`). PICK by intent: core vs headline (CPILFESL vs CPIAUCSL), SA vs NSA, PCE vs
+    CPI. `curated:true` + high popularity = the canonical pick. Empty candidates = FRED doesn't have it (ISM/PMI;
+    commodity SPOT prices → use commodity_pulse) — say so, don't fabricate. Feeds `fred_series`."""
+    return _ext("/v1/ext/fred/find", {"q": q, "country": country, "limit": _lim(limit, default=8, ceiling=25)})
+
+@mcp.tool(name="fred_series", title="Macro Series + Analysis (FRED)", annotations=_RO)
+def fred_series(series_id: Annotated[str, _d("ONE FRED series_id from find_series (never guess). Comma-sep = rejected; compare two = call twice + diff.")],
+                transform: Annotated[Optional[str], _d("FRED units transform — `lin` (level: a rate/ratio) · `pc1` (YoY %: inflation/price index) · "
+                                                       "`pca` (annualized %: real GDP) · `pch` (period %) · `chg`/`ch1` (abs Δ). Default = the series' suggested_transform.")] = None,
+                from_: Annotated[Optional[str], _d("Start — ISO date or relative window `10y`/`5y`/`qtd` (dynamic, anchored to today).")] = None,
+                to: Annotated[Optional[str], _d("End — ISO date. Omit → latest.")] = None) -> dict:
+    """"What is <macro indicator> / is it high vs history / how has it moved" — ONE FRED series, feature-extracted.
+    Returns `series` (transformed points) + an `analysis` block: `latest` (+date — always say as-of-when),
+    `trend`, `change` (vs prior/YoY/window), `peak`/`trough`, and 🔑 `percentile`+`z_score` vs the window's own
+    history (the money-shot for "high or low?" — e.g. unemployment 8th pct = historically very low), `volatility`,
+    a one-line `read`. 🔵 `transform` matters: "inflation" = pc1 (YoY %) of a price index, NOT the level; a rate
+    (UNRATE/FEDFUNDS/yields) = lin. QUOTE the `read`; narrate the percentile. Compare two = call once per
+    series_id and diff. US-govt series are public domain (`_license_note`)."""
+    return _ext("/v1/ext/fred/series", {"series_id": series_id, "transform": transform, "from": from_, "to": to})
+
+# curated dashboards — the economist mental-model (which indicators make each read); series confirmed via
+# find_series 2026-08-04. Each = (series_id, transform, label).
+_MACRO_DASH = {
+    "economy": [("GDPC1", "pca", "real GDP growth"), ("INDPRO", "pc1", "industrial production"),
+                ("CPIAUCSL", "pc1", "CPI inflation"), ("PCEPILFE", "pc1", "core PCE"),
+                ("UNRATE", "lin", "unemployment"), ("PAYEMS", "chg", "nonfarm payrolls"),
+                ("FEDFUNDS", "lin", "fed funds (policy)")],
+    "inflation": [("CPIAUCSL", "pc1", "headline CPI"), ("CPILFESL", "pc1", "core CPI"),
+                  ("PCEPILFE", "pc1", "core PCE"), ("PPIACO", "pc1", "producer prices"),
+                  ("T5YIE", "lin", "5y inflation expectations")],
+    "labor": [("PAYEMS", "chg", "nonfarm payrolls"), ("UNRATE", "lin", "unemployment"),
+              ("CIVPART", "lin", "participation"), ("CES0500000003", "pc1", "avg hourly earnings"),
+              ("ICSA", "lin", "initial jobless claims"), ("JTSJOL", "lin", "job openings (JOLTS)")],
+    "consumer": [("RSAFS", "pc1", "retail sales"), ("DSPIC96", "pc1", "real disposable income"),
+                 ("UMCSENT", "lin", "consumer sentiment"), ("PSAVERT", "lin", "personal saving rate"),
+                 ("TOTALSL", "pc1", "consumer credit")],
+    "housing": [("HOUST", "lin", "housing starts"), ("PERMIT", "lin", "building permits"),
+                ("CSUSHPINSA", "pc1", "home prices"), ("EXHOSLUSM495S", "lin", "existing home sales"),
+                ("MORTGAGE30US", "lin", "30y mortgage rate")],
+    "recession-risk": [("T10Y2Y", "lin", "2s10s curve"), ("UNRATE", "lin", "unemployment (Sahm)"),
+                       ("ICSA", "lin", "initial jobless claims"), ("USSLIND", "lin", "leading index"),
+                       ("RECPROUSM156N", "lin", "recession probability")],
+}
+_MACRO_ALIASES = {"regime": "economy", "gdp": "economy", "growth": "economy", "us economy": "economy",
+                  "macro": "economy", "jobs": "labor", "employment": "labor", "unemployment": "labor",
+                  "prices": "inflation", "cpi": "inflation", "recession": "recession-risk",
+                  "recession risk": "recession-risk", "housing market": "housing", "real estate": "housing"}
+
+def _fred_slim(sid: str, tf: str, label: str, frm: str = "10y") -> dict:
+    """One FRED series → slim feature-extract for a dashboard (latest + percentile + trend + read)."""
+    try:
+        d = mdx()._get("/v1/ext/fred/series", {"series_id": sid, "transform": tf, "from": frm}).data
+        a = d.get("analysis") or {}
+        return {"indicator": label, "series_id": sid, "transform": tf,
+                "title": (d.get("meta") or {}).get("title"), "latest": a.get("latest"),
+                "trend": a.get("trend"), "percentile": a.get("percentile"),
+                "z_score": a.get("z_score"), "read": a.get("read")}
+    except Exception as e:
+        return {"indicator": label, "series_id": sid, "error": str(e)[:80]}
+
+@mcp.tool(title="Macro Pulse (FRED)", annotations=_RO)
+def macro_pulse(scope: Annotated[str, _d("A macro DASHBOARD: `economy` (overall regime) · `inflation` · `labor` · `consumer` · "
+                                         "`housing` · `recession-risk`. For ONE indicator use find_series→fred_series; for the "
+                                         "rates/yield-curve use bond_pulse.")],
+                window: Annotated[Optional[str], _d("History window for each indicator's percentile/trend (default `10y`; e.g. `5y`/`20y`).")] = None,
+                country: Annotated[Optional[str], _d("OPTIONAL ISO-2 — v0 dashboards are US; non-US returns a note (use find_series?country=XX per indicator).")] = None) -> dict:
+    """⭐ "How is <the economy / consumer / labor market / housing / inflation> doing? / recession risk / soft-
+    landing or stagflation?" — the MACRO REGIME & DASHBOARD read. Fuses the key indicators for a SCOPE, each
+    feature-extracted (latest + where it sits vs its OWN history = `percentile` + trend), so you SYNTHESIZE the
+    regime instead of fetching one series at a time. Scopes: `economy` (growth×inflation×labor×policy → the
+    regime) · `inflation` · `labor` · `consumer` · `housing` · `recession-risk`.
+      • SYNTHESIZE, don't dump: lead with the growth×inflation quadrant (reflation growth↑infl↑ / goldilocks
+        growth↑infl↓ / stagflation growth↓infl↑ / slowdown growth↓infl↓), modulated by labor tightness (low
+        unemployment-percentile + high openings = tight) and policy (fed funds vs inflation). `percentile` is the
+        money-shot — "unemployment 8th pct of its history = historically very low". State each as-of date.
+      • Voice: the regime + the MECHANISM it implies (e.g. rising real yields historically pressure gold / long-
+        duration) — NOT advice or a forecast; hand judgment back; if the user holds names, tie the regime to them.
+      • Boundaries: no ISM/PMI on FRED; commodity SPOT → commodity_pulse; rates/curve detail → bond_pulse;
+        external/trade → the Comtrade tools. A component with `error` = that series wasn't available; say so.
+    For ONE indicator → find_series+fred_series; THIS is the multi-indicator regime composite."""
+    key = _MACRO_ALIASES.get(scope.strip().lower(), scope.strip().lower())
+    dash = _MACRO_DASH.get(key)
+    if not dash:
+        return {"error": f"unknown scope '{scope}'. Use one of: {', '.join(_MACRO_DASH)} "
+                         f"(or find_series+fred_series for a single indicator)."}
+    if country and country.strip().upper() not in ("US", "USA", "UNITED STATES"):
+        return {"scope": key, "note": f"macro_pulse dashboards are US-only in v0; for {country} resolve each "
+                "indicator via find_series?country=… then fred_series (FRED intl coverage is uneven)."}
+    frm = window or "10y"
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=min(8, len(dash))) as ex:
+        rows = list(ex.map(lambda t: _fred_slim(t[0], t[1], t[2], frm), dash))
+    return {
+        "scope": key, "window": frm, "country": "US", "indicators": rows,
+        "_guide": ("SYNTHESIZE a regime read, don't list. For `economy`/`recession-risk`: place it on the "
+                   "growth×inflation quadrant (reflation/goldilocks/stagflation/slowdown), then modulate with "
+                   "labor tightness (low `unemployment` percentile + high openings) and policy stance (fed funds "
+                   "vs inflation). LEAD with each indicator's `percentile` — where it sits vs its OWN history is "
+                   "the answer to 'high or low' (a bare level isn't). Quote each `read` + its as-of date. Then "
+                   "the MECHANISM/implication (facts, not advice; hand judgment back; tie to the user's holdings "
+                   "if any). Route out where relevant: rates/curve → bond_pulse, commodity spot → commodity_pulse, "
+                   "trade/external → the Comtrade tools. Any indicator with `error` = unavailable, say so."),
+        "_license_note": "Macro data via FRED; US-government series are public domain.",
+    }
 
 @mcp.tool(title="Suggest Explorations", annotations=_RO)
 def suggest_cta(theme: Annotated[str, _d("A theme/scope to suggest a next-step call-to-action for.")],
