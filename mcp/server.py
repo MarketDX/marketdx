@@ -1983,6 +1983,42 @@ def fred_series(series_id: Annotated[str, _d("ONE FRED series_id from find_serie
     series_id and diff. US-govt series are public domain (`_license_note`)."""
     return _ext("/v1/ext/fred/series", {"series_id": series_id, "transform": transform, "from": from_, "to": to})
 
+# ── World Bank (Data360) — cross-country structural data (open, no key, cached) ───────────────────────
+# find_indicator (FREE resolver) → wb_series (indicator + country(+multi) + analysis). Annual structural
+# data (consumption/GDP/demographics/poverty) — FRED's cross-country complement. Contract: docs/wb-api-for-mcp.md.
+
+@mcp.tool(name="find_indicator", title="Find World Bank Indicator", annotations=_RO)
+def find_indicator(q: Annotated[str, _dq("A cross-country STRUCTURAL concept in ANY language — 'household consumption', "
+                                        "'GDP per capita', 'poverty rate', 'life expectancy', 'government debt', 'internet users', "
+                                        "'การบริโภค'. Returns the canonical World Bank (WDI) indicator + the right unit VARIANT.")],
+                   country: Annotated[Optional[str], _d("OPTIONAL country (name or ISO3) to validate coverage for; omit for a general search.")] = None,
+                   limit: Annotated[Optional[int], _d("Candidates (default 8, max 25).")] = None) -> dict:
+    """⭐ FREE resolver — a structural concept → the exact World Bank indicator id (+ unit VARIANT). ALWAYS step
+    1; never guess a code (cryptic: WB_WDI_NE_CON_PRVT_ZS). World Bank = ANNUAL, cross-country structural data
+    (consumption, GDP, demographics, poverty, trade shares) — NOT high-frequency macro (that's find_series/FRED).
+    Returns ranked `candidates` with `indicator`, `name`, `database`, `coverage` (economies + year range),
+    `unit_hint`, `curated`. 🔵 The VARIANT matters (code suffix): `.ZS` = % of GDP/share (compare across country
+    SIZES) · `.CD` = current US$ (size) · `.KD` = constant/real · `.KD.ZG` = % growth · `.PC`/`.PCAP` = per
+    capita (living standards) · `.PP` = PPP. `curated:true` + `database=WB_WDI` = the canonical pick; higher
+    `coverage.economies` = more widely reported. Empty = not in the World Bank set — say so, don't fabricate.
+    Feeds `wb_series`."""
+    return _ext("/v1/ext/wb/find", {"q": q, "country": country, "limit": _lim(limit, default=8, ceiling=25)})
+
+@mcp.tool(name="wb_series", title="World Bank Data + Analysis", annotations=_RO)
+def wb_series(indicator: Annotated[str, _d("ONE indicator id from find_indicator (never guess), e.g. WB_WDI_NE_CON_PRVT_ZS.")],
+              country: Annotated[str, _d("Country as ISO3 or a name (`Thailand`/`THA`); COMMA-SEP for a cross-country compare "
+                                         "(`THA,JPN,USA`); or an aggregate (`WLD` world · `EMU` euro area · `HIC`/`MIC`/`LIC` income groups).")],
+              from_: Annotated[Optional[int], _d("Start year (default ≈ last 15y, dynamic).")] = None,
+              to: Annotated[Optional[int], _d("End year (default latest).")] = None) -> dict:
+    """"<structural indicator> for <country>, over time / vs other countries" — World Bank annual data,
+    feature-extracted (open data, 3 credits). Returns `results:[{country, series:[{year,value}], analysis}]`
+    (one per country); `analysis` = `latest`(+year), `trend`, `cagr_pct`, `change`, `peak`/`trough`. ⭐ For a
+    MULTI-COUNTRY call (comma-sep `country`) a top-level `ranking` orders them by the latest value — the
+    cross-country compare FRED can't do. Annual STRUCTURAL data → read levels + CAGR, not high-frequency moves.
+    A country/year with no data is omitted (never interpolated). Pick the right VARIANT at find_indicator (%GDP
+    vs US$ vs per-capita). Surface `_license_note` when showing data."""
+    return _ext("/v1/ext/wb/series", {"indicator": indicator, "country": country, "from": from_, "to": to})
+
 # curated dashboards — the economist mental-model (which indicators make each read); series confirmed via
 # find_series 2026-08-04. Each = (series_id, transform, label).
 _MACRO_DASH = {
