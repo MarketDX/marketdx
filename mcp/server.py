@@ -70,6 +70,22 @@ _INSTRUCTIONS = (
     "Prefer these composites over calling stock_impact / "
     "options_sentiment one at a time; use those only to DRILL deeper afterwards. Synthesize where news and "
     "positioning AGREE or DIVERGE; if the user HOLDS the name, tie the read back to their position. "
+    "🧠 ANALYTICAL MINDSET — when the user asks you to ASSESS or read an OUTLOOK ('how's X', 'แนวโน้ม', "
+    "'น่าสนใจไหม', 'should I worry', 'is it cheap') rather than a bare price/number: asset_pulse/theme_pulse "
+    "is the CORE read, but it is NOT the whole answer. Before you conclude, ASK YOURSELF what OFF-INSTRUMENT "
+    "backdrop would MATERIALLY change this read, and go GATHER it — do not answer from a single tool by "
+    "reflex. Map the entity to its real drivers using your own world-knowledge: a DOMESTIC-demand business "
+    "(a consumer/retail/bank/property/telecom name that sells mainly into ITS OWN country — e.g. CPALL, a "
+    "local bank, a homebuilder) is driven by that COUNTRY'S STRUCTURAL health, so pull it with "
+    "`find_indicator`→`wb_series` for the stock's country (household consumption, HOUSEHOLD DEBT, GDP-per-"
+    "capita growth, credit — the demand backdrop the price+news alone can't give); an EXPORTER / tariff- or "
+    "supply-chain-exposed name → the TRADE flows (`find_hs`→`search_trade`/`top_traders`); a rate- or "
+    "macro-sensitive read → the macro series (`find_series`→`fred_series`, or `macro_pulse`). Pull ONLY the "
+    "1–2 backdrops that would actually move the conclusion (cheap, high-signal — find_* resolvers are FREE), "
+    "then SYNTHESIZE: does the structural/macro/trade backdrop CONFIRM or CONTRADICT the price+news? Never "
+    "gather just to look thorough — but never leave a domestic-consumer, exporter, or macro-sensitive read "
+    "backdrop-BLIND either (that is the difference between a data readout and an analyst's answer). The "
+    "stock's country + sector (from find_stock / asset_pulse) is enough to know WHICH backdrop applies. "
     "To SUMMARIZE a whole scope — a news CATEGORY (e.g. "
     "'สรุปข่าว commodity' → news_type='commodity_supply'), a country/market, an impact channel (aspect), "
     "a GICS sector, a megatrend, or any AND-mix — use `brief` (the composed 'how is <X> doing right now?' "
@@ -2009,7 +2025,8 @@ def wb_series(indicator: Annotated[str, _d("ONE indicator id from find_indicator
               country: Annotated[str, _d("Country as ISO3 or a name (`Thailand`/`THA`); COMMA-SEP for a cross-country compare "
                                          "(`THA,JPN,USA`); or an aggregate (`WLD` world · `EMU` euro area · `HIC`/`MIC`/`LIC` income groups).")],
               from_: Annotated[Optional[int], _d("Start year (default ≈ last 15y, dynamic).")] = None,
-              to: Annotated[Optional[int], _d("End year (default latest).")] = None) -> dict:
+              to: Annotated[Optional[int], _d("End year (default latest).")] = None,
+              database: Annotated[Optional[str], _d("The candidate's `database` from find_indicator (e.g. WB_WDI, IMF_FSIC). Optional — pass it for non-WDI series to be safe; derived if omitted.")] = None) -> dict:
     """"<structural indicator> for <country>, over time / vs other countries" — World Bank annual data,
     feature-extracted (open data, 3 credits). Returns `results:[{country, series:[{year,value}], analysis}]`
     (one per country); `analysis` = `latest`(+year), `trend`, `cagr_pct`, `change`, `peak`/`trough`. ⭐ For a
@@ -2017,7 +2034,7 @@ def wb_series(indicator: Annotated[str, _d("ONE indicator id from find_indicator
     cross-country compare FRED can't do. Annual STRUCTURAL data → read levels + CAGR, not high-frequency moves.
     A country/year with no data is omitted (never interpolated). Pick the right VARIANT at find_indicator (%GDP
     vs US$ vs per-capita). Surface `_license_note` when showing data."""
-    return _ext("/v1/ext/wb/series", {"indicator": indicator, "country": country, "from": from_, "to": to})
+    return _ext("/v1/ext/wb/series", {"indicator": indicator, "country": country, "from": from_, "to": to, "database": database})
 
 # curated dashboards — the economist mental-model (which indicators make each read); series confirmed via
 # find_series 2026-08-04. Each = (series_id, transform, label).
