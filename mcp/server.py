@@ -1586,7 +1586,7 @@ def positioning(asset: Annotated[str, _dq(
     a = asset.strip()
     ticker = a if "." in a else (
         (cli._get("/v1/stocks", {"q": a, "limit": 5}).data.get("matches") or [{}])[0].get("ticker") or a)
-    return cli._get(f"/v1/positioning/{ticker}").data
+    return cli._get("/v1/positioning", {"asset": ticker}).data
 
 @mcp.tool(title="Positioning Extremes (COT)", annotations=_RO)
 def positioning_extremes(
