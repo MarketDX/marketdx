@@ -1686,10 +1686,19 @@ def bond_pulse(q: Annotated[str, _dq("A COUNTRY ('US rates', 'US yield curve'), 
             return {"error": f"price unavailable for {t}: {e}"}
         w = {k: {x: v[x] for x in ("change_bps",) if x in v} for k, v in (p.get("windows") or {}).items()
              if k in ("1w", "1mo", "3mo", "ytd", "1y")}
+        def _rpos():
+            try:
+                d = cli._get("/v1/positioning", {"asset": t}).data
+                return None if (not d or d.get("__notfound")) else {
+                    "score": d.get("positioning_score"), "crowding": (d.get("crowding") or {}).get("state"), "read": d.get("read")}
+            except Exception:
+                return None
         return {"mode": "rate", "ticker": t, "name": rate.get("name"), "level": p.get("last_close"),
-                "windows_bps": w, "range_read": p.get("range_read"), "news": _news_for(t),
+                "windows_bps": w, "range_read": p.get("range_read"), "news": _news_for(t), "positioning": _rpos(),
                 "_guide": ("A policy/reference RATE. Narrate the level + move in BASIS POINTS (`change_bps`), "
-                           "never % of the rate. Tie it to the central-bank stance in `news`. No options/PE.")}
+                           "never % of the rate. Tie it to the central-bank stance in `news`. 🎯 If `positioning` "
+                           "is present it's the CFTC COT futures stance (invert-aware: long future = for LOWER "
+                           "rates) — weave its plain `read` in. No options/PE.")}
 
     # ── CURVE mode: pick the country (prefer a pure .GB bond's issuer) and pull the whole curve ──
     iso = (bond or ms[0]).get("domicile") or (bond or ms[0]).get("country")
@@ -1752,14 +1761,30 @@ def bond_pulse(q: Annotated[str, _dq("A COUNTRY ('US rates', 'US yield curve'), 
         from concurrent.futures import ThreadPoolExecutor as _TPE
         with _TPE(max_workers=5) as ex2:  # `cli` captured from bond_pulse's main thread (contextvar-safe)
             return {"covered": True, "drivers": list(ex2.map(lambda t: _fred_slim(cli, t[0], t[1], t[2], "10y"), drv))}
+    # ── futures_positioning: the CFTC COT basis-trade view (leveraged funds vs asset managers in the Treasury
+    #    FUTURES) — complements rate_positioning (ETF options) with the second positioning lens. US tenors only. ──
+    def _cot_positioning():
+        if iso != "US":
+            return {"covered": False, "note": "CFTC futures positioning is mapped for US Treasuries (2Y/10Y/30Y); not shown for non-US curves."}
+        out = []
+        for tn in ("2Y", "10Y", "30Y"):
+            try:
+                d = cli._get("/v1/positioning", {"asset": f"{iso}-{tn}.GB"}).data
+                if d and not d.get("__notfound"):
+                    out.append({"tenor": tn, "score": d.get("positioning_score"),
+                                "crowding": (d.get("crowding") or {}).get("state"), "read": d.get("read")})
+            except Exception:
+                pass
+        return {"covered": bool(out), "tenors": out}
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=5) as ex:
-        fc, fs, fn, fp, fm = (ex.submit(_curve), ex.submit(_slopes), ex.submit(_news_for, f"{iso}-10Y.GB"),
-                              ex.submit(_rate_positioning), ex.submit(_macro_drivers))
-        curve, slopes, news, rate_pos, macro = fc.result(), fs.result(), fn.result(), fp.result(), fm.result()
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        fc, fs, fn, fp, fm, fcot = (ex.submit(_curve), ex.submit(_slopes), ex.submit(_news_for, f"{iso}-10Y.GB"),
+                              ex.submit(_rate_positioning), ex.submit(_macro_drivers), ex.submit(_cot_positioning))
+        curve, slopes, news, rate_pos, macro, cot_pos = (fc.result(), fs.result(), fn.result(),
+                                                         fp.result(), fm.result(), fcot.result())
     return {
         "mode": "curve", "country": iso, "curve": curve, "slope": slopes, "news": news,
-        "rate_positioning": rate_pos, "macro_drivers": macro,
+        "rate_positioning": rate_pos, "futures_positioning": cot_pos, "macro_drivers": macro,
         "_guide": ("Rates are a CURVE. LEAD with the curve's SHAPE: read `slope.2s10s` — negative = INVERTED "
                    "(a classic recession signal); positive = normal. Then the level + recent MOVE of the key "
                    "tenors in BASIS POINTS (`curve[].change_bps`, NOT %). Explain the DRIVER from `macro_drivers` "
@@ -1767,7 +1792,10 @@ def bond_pulse(q: Annotated[str, _dq("A COUNTRY ('US rates', 'US yield curve'), 
                    "stance — quote each `read`) + `news`. `yield↑ ⇒ bond price↓`. The yield itself has no "
                    "options — but for a FORWARD 'will rates rise/fall?' read, use `rate_positioning`: it's "
                    "the options market on the Treasury ETFs (TLT/IEF), where ETF price DOWN = yields UP, so a "
-                   "NEGATIVE `positioning_score` = the market positioned for HIGHER yields. FUSE all three — "
+                   "NEGATIVE `positioning_score` = the market positioned for HIGHER yields. 🎯 `futures_positioning` "
+                   "adds the CFTC COT view (leveraged funds vs asset managers in the bond FUTURES — the basis "
+                   "trade; its plain `read` is invert-aware: a long future = for LOWER yields); fuse it with "
+                   "rate_positioning. FUSE all — "
                    "curve move + macro_drivers + positioning: agreement strengthens the read, divergence is the "
                    "insight. Explain any options term in plain words. `covered=false` (non-US) on rate_positioning/"
                    "macro_drivers → say the US-macro/ETF proxy isn't available there. `news` empty = say so; the "
