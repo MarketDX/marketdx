@@ -193,8 +193,12 @@ the read (a domestic-demand or EM name, a country/allocation question, a thesis 
 demographics). A diversified DM mega-cap → usually skip. Route home: domestic consumer/credit/demographics →
 here; US high-freq → FRED; trade flows → Comtrade.
 
-**Voice/limits:** annual + revised — say "as of &lt;year&gt;"; cross-country coverage is uneven (some indicators
-thin for small economies — say so, don't fabricate); quote the `analysis`/percentile. Research-analyst voice.
+**Voice/limits:** annual + revised — say "as of &lt;year&gt;"; 🔴 READ `meta.unit` before you narrate — an IMF
+series can report a domestic-currency LEVEL, not the "% of GDP" its NAME implies (the tool surfaces the real unit
+and blanks a non-comparable cross-country `ranking` — heed `ranking_note`). Coverage is uneven: household-debt
+%GDP is the IMF-FSI ratio (~50 economies, no Nigeria) — narrower than FRED/BIS, so for a broad cross-country
+debt compare, FRED. Some series are EM-thin (Nigeria especially). Quote the `analysis`/percentile; don't
+fabricate a missing country. Research-analyst voice.
 
 ---
 
