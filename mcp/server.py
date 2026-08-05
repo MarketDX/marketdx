@@ -165,9 +165,9 @@ _COUNTRY_CSV = ("Market filter — CSV of ISO-2 codes (e.g. `US` or `CN,TW,HK`).
 _ASPECT = "Impact CHANNEL filter (e.g. `demand`, `competition`, `tariff`, `monetary`). Omit → all channels."
 _MEGATREND = "A megatrend node — a name/slug (resolved for you, e.g. `foundry`) or an int node id. CSV for several."
 _GICS = ("GICS code prefix(es), CSV — sector `25` / industry-group `2550` / industry `255010` / sub-industry "
-         "`25501010`. A CODE (digits) ONLY — a sector/industry NAME is rejected. Resolve a NAME (any language: "
-         "'banks'/'ธนาคาร'/'semiconductors') to its code with `find_gics` FIRST, then pass the code here. "
-         "So 'European banks' = find_gics('banks')→4010, then this=`4010` + country=EU codes.")
+         "`25501010`. A CODE (digits) ONLY — a sector/industry NAME is rejected. Resolve a NAME to its code with "
+         "`find_gics` FIRST (pass the ENGLISH industry word — translate the concept first: ธนาคาร→'banks'), then "
+         "pass the code here. So 'European banks' = find_gics('banks')→4010, then this=`4010` + country=EU codes.")
 _NEWS_TYPE = "News CATEGORY (exact names only, e.g. `macro_economic`, `commodity_supply`, `earnings_results`)."
 _PID = "The portfolio's id (call list_portfolios first if the user says 'my portfolio' without a number)."
 
@@ -1908,14 +1908,71 @@ def _gics_out(code: str) -> dict:
     n = _gics_tax()["by_code"][code]
     return {"code": n["code"], "name": n["name"], "level": n["level"]}
 
+# Common occupation / plural / colloquial nouns → the canonical GICS concept WORD (a real node name the
+# gazetteer then resolves + rolls up). These aren't node names themselves, so without this they'd skip the
+# deterministic path and burn the deepseek drill. Keep tight — high-frequency only; the long tail stays with
+# deepseek. Values MUST be an exact node name (verified) so the gazetteer hits.
+_GICS_ALIAS = {
+    "chipmaker": "semiconductors", "chipmakers": "semiconductors", "chip stocks": "semiconductors",
+    "chips": "semiconductors", "semis": "semiconductors", "semiconductor stocks": "semiconductors",
+    "homebuilder": "homebuilding", "homebuilders": "homebuilding", "housebuilder": "homebuilding",
+    "housebuilders": "homebuilding", "home builders": "homebuilding",
+    "automaker": "automobiles", "automakers": "automobiles", "carmaker": "automobiles",
+    "carmakers": "automobiles", "car makers": "automobiles", "auto manufacturers": "automobiles",
+    "drugmaker": "pharmaceuticals", "drugmakers": "pharmaceuticals", "pharma": "pharmaceuticals",
+    "big pharma": "pharmaceuticals", "biotech": "biotechnology",
+    "lender": "banks", "lenders": "banks", "insurer": "insurance", "insurers": "insurance",
+    "miner": "metals & mining", "miners": "metals & mining", "mining": "metals & mining",
+    "steelmaker": "steel", "steelmakers": "steel", "steel producers": "steel",
+    "airline": "passenger airlines", "airlines": "passenger airlines", "carriers": "passenger airlines",
+    "telco": "telecommunication services", "telcos": "telecommunication services",
+    "telecom": "telecommunication services", "telecoms": "telecommunication services",
+    "defense": "aerospace & defense", "defence": "aerospace & defense",
+    "utility": "utilities",
+}
+
+def _gics_rollup(code: str) -> str:
+    """Broaden a specifically-named node to the highest ancestor that is the SAME concept as a family. Roll
+    child→parent only when (a) no comma in the parent name (a comma = a list of DISTINCT sibling industries,
+    e.g. 'Pharmaceuticals, Biotechnology & Life Sciences'), AND (b) the parent's name CONTAINS the child's
+    name, AND (c) the EXTRA part of the parent name (beyond the child) is empty (a pure level-promotion, e.g.
+    industry 'Banks'→group 'Banks') OR is QUALIFIED by the child's own root word — so 'Semiconductors' rolls
+    into 'Semiconductors & Semiconductor Equipment' (extra 'Semiconductor Equipment' repeats the root), but
+    'Automobiles' does NOT roll into 'Automobiles & Components' and 'Software' not into 'Software & Services'
+    (the extra segment is a distinct business, unqualified by the concept)."""
+    tax = _gics_tax()
+    cur = code
+    while cur in tax["by_code"]:
+        node = tax["by_code"][cur]
+        p = node.get("parent_code")
+        if not p or p not in tax["by_code"]:
+            break
+        cname, pname = node["name"].lower(), tax["by_code"][p]["name"].lower()
+        if "," in pname or cname not in pname:
+            break
+        extra = pname.replace(cname, "", 1).strip(" &")   # the parent's name beyond the child concept
+        root = cname.split(" ")[0].rstrip("s")            # child's leading root word (rough singular)
+        if extra and root not in extra:                    # a distinct business, not a concept-qualified extension
+            break
+        cur = p
+    return cur
+
 # The ONE shared concept→GICS resolver. find_gics AND theme_pulse both call this — no tool rolls its own
 # keyword→sector map (theme_pulse used to run a private deepseek classify that mis-mapped "homebuilders"→Banks).
 def _resolve_gics_codes(term: str) -> list:
-    """A sector/industry concept → GICS code(s). Gazetteer-first (deterministic exact/tight-substring), then a
-    deepseek tier-drill (sector→group→industry→sub) for the rest. Returns codes in taxonomy order, dedup'd."""
+    """A sector/industry concept → GICS code(s). Alias-normalise vocabulary → gazetteer (deterministic
+    exact/tight-substring) + roll-up to the family group as an ADDED candidate → else a deepseek tier-drill
+    (sector→group→industry→sub). Returns codes broad-first (shorter code first), dedup'd — YOU pick."""
+    term = _GICS_ALIAS.get(str(term).strip().lower(), term)
     g = _gics_gaz(term)
     if g:
-        return g
+        out: list = []
+        for c in g:  # add the rolled-up family group WITHOUT dropping the specific node — client picks
+            r = _gics_rollup(c)
+            if r != c:
+                out.append(r)
+            out.append(c)
+        return sorted(dict.fromkeys(out), key=lambda x: (len(x), x))
     sectors = [n for n in _gics_tax()["nodes"] if n["level"] == "sector"]
     m1 = _gics_match(term, sectors)
     c2 = [k for s in m1 for k in _gics_children(s)]
@@ -1930,7 +1987,7 @@ def _resolve_gics_codes(term: str) -> list:
     return list(dict.fromkeys(nodes))
 
 @mcp.tool(name="find_gics", title="Find GICS Sector", annotations=_RO)
-def find_gics(q: Annotated[str, _dq("An INDUSTRY/SECTOR term (retail, airlines, banks, semiconductors, pharma) to map to GICS code candidates — YOU pick from the returned `{code,name,level}`.")]) -> dict:
+def find_gics(q: Annotated[str, _dq("An INDUSTRY/SECTOR term IN ENGLISH (retail, airlines, banks, semiconductors, pharma) to map to GICS code candidates — YOU pick from the returned `{code,name,level}`. The GICS tree is English-named, so TRANSLATE the concept to its English industry word FIRST (銀行→banks, ธนาคาร→banks, 半導体→semiconductors); a raw non-English term still resolves but takes the slow path.")]) -> dict:
     """🔴 The SECTOR/INDUSTRY counterpart of `find_megatrend` — map an established-industry concept
     ('retail', 'airlines', 'banks', 'semiconductors', 'utilities', 'pharma') to its GICS node(s). Use this
     when a note is about an INDUSTRY (not an emerging trend → that's `find_megatrend`, not a single company
