@@ -1393,8 +1393,11 @@ def theme_pulse(q: Annotated[str, _dq("The SECTOR / INDUSTRY / THEME name ONLY �
             pass
         return {"concept": concept, "megatrend": megatrend, "gics": gics, "etf": etf}
 
-    with ThreadPoolExecutor(max_workers=min(6, len(concepts))) as ex:
-        resolved = list(ex.map(_resolve, concepts))
+    # Resolve concepts SEQUENTIALLY in THIS thread — _resolve → _resolve_gics_codes → _gics_tax() does an
+    # mdx() API call, and a ThreadPoolExecutor worker does NOT inherit the request's auth contextvar (the
+    # "no MarketDX API key" bug). The expensive angle fan-out below is still parallel (it reuses the already-
+    # authed `cli`). Concept count is tiny (usually 1), so sequential costs nothing.
+    resolved = [_resolve(c) for c in concepts]
 
     def _dedup(xs):
         out = []
