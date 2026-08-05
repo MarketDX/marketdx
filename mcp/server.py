@@ -158,7 +158,10 @@ _TO = "Upper time bound, ISO date `YYYY-MM-DD`."
 _DIRECTION = "Filter by impact direction: `pos` | `neg` | `ambiguous`. Omit → all."
 _COLLAPSE = "Merge near-duplicate stories (same article from many outlets) into one row + `dup_count`. " \
     "Default ON; pass `false` for the raw un-deduped feed."
-_COUNTRY_CSV = "Market filter — CSV of ISO-2 codes (e.g. `US` or `CN,TW,HK`). For a REGION pass every member."
+_COUNTRY_CSV = ("Market filter — CSV of ISO-2 codes (e.g. `US` or `CN,TW,HK`). 🌍 If the question names a NATIONALITY "
+                "or REGION ('European','Thai','Chinese','ASEAN'), put it HERE — never leave it inside a concept/`q`/"
+                "`gics` field. Enumerate a region into its member ISO-2s yourself (Europe→GB,DE,FR,IT,ES,NL,CH,SE; "
+                "ASEAN→TH,SG,MY,ID,PH,VN).")
 _ASPECT = "Impact CHANNEL filter (e.g. `demand`, `competition`, `tariff`, `monetary`). Omit → all channels."
 _MEGATREND = "A megatrend node — a name/slug (resolved for you, e.g. `foundry`) or an int node id. CSV for several."
 _GICS = ("GICS code prefix(es), CSV — sector `25` / industry-group `2550` / industry `255010` / sub-industry "
@@ -1301,16 +1304,18 @@ def portfolio_pulse(portfolio_id: Annotated[int, _d(_PID)],
     }
 
 @mcp.tool(title="Theme Pulse", annotations=_RO)
-def theme_pulse(q: Annotated[str, _dq("A SECTOR / INDUSTRY / THEME concept (semiconductors, AI, energy, banks, "
-                                          "clean energy, gold) — or SEVERAL at once, comma-separated "
-                                          "('semiconductors,cloud'; 'banks,insurance') to read them together in ONE call. "
-                                          "NOT a single company/ticker (→ asset_pulse) and NOT a bond/rate (→ bond_pulse). "
-                                          "Fans out to megatrend/GICS/ETF/commodity angles.")],
-                country: Annotated[Optional[str], _d("Optional country/region scope — CSV of ISO-2 codes; enumerate a "
-                                          "region YOURSELF (Europe→'GB,DE,FR,IT,ES,NL,CH,SE'; ASEAN→'TH,SG,MY,ID,PH,VN'). "
-                                          "Scopes the NEWS angles (theme + gics) to companies LISTED there — so "
-                                          "'European banks' = q='banks', country='GB,DE,FR,...'. The ETF-options + "
-                                          "commodity angles stay GLOBAL (an ETF/commodity has no listing country).")] = None,
+def theme_pulse(q: Annotated[str, _dq("The SECTOR / INDUSTRY / THEME name ONLY — 'semiconductors', 'banks', 'energy', "
+                                          "'AI', 'clean energy', 'gold' — or SEVERAL comma-separated ('semiconductors,cloud') "
+                                          "to read together in one call. ⛔ Do NOT put a COUNTRY or REGION in `q`: the "
+                                          "nationality ALWAYS goes in the `country` param, never here. 'European banks' → "
+                                          "q='banks' + country='GB,DE,FR,IT,ES,NL,CH,SE'; 'Thai retail' → q='retail' + "
+                                          "country='TH'; 'Japanese real estate' → q='real estate' + country='JP'. "
+                                          "NOT a single company/ticker (→ asset_pulse), NOT a bond/rate (→ bond_pulse).")],
+                country: Annotated[Optional[str], _d("Country/region scope — CSV of ISO-2 codes. 🌍 If the question names a "
+                                          "nationality or region ('European', 'Thai', 'Chinese', 'ASEAN'), put it HERE (never in "
+                                          "`q`); enumerate a region into its ISO-2s YOURSELF (Europe→'GB,DE,FR,IT,ES,NL,CH,SE'; "
+                                          "ASEAN→'TH,SG,MY,ID,PH,VN'; 'China+US'→'CN,US'). Scopes the theme+gics news angles to "
+                                          "companies LISTED there; the ETF-options + commodity angles stay GLOBAL.")] = None,
                 window: Annotated[str, _d(_WINDOW)] = "30d") -> dict:
     """⭐ THE tool for "how is <a SECTOR / INDUSTRY / THEME> doing?" (semiconductors, tech, energy, banks,
     AI, clean energy, …) — a concept that spans MULTIPLE INDEPENDENT taxonomies. It resolves the concept
@@ -2018,10 +2023,12 @@ def trade_balance(reporter: Annotated[str, _d("Reporting country — name / ISO 
 # Centralized key + cross-user cache server-side (no BYOK). Design: docs/product/macro-pulse-design.md.
 
 @mcp.tool(name="find_series", title="Find Macro Series (FRED)", annotations=_RO)
-def find_series(q: Annotated[str, _dq("A macro concept in ANY language — 'US inflation', 'อัตราว่างงาน', 'core PCE', "
-                                     "'fed funds', '10y yield', 'housing starts'. Returns the canonical FRED series + the "
-                                     "RIGHT default transform.")],
-                country: Annotated[Optional[str], _d("OPTIONAL ISO-2 to bias to a country's series (JP, DE) — FRED intl coverage is uneven; omit for US.")] = None,
+def find_series(q: Annotated[str, _dq("A macro concept ONLY, in ANY language — 'inflation', 'unemployment', 'core PCE', "
+                                     "'fed funds', '10y yield', 'housing starts', 'อัตราว่างงาน'. ⛔ Do NOT put a country in `q`: "
+                                     "for a NON-US country put its code in the `country` param ('Japanese inflation' → q='inflation', "
+                                     "country='JP'), US is the default. Returns the canonical FRED series + the RIGHT default transform.")],
+                country: Annotated[Optional[str], _d("OPTIONAL ISO-2 to bias to a country's series (JP, DE) — put the nationality from the "
+                                     "question HERE, not in `q`. FRED intl coverage is uneven; omit for US (the default).")] = None,
                 limit: Annotated[Optional[int], _d("Candidates (default 8, max 25).")] = None) -> dict:
     """⭐ FREE resolver — a macro concept → the exact FRED `series_id` (+ the transform to apply). ALWAYS step 1;
     never guess a series_id (cryptic: CPIAUCSL, PCEPILFE, LRHUTTTTJPM156S). Returns ranked `candidates` with
