@@ -76,6 +76,13 @@ China" is the differentiated one. **GATE it — judgment, not reflex:**
   macro driver → **FRED** (§7); cross-border trade / supply-chain → **Comtrade** (§6, its own gate); purely
   idiosyncratic / one-off → say so, don't manufacture a backdrop.
 
+💰 **Valuation is a RETRIEVABLE lens — never apologise for "not having P/E".** A "worth investing? / cheap or
+expensive? / น่าลงทุนไหม" question needs the multiples: **`screen_stocks`** (and `screen_dividends`) carry
+per-name **`pe_ratio` / `pb_ratio`** in every row's `fundamentals` block, and `asset_pulse` carries a single
+name's. So for a COHORT ("European vs US banks — worth it?") run `screen_stocks(gics=<code>, country=…)` per
+side and read the P/E–P/B — the news pulse (theme_pulse/brief) is NOT a valuation answer. A "worth investing"
+read on pulse alone is incomplete: pull the multiples, don't say you lack them.
+
 **The dishes** — each is *LEAD tool → (conditional) structural layer → your own angle*:
 
 - **① Should I act?** (buy/sell/hold/trim/add · dip-or-trap) — the highest-frequency job. `asset_pulse`
