@@ -1693,13 +1693,17 @@ def screen_stocks(megatrend: Annotated[Optional[str], _d(_MEGATREND)] = None,
                   to: Annotated[Optional[str], _d(_TO)] = None,
                   gate: Annotated[Optional[str], _d("megatrend scope only: `both` (default, strict member AND epicenter) | `membership` (looser).")] = None,
                   limit: Annotated[Optional[int], _d(_LIMIT)] = None) -> dict:
-    """⭐ "Which stocks in <a group> are INTERESTING / winning / losing / most-talked-about?" — the
-    news-driven impact SCREENER. Ranks the companies in a scope by how the news is hitting them, so you
-    can lead with the WINNERS-vs-LOSERS split, not a flat list.
+    """⭐ "Which stocks in <a group> are INTERESTING / winning / losing / most-talked-about — and how
+    CHEAP or EXPENSIVE do they trade?" — the cohort SCREENER. Ranks the companies in a scope by how the news
+    is hitting them (lead with the WINNERS-vs-LOSERS split), AND every row carries its **VALUATION** (P/E,
+    P/B, dividend yield, 52w) — so this is ALSO the tool for "which in <group> are cheap / EU-vs-US banks on
+    P/E–P/B / is <cohort> worth investing". 💰 A valuation / "worth investing" / cheap-vs-expensive question
+    on a GROUP → screen here and READ the fundamentals; theme_pulse/brief are NEWS pulse only (no valuation),
+    so never say "I don't have P/E" — pull it from here (P/B is best-covered; for banks/insurers P/B leads).
       • Scope (≥1 REQUIRED — it never scans the whole universe): `megatrend` (one OR SEVERAL trend
         names/ids as csv — resolved for you in one pass, same as theme_pulse: 'foundry', 'foundry,hbm',
-        '56020000'), `gics` (csv GICS prefixes from your own knowledge: '453010' semis, '2550' retail,
-        '201010' aerospace/defense, '352010' biotech), `country` (csv ISO-2; for a REGION pass every
+        '56020000'), `gics` (csv GICS CODE prefixes — resolve a sector NAME to its code via find_gics first:
+        '453010' semis, '2550' retail, '201010' aerospace/defense, '352010' biotech), `country` (csv ISO-2; for a REGION pass every
         country — Asia='CN,JP,KR,TW,HK,IN,SG'). Combine freely — "China+Taiwan foundry & HBM names" = ONE
         call: country='CN,TW', megatrend='foundry,hbm'.
       • `order_by` = `news_count` (default — most attention) | `relevance` (most central to its news) |
@@ -1715,7 +1719,9 @@ def screen_stocks(megatrend: Annotated[Optional[str], _d(_MEGATREND)] = None,
         query) returns EMPTY — say so plainly ("no impact data that far back"); do NOT present empty as
         "nothing happened".
     Each row = `{symbol, name, country, gic_code, market_cap_usd, impact:{news_count, pos, neg, ambiguous,
-    net_direction, top_relevance, aspects, top_reason}}` — each row carries `market_cap_usd`, so for a
+    net_direction, top_relevance, aspects, top_reason}, fundamentals:{pe_ratio, pb_ratio, dividend_yield_pct,
+    week52_high, week52_low}}` — the `fundamentals` block is the VALUATION lens (read it for cheap/expensive).
+    Each row carries `market_cap_usd`, so for a
     constraint we DON'T support (e.g. "SMALL-cap only", a max size) return the cohort and filter/annotate
     from that field + your own knowledge. `direction_split` pre-tallies the cohort's winners/losers so you
     can open with it. If a scope term isn't a MarketDX taxonomy node (a niche theme like 'protein
@@ -1783,7 +1789,7 @@ def screen_dividends(country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
     `yield_trailing_pct` (if >> yield_pct, a SPECIAL one-time dividend inflated it — not repeatable),
     `payout_ratio` (>1 = pays more than it earns = unsustainable), `ttm_div_yoy_pct` (is the PAYMENT up/flat/
     CUT), `no_cut_streak_yrs` (≤10, reliability not age), `last_cut_year`, `cagr_5y_pct` — plus `week52_high/low` (is the yield high
-    because the PRICE fell?) + `pe_ratio`/`eps` + a `news` block. 🔴 NEVER rank on yield alone: high yield +
+    because the PRICE fell?) + `pe_ratio`/`pb_ratio`/`eps` + a `news` block. 🔴 NEVER rank on yield alone: high yield +
     recent `last_cut_year` + negative `ttm_div_yoy_pct` + high payout + bad `news` = TRAP; high yield from a
     price drop + intact/growing dividend + long streak = possible VALUE. Read the payload's `_guide`.
     `limit` default 15 (max 50)."""
