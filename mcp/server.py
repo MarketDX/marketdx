@@ -161,11 +161,10 @@ _COLLAPSE = "Merge near-duplicate stories (same article from many outlets) into 
 _COUNTRY_CSV = "Market filter — CSV of ISO-2 codes (e.g. `US` or `CN,TW,HK`). For a REGION pass every member."
 _ASPECT = "Impact CHANNEL filter (e.g. `demand`, `competition`, `tariff`, `monetary`). Omit → all channels."
 _MEGATREND = "A megatrend node — a name/slug (resolved for you, e.g. `foundry`) or an int node id. CSV for several."
-_GICS = ("GICS classification, CSV. Each item is EITHER a code prefix — sector `25` / industry-group `2550` / "
-         "industry `255010` (from your knowledge) — OR a plain sector/industry WORD the server resolves: "
-         "`energy`,`materials`,`industrials`,`financials`,`technology`,`healthcare`,`utilities`,`real estate`, "
-         "or finer `banks`,`insurance`,`semiconductors`,`software`,`pharma`,`reits`,`autos`,`airlines`. "
-         "Prefer a word when unsure of the number (e.g. `banks` → 4010).")
+_GICS = ("GICS code prefix(es), CSV — sector `25` / industry-group `2550` / industry `255010` / sub-industry "
+         "`25501010`. A CODE (digits) ONLY — a sector/industry NAME is rejected. Resolve a NAME (any language: "
+         "'banks'/'ธนาคาร'/'semiconductors') to its code with `find_gics` FIRST, then pass the code here. "
+         "So 'European banks' = find_gics('banks')→4010, then this=`4010` + country=EU codes.")
 _NEWS_TYPE = "News CATEGORY (exact names only, e.g. `macro_economic`, `commodity_supply`, `earnings_results`)."
 _PID = "The portfolio's id (call list_portfolios first if the user says 'my portfolio' without a number)."
 
@@ -475,6 +474,9 @@ def brief(news_type: Annotated[Optional[str], _d(_NEWS_TYPE)] = None,
     SECTOR, or an aspect (NOT a raw article list → that's search_news/news_feed). ⛔ NOT for a single
     COMPANY or a market INDEX/ticker: "how is the S&P / Nasdaq / AAPL doing?" → `options_sentiment`
     (+ `stock_impact`/`news_feed`), because an index maps to an ETF asset (S&P→SPY), not a brief scope.
+    ⭐ THE tool for a SECTOR × REGION ("how are European banks / Thai tech doing?") — the one thing
+    theme_pulse can't do (it has no country scope): resolve the sector NAME to a code with `find_gics`
+    ('banks'→4010), then `brief(gics=4010, country="GB,DE,FR,IT,ES,NL,CH,SE")` (enumerate the region's ISO-2s).
     Scope by ≥1 of (each takes a CSV for multiple values):
       • `news_type` — a news CATEGORY. Use ONLY these EXACT names (never invent one): product_tech,
         ma_partnership, industry_thematic, earnings_results, corporate_action, management_governance,
@@ -484,8 +486,8 @@ def brief(news_type: Annotated[Optional[str], _d(_NEWS_TYPE)] = None,
         macro_economic — there is NO 'monetary_policy').
       • `country` — an ISO-2 market. country='JP' → "how is Japan doing right now?".
       • `aspect` — an impact CHANNEL. aspect='tariff' → "everything moving via tariffs".
-      • `gics` — GICS: a code prefix (sector 25 / industry-group 2550 / industry 255010) OR a plain word
-        the server resolves ('banks'→4010, 'energy'→10, 'semiconductors'→4530), often × country.
+      • `gics` — a GICS CODE prefix (sector 25 / industry-group 2550 / industry 255010), often × country.
+        For a sector by NAME (e.g. "European banks") resolve first: `find_gics('banks')`→4010, then gics=4010.
       • `megatrend` — a theme node id/slug. For a NAMED theme use `theme_summary` (it resolves free text);
         use `megatrend` here only when you already have the id or want to AND it with another scope.
     Combine (AND): news_type='commodity_supply'+country='JP' = commodity news in Japan; gics='2550'+
@@ -1318,6 +1320,10 @@ def theme_pulse(q: Annotated[str, _dq("A SECTOR / INDUSTRY / THEME concept (semi
     commodity (the EUA price); 'gold' → asset (GLD options) + commodity (GOLD.COMM price); 'AI' → theme (no
     single AI ETF). `skipped` lists the angles that didn't resolve.
     ⚠️ Use `asset_pulse(ticker)` for a SINGLE company/ETF; use `theme_pulse` for a sector/theme CONCEPT.
+    🌍 theme_pulse has NO country/region scope — it reads the sector GLOBALLY. For a sector IN a specific
+    country/region ("European banks", "Thai tech", "US semiconductors"), DON'T use theme_pulse: resolve the
+    sector to a code with `find_gics` then call `brief(gics=<code>, country=<ISO-2 CSV>)` — brief is the
+    "how is <sector × region> doing" composer and is the only path that honours the geography.
     `window` = 7d/30d/90d/1y/…"""
     cli = mdx()
     # ── resolve the concept into its (up to 3) angle keys — skip any that don't resolve ──
@@ -1706,8 +1712,8 @@ def screen_dividends(country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
     ("retail names with high dividend", "dividend aristocrats in the US", "Thai high-yield stocks"). Ranks
     the DIVIDEND-PAYING universe (all payers, NOT just news-covered) and — the whole point — hands you the
     RAW pieces to tell a real income name from a YIELD TRAP, so YOU judge (don't trust a headline yield).
-      • Scope (≥1 REQUIRED): `country` (csv ISO-2) and/or `gics` (csv — a code prefix like '2550' retail,
-        OR a plain word like 'banks'/'energy' the server resolves to GICS). Combine freely.
+      • Scope (≥1 REQUIRED): `country` (csv ISO-2) and/or `gics` (csv GICS CODE prefixes, e.g. '2550' retail).
+        For a sector by NAME, resolve first with `find_gics` ('banks'→4010) then pass the code. Combine freely.
       • `order_by` = `yield` (default) | `streak` (reliability — longest clean run in our window) | `cagr`
         (fastest dividend growth). Filters: `min_yield`/`max_yield` (PERCENT, e.g. 3 = 3%; max guards against
         traps), `min_streak_years` (≤10, see below), `min_cagr` (%), `min/max_market_cap_usd`.
@@ -1724,7 +1730,7 @@ def screen_dividends(country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
     price drop + intact/growing dividend + long streak = possible VALUE. Read the payload's `_guide`.
     `limit` default 15 (max 50)."""
     if not (country or gics):
-        return {"error": "screen_dividends needs a scope: country and/or gics (gics accepts a code prefix like 4010 or a word like 'banks')."}
+        return {"error": "screen_dividends needs a scope: country and/or gics (gics is a GICS CODE like 4010 — resolve a sector NAME via find_gics first)."}
     params = {"country": country, "gics": gics,
               "min_yield": min_yield, "max_yield": max_yield,
               "min_streak_years": min_streak_years, "min_cagr": min_cagr,
@@ -1835,8 +1841,10 @@ def find_gics(terms: Annotated[List[str], _d("One or more INDUSTRY/SECTOR terms 
     → that's `find_stock`). Returns {term:[{code,name,level},...]} CANDIDATES for YOU to pick (may be
     several: 'retail' legitimately spans Consumer-Discretionary + Staples; 'bank' spans commercial vs
     investment). Reuse the picked `code`(s) as `gics` in `write_note` / as a `gics` filter — don't guess a
-    number. A concept that is NOT an industry (a metric like 'P/E', a company, a pure trend) → [] — correct,
-    don't force it. Gazetteer-first (deterministic), deepseek tier-drill (sector→sub) for the rest."""
+    number. 🔑 The `gics` arg of `brief` / `screen_stocks` / `screen_dividends` is a CODE and REJECTS a name —
+    so when a request scopes by a sector NAME ("European banks", "Thai high-yield tech"), call find_gics FIRST
+    to get the code, THEN pass it. A concept that is NOT an industry (a metric like 'P/E', a company, a pure
+    trend) → [] — correct, don't force it. Gazetteer-first (deterministic), deepseek tier-drill (sector→sub)."""
     sectors = [n for n in _gics_tax()["nodes"] if n["level"] == "sector"]
     result: dict = {}
     for term in terms:
