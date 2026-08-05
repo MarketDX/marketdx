@@ -11,7 +11,7 @@ WORKDIR /app
 # mcp pinned <2: 2.0.0 moved `mcp.server.fastmcp` and breaks the import (server.py:19).
 RUN pip install --no-cache-dir \
       "mcp>=1.8.0,<2" "marketdx>=0.14.0" "openai>=1.0.0" "uvicorn>=0.30.0"
-COPY server.py policy.md favicon.ico ./
+COPY server.py policy.md favicon.ico gics_taxonomy.json ./
 
 ENV MCP_TRANSPORT=http \
     PORT=8080

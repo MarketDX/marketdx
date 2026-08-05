@@ -1842,7 +1842,15 @@ _GLVL = {"sector": 1, "group": 2, "industry": 3, "sub_industry": 4}
 def _gics_tax() -> dict:
     global _GTAX
     if _GTAX is None:
-        nodes = mdx()._get("/v1/gics", {}).data.get("gics", [])
+        # STATIC reference data (273 GICS nodes) → load the BUNDLED file, so no mdx() API call (hence no auth
+        # contextvar) is ever needed and a worker thread can safely resolve GICS. Fallback to the API only if
+        # the bundle is somehow missing. Refresh the file: curl /v1/gics → gics_taxonomy.json.
+        try:
+            import os, json
+            with open(os.path.join(os.path.dirname(__file__), "gics_taxonomy.json"), encoding="utf-8") as f:
+                nodes = json.load(f)
+        except Exception:
+            nodes = mdx()._get("/v1/gics", {}).data.get("gics", [])
         children: dict = {}
         for n in nodes:
             children.setdefault(n.get("parent_code"), []).append(n)
