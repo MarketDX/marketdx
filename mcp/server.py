@@ -474,9 +474,10 @@ def brief(news_type: Annotated[Optional[str], _d(_NEWS_TYPE)] = None,
     SECTOR, or an aspect (NOT a raw article list → that's search_news/news_feed). ⛔ NOT for a single
     COMPANY or a market INDEX/ticker: "how is the S&P / Nasdaq / AAPL doing?" → `options_sentiment`
     (+ `stock_impact`/`news_feed`), because an index maps to an ETF asset (S&P→SPY), not a brief scope.
-    ⭐ THE tool for a SECTOR × REGION ("how are European banks / Thai tech doing?") — the one thing
-    theme_pulse can't do (it has no country scope): resolve the sector NAME to a code with `find_gics`
-    ('banks'→4010), then `brief(gics=4010, country="GB,DE,FR,IT,ES,NL,CH,SE")` (enumerate the region's ISO-2s).
+    For a SECTOR × REGION ("how are European banks doing?") the quickest path is `theme_pulse(q='banks',
+    country=…)` (fans out, resolves the code for you). Use THIS (brief) when you want the ONE precise GICS
+    cohort with no fan-out, or an AND-combo: resolve the sector to a code with `find_gics` ('banks'→4010),
+    then `brief(gics=4010, country="GB,DE,FR,IT,ES,NL,CH,SE")` (enumerate the region's ISO-2s).
     Scope by ≥1 of (each takes a CSV for multiple values):
       • `news_type` — a news CATEGORY. Use ONLY these EXACT names (never invent one): product_tech,
         ma_partnership, industry_thematic, earnings_results, corporate_action, management_governance,
@@ -1301,8 +1302,15 @@ def portfolio_pulse(portfolio_id: Annotated[int, _d(_PID)],
 
 @mcp.tool(title="Theme Pulse", annotations=_RO)
 def theme_pulse(q: Annotated[str, _dq("A SECTOR / INDUSTRY / THEME concept (semiconductors, AI, energy, banks, "
-                                          "clean energy, gold). NOT a single company/ticker (→ asset_pulse) and NOT a "
-                                          "bond/rate (→ bond_pulse). Fans out to megatrend/GICS/ETF/commodity angles.")],
+                                          "clean energy, gold) — or SEVERAL at once, comma-separated "
+                                          "('semiconductors,cloud'; 'banks,insurance') to read them together in ONE call. "
+                                          "NOT a single company/ticker (→ asset_pulse) and NOT a bond/rate (→ bond_pulse). "
+                                          "Fans out to megatrend/GICS/ETF/commodity angles.")],
+                country: Annotated[Optional[str], _d("Optional country/region scope — CSV of ISO-2 codes; enumerate a "
+                                          "region YOURSELF (Europe→'GB,DE,FR,IT,ES,NL,CH,SE'; ASEAN→'TH,SG,MY,ID,PH,VN'). "
+                                          "Scopes the NEWS angles (theme + gics) to companies LISTED there — so "
+                                          "'European banks' = q='banks', country='GB,DE,FR,...'. The ETF-options + "
+                                          "commodity angles stay GLOBAL (an ETF/commodity has no listing country).")] = None,
                 window: Annotated[str, _d(_WINDOW)] = "30d") -> dict:
     """⭐ THE tool for "how is <a SECTOR / INDUSTRY / THEME> doing?" (semiconductors, tech, energy, banks,
     AI, clean energy, …) — a concept that spans MULTIPLE INDEPENDENT taxonomies. It resolves the concept
@@ -1320,100 +1328,128 @@ def theme_pulse(q: Annotated[str, _dq("A SECTOR / INDUSTRY / THEME concept (semi
     commodity (the EUA price); 'gold' → asset (GLD options) + commodity (GOLD.COMM price); 'AI' → theme (no
     single AI ETF). `skipped` lists the angles that didn't resolve.
     ⚠️ Use `asset_pulse(ticker)` for a SINGLE company/ETF; use `theme_pulse` for a sector/theme CONCEPT.
-    🌍 theme_pulse has NO country/region scope — it reads the sector GLOBALLY. For a sector IN a specific
-    country/region ("European banks", "Thai tech", "US semiconductors"), DON'T use theme_pulse: resolve the
-    sector to a code with `find_gics` then call `brief(gics=<code>, country=<ISO-2 CSV>)` — brief is the
-    "how is <sector × region> doing" composer and is the only path that honours the geography.
+    🌍 A sector IN a country/region — "how are EUROPEAN banks / THAI retail / JAPANESE real-estate doing?" —
+    just pass `country` (CSV of ISO-2; enumerate the region yourself). It scopes the news angles (theme+gics)
+    to companies listed there; the ETF-options + commodity angles stay global. So 'European banks' =
+    theme_pulse(q='banks', country='GB,DE,FR,IT,ES,NL,CH,SE') — ONE call, no need to pre-resolve the code.
+    (For a single PRECISE cohort with no fan-out, `brief(gics=<find_gics code>, country=…)` is the alternative.)
+    🧩 MULTIPLE sectors at once — "how are SEMICONDUCTORS and CLOUD in China doing?" — comma-separate them in
+    `q` ('semiconductors,cloud'); theme+gics merge into one union pulse, asset+commodity list per concept. So
+    "Chinese + American banks" = q='banks', country='CN,US'; "semis + cloud in China" = q='semiconductors,cloud', country='CN'.
     `window` = 7d/30d/90d/1y/…"""
     cli = mdx()
-    # ── resolve the concept into its (up to 3) angle keys — skip any that don't resolve ──
-    mt = _to_node(q)
-    megatrend = mt if isinstance(mt, int) else None
-    gics = etf = None
-    try:
-        r = _deepseek(
-            "Map a market concept to standard classifications. Return JSON "
-            '{"gics": <best-matching GICS sector/industry code as a digit string, or null>, '
-            '"etf": <the ONE best ticker from the provided covered list, or null>}. '
-            "gics = the standard GICS code (e.g. semiconductors->'453010', energy->'10', banks->'4010', "
-            "software->'451030'); null if the concept is NOT a GICS sector/industry (a single commodity "
-            "like gold, a cross-sector trend like AI, a country). etf = the ticker whose theme matches the "
-            "concept; null if none fits well. A country/region market IS a valid concept for etf even "
-            "though it has no gics (China->MCHI, Hong Kong->EWH, Taiwan->EWT, Thailand->THD, Japan->EWJ). "
-            "Prefer the PLAIN, unleveraged, broad fund; pick a LEVERAGED (2x/3x/bull/bear, e.g. YINN/SOXL/"
-            "SPXL/TQQQ) or a narrow sub-slice (China A-Shares->ASHR, China internet/tech->KWEB, "
-            "China large-cap->FXI) ONLY if the concept explicitly asks for leverage / A-shares / mainland / "
-            "internet / large-cap. Bare 'China'/'Chinese stocks'/'China market' -> MCHI.",
-            f"Concept: {q}\nCovered ETFs: " + ", ".join(f"{k}={v}" for k, v in _COVERED_ETFS.items()),
-            0.0)
-        g = str(r.get("gics") or "").strip()
-        gics = g if (g.isdigit() and 2 <= len(g) <= 8) else None
-        etf = r.get("etf") if r.get("etf") in _COVERED_ETFS else None
-    except Exception:
-        pass
+    from concurrent.futures import ThreadPoolExecutor
+    # ── q may carry SEVERAL concepts (CSV) — resolve each independently, then aggregate the scope axes ──
+    concepts = [c.strip() for c in q.split(",") if c.strip()] or [q]
+    ctry = [c.strip().upper() for c in country.split(",") if c.strip()] if country else None
+
+    def _resolve(concept):
+        # concept → {megatrend?, gics?, etf?} via the node resolver + one deepseek classify.
+        mt = _to_node(concept)
+        megatrend = mt if isinstance(mt, int) else None
+        gics = etf = None
+        try:
+            r = _deepseek(
+                "Map a market concept to standard classifications. Return JSON "
+                '{"gics": <best-matching GICS sector/industry code as a digit string, or null>, '
+                '"etf": <the ONE best ticker from the provided covered list, or null>}. '
+                "gics = the standard GICS code (e.g. semiconductors->'453010', energy->'10', banks->'4010', "
+                "software->'451030'); null if the concept is NOT a GICS sector/industry (a single commodity "
+                "like gold, a cross-sector trend like AI, a country). etf = the ticker whose theme matches the "
+                "concept; null if none fits well. A country/region market IS a valid concept for etf even "
+                "though it has no gics (China->MCHI, Hong Kong->EWH, Taiwan->EWT, Thailand->THD, Japan->EWJ). "
+                "Prefer the PLAIN, unleveraged, broad fund; pick a LEVERAGED (2x/3x/bull/bear, e.g. YINN/SOXL/"
+                "SPXL/TQQQ) or a narrow sub-slice (China A-Shares->ASHR, China internet/tech->KWEB, "
+                "China large-cap->FXI) ONLY if the concept explicitly asks for leverage / A-shares / mainland / "
+                "internet / large-cap. Bare 'China'/'Chinese stocks'/'China market' -> MCHI.",
+                f"Concept: {concept}\nCovered ETFs: " + ", ".join(f"{k}={v}" for k, v in _COVERED_ETFS.items()),
+                0.0)
+            g = str(r.get("gics") or "").strip()
+            gics = g if (g.isdigit() and 2 <= len(g) <= 8) else None
+            etf = r.get("etf") if r.get("etf") in _COVERED_ETFS else None
+        except Exception:
+            pass
+        return {"concept": concept, "megatrend": megatrend, "gics": gics, "etf": etf}
+
+    with ThreadPoolExecutor(max_workers=min(6, len(concepts))) as ex:
+        resolved = list(ex.map(_resolve, concepts))
+
+    def _dedup(xs):
+        out = []
+        for x in xs:
+            if x is not None and x not in out:
+                out.append(x)
+        return out
+    # theme + gics angles MERGE across concepts (brief takes arrays → one union pulse); asset + commodity
+    # stay PER-CONCEPT (each concept has its own ETF / commodity), returned as lists.
+    megatrends = _dedup([r["megatrend"] for r in resolved])
+    gics_codes = _dedup([r["gics"] for r in resolved])
+    etf_concepts = [(r["concept"], r["etf"]) for r in resolved if r["etf"]]
 
     def _theme():
-        if megatrend is None:
+        if not megatrends:
             return None
         try:
-            return {"megatrend": _node_out(megatrend), "brief": _brief_slim(cli.brief(megatrend=megatrend, window=window))}
+            return {"megatrends": [_node_out(m) for m in megatrends],
+                    "brief": _brief_slim(cli.brief(megatrend=megatrends, country=ctry, window=window))}
         except Exception as e:
             return {"error": str(e)}
     def _gics():
-        if not gics:
+        if not gics_codes:
             return None
         try:
-            return {"gics_code": gics, "brief": _brief_slim(cli.brief(gics=gics, window=window))}
+            return {"gics_codes": gics_codes, "brief": _brief_slim(cli.brief(gics=gics_codes, country=ctry, window=window))}
         except Exception as e:
-            return {"error": str(e), "gics_code": gics}
-    def _asset():
-        if not etf:
-            return None
-        try:
-            return {"etf": etf, "concept": _COVERED_ETFS.get(etf),
-                    "options": _options_brief(cli._get(f"/v1/options/{etf}/sentiment", {"style": "plain"}).data)}
-        except NotFoundError:
-            return {"etf": etf, "covered": False}
-        except Exception as e:
-            return {"error": str(e)}
-    def _commodity():
-        # A concept that IS / HAS a tradable COMMODITY (gold, carbon, copper, oil) → its PRICE read. The
-        # `asset` angle above only fires for a concept with a COVERED OPTIONS ETF (GLD…); carbon/most
-        # metals have NO options ETF, so their price was invisible. Resolve via the (alias/embed-seeded)
-        # resolver — no deepseek — and pull the digested /prices for the first commodity match.
-        try:
-            ms = cli._get("/v1/stocks", {"q": q, "asset_class": "commodity", "limit": 5}).data.get("matches", [])
-            cm = next((m for m in ms if m.get("type") == "commodity"), None)
-            if not cm:
-                return None
-            p = cli._get(f"/v1/stocks/{cm['ticker']}/prices", {}).data
-            kw = {k: {x: v[x] for x in ("change_pct", "change_bps") if x in v}
-                  for k, v in (p.get("windows") or {}).items() if k in ("1w", "1mo", "3mo", "1y", "ytd")}
-            return {"ticker": cm["ticker"], "name": cm.get("name"), "region": p.get("region"),
-                    "currency": p.get("currency"), "description": p.get("description"),
-                    "metric_kind": p.get("metric_kind"), "last_close": p.get("last_close"),
-                    "range_read": p.get("range_read"), "trend_read": p.get("trend_read"),
-                    "realized_vol_percentile_1y": p.get("realized_vol_percentile_1y"), "windows": kw}
-        except Exception:
-            return None
-    from concurrent.futures import ThreadPoolExecutor
+            return {"error": str(e), "gics_codes": gics_codes}
+    def _assets():  # per-concept ETF options positioning (global — an ETF has no listing country)
+        out = []
+        for concept, etf in etf_concepts:
+            try:
+                out.append({"concept": concept, "etf": etf, "etf_name": _COVERED_ETFS.get(etf),
+                            "options": _options_brief(cli._get(f"/v1/options/{etf}/sentiment", {"style": "plain"}).data)})
+            except NotFoundError:
+                out.append({"concept": concept, "etf": etf, "covered": False})
+            except Exception as e:
+                out.append({"concept": concept, "etf": etf, "error": str(e)})
+        return out or None
+    def _commodities():  # per-concept COMMODITY price read (for a concept that IS/HAS a tradable commodity)
+        out = []
+        for concept in concepts:
+            try:
+                ms = cli._get("/v1/stocks", {"q": concept, "asset_class": "commodity", "limit": 5}).data.get("matches", [])
+                cm = next((m for m in ms if m.get("type") == "commodity"), None)
+                if not cm:
+                    continue
+                p = cli._get(f"/v1/stocks/{cm['ticker']}/prices", {}).data
+                kw = {k: {x: v[x] for x in ("change_pct", "change_bps") if x in v}
+                      for k, v in (p.get("windows") or {}).items() if k in ("1w", "1mo", "3mo", "1y", "ytd")}
+                out.append({"concept": concept, "ticker": cm["ticker"], "name": cm.get("name"), "region": p.get("region"),
+                            "currency": p.get("currency"), "description": p.get("description"),
+                            "metric_kind": p.get("metric_kind"), "last_close": p.get("last_close"),
+                            "range_read": p.get("range_read"), "trend_read": p.get("trend_read"),
+                            "realized_vol_percentile_1y": p.get("realized_vol_percentile_1y"), "windows": kw})
+            except Exception:
+                continue
+        return out or None
+
     with ThreadPoolExecutor(max_workers=4) as ex:
-        ft, fg, fa, fc = ex.submit(_theme), ex.submit(_gics), ex.submit(_asset), ex.submit(_commodity)
+        ft, fg, fa, fc = ex.submit(_theme), ex.submit(_gics), ex.submit(_assets), ex.submit(_commodities)
         angles = {k: v for k, v in {"theme": ft.result(), "gics": fg.result(),
                                     "asset": fa.result(), "commodity": fc.result()}.items()
                   if v is not None}
     return {
-        "query": q, "window": window, "angles": angles,
+        "query": q, "concepts": concepts, "window": window, "angles": angles,
         "skipped": [k for k in ("theme", "gics", "asset", "commodity") if k not in angles],
         "_guide": ("Present each angle SEPARATELY — they are DIFFERENT cohorts/lenses: `theme` = MarketDX "
                    "megatrend membership (trend-exposed, may cross sectors); `gics` = standard GICS sector "
-                   "classification (different winners/losers); `asset` = the tradable ETF's options "
-                   "positioning; `commodity` = the underlying COMMODITY's PRICE (level/change/trend — the "
-                   "price lens for a concept like carbon/gold/copper that has no options ETF; narrate a "
-                   "`metric_kind:yield` move in bps). Do NOT merge them. `skipped` angles don't apply. Lead "
-                   "with the sharpest cross-angle read (e.g. where the megatrend and the GICS sector "
-                   "diverge, or where options positioning contradicts the news breadth). Narrate options "
-                   "from its read/because for a non-expert."),
+                   "classification (different winners/losers); `asset` = a LIST of per-concept ETF options "
+                   "positioning; `commodity` = a LIST of per-concept underlying COMMODITY PRICE reads "
+                   "(level/change/trend — the price lens for carbon/gold/copper that has no options ETF; "
+                   "narrate a `metric_kind:yield` move in bps). With MULTIPLE `concepts`, theme+gics MERGE "
+                   "them into one union pulse while asset+commodity stay per-concept — so you can still tell "
+                   "which concept each ETF/commodity belongs to. Do NOT merge the four angles. `skipped` "
+                   "angles don't apply. Lead with the sharpest cross-angle read (megatrend vs GICS divergence, "
+                   "options contradicting news breadth). Narrate options from its read/because for a non-expert."),
     }
 
 @mcp.tool(title="Commodity Pulse", annotations=_RO)
