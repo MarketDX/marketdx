@@ -1563,6 +1563,48 @@ def commodity_pulse(q: Annotated[str, _dq("A COMMODITY concept, in ENGLISH — t
                    "Chile exports +5y CAGR 14%'). BYOK — relay the connect CTA if no key."),
     }
 
+@mcp.tool(title="Futures Positioning (COT)", annotations=_RO)
+def positioning(asset: Annotated[str, _dq(
+        "A COMMODITY / FX / RATES / INDEX to read FUTURES positioning for — a concept IN ENGLISH (oil, gold, "
+        "copper, natural gas, US 10Y treasury, euro, S&P 500; translate first) or a MarketDX ticker "
+        "(WTI.COMM, US-10Y.GB, EURUSD.FOREX, SPY.US). NOT a single stock — a stock's positioning lives in "
+        "OPTIONS, use options_sentiment.")]) -> dict:
+    """⭐ How the FUTURES market is POSITIONED — the CFTC Commitment of Traders lens for commodities, FX,
+    rates and equity indices (the non-equity TWIN of options_sentiment; the two together cover positioning
+    for every asset class). Answers 'is this trade crowded?', 'is the smart money leaning the other way?',
+    'is the good news already priced into positioning?'. Returns: `crowding` (the speculative crowd at a
+    3-year extreme = a contrarian RISK, NOT a timing call), `smart_vs_crowd` (are commercial hedgers — who
+    know the physical/fundamental side — leaning against the crowd), `momentum` (building or unwinding; a
+    flip = regime change), `fragility` (a few big traders holding it = reverses fast), and ⭐
+    `news_vs_positioning` (does recent news CONFIRM the crowd → priced-in, or CONTRADICT a crowded position →
+    unwind risk). Weekly, as of the prior TUESDAY. For a RATE/YIELD asset (`.GB`/`.MM`) a long futures =
+    positioned for LOWER yields (the reads already say it that way). 🗣 Every feature carries a PLAIN `read`
+    — narrate it in EVERYDAY language for a beginner (no 'net'/'percentile'/'basis' jargon); say what it
+    MEANS for risk. Facts, not advice — the verdict is yours. A stock / uncovered asset → `__notfound`: say
+    futures positioning doesn't apply and use options_sentiment / the news read instead."""
+    cli = mdx()
+    a = asset.strip()
+    ticker = a if "." in a else (
+        (cli._get("/v1/stocks", {"q": a, "limit": 5}).data.get("matches") or [{}])[0].get("ticker") or a)
+    return cli._get(f"/v1/positioning/{ticker}").data
+
+@mcp.tool(title="Positioning Extremes (COT)", annotations=_RO)
+def positioning_extremes(
+    asset_class: Annotated[Optional[str], _d("Filter: `commodity` | `fx` | `rates` | `equity_index`. Omit = all.")] = None,
+    limit: Annotated[Optional[int], _d("Max markets (default 15, max 50).")] = None,
+) -> dict:
+    """⭐ WHICH futures markets have the speculative CROWD at a 3-year positioning EXTREME right now — the
+    discovery scan across every tracked commodity / FX / rate / index at once. Surfaces stretched positioning
+    (≥90th or ≤10th percentile of its own 3y history) that could unwind hard on a shock — a contrarian-RISK
+    map, NOT buy/sell calls (an extreme can persist). Use for 'where is positioning most crowded / stretched
+    right now?'. Narrate each market's `read` in plain language."""
+    p = {}
+    if asset_class:
+        p["asset_class"] = asset_class
+    if limit:
+        p["limit"] = limit
+    return mdx()._get("/v1/positioning/extremes", p).data
+
 _CURVE_TENORS = ("3M", "2Y", "5Y", "10Y", "30Y")
 
 @mcp.tool(title="Bond Pulse", annotations=_RO)
