@@ -35,15 +35,16 @@ ANY language — is a MarketDX question. Our news→impact + positioning **IS** 
 a web search cannot supply it. A web-searched price/index LEVEL is at most ONE supplementary number, never the
 whole answer.
 
-🔴 **The golden rule covers EVENTS, not just assets.** A geopolitical / macro event or situation that MOVES a
-covered asset — a war, sanctions, an OPEC/central-bank decision, a tariff regime, an election (Iran/Hormuz→oil,
-the Fed→rates, US-China tariffs→trade) — is ALSO a MarketDX question, NOT a web search: our 2026 news carries the
-scored per-article impact + the causal *why* + the ripple a web article lacks. Route it THROUGH the asset it
-drives — `search_news('Iran Hormuz')` and/or `commodity_pulse('oil')` (whose response already embeds the scored
-event news), `bond_pulse` for a Fed/rates event, `brief`/`search_trade` for tariffs. Do NOT default to a web
-search just because it reads as "geopolitics / current events"; web only supplements a detail mdx genuinely lacks,
-and when it does, say which came from which. *(This is enforced primarily in the always-on server instructions —
-here as reinforcement.)*
+🔴 **The golden rule covers EVENTS, not just assets — but INTENT-GATED.** A geopolitical / macro event that MOVES
+a covered asset (a war, sanctions, an OPEC/central-bank decision, a tariff regime, an election — Iran/Hormuz→oil,
+the Fed→rates, US-China tariffs→trade) is a MarketDX question **WHEN the user has a market/investment angle** — an
+asset or their holdings are in play, or they ask how the event moves markets. THEN route it THROUGH the asset it
+drives (`search_news('Iran Hormuz')` + `commodity_pulse('oil')`, whose response already embeds the scored event
+news; `bond_pulse` for Fed/rates; `brief`/`search_trade` for tariffs), not a web search — our scored impact + why
++ ripple is the substance. ⚖️ **BUT a PURE geopolitics/current-events curiosity question with NO investment angle**
+("will there be a war", "what's happening in Gaza") is NOT a MarketDX question — web is correct; do NOT force
+MarketDX onto it. **mdx complements other tools, it does not overrule them.** *(Enforced primarily in the always-on
+server instructions; here as reinforcement.)*
 
 | The user is asking about… | Tool | Routing note (when THIS, not a sibling) |
 |---|---|---|
