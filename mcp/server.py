@@ -161,7 +161,11 @@ _COLLAPSE = "Merge near-duplicate stories (same article from many outlets) into 
 _COUNTRY_CSV = "Market filter — CSV of ISO-2 codes (e.g. `US` or `CN,TW,HK`). For a REGION pass every member."
 _ASPECT = "Impact CHANNEL filter (e.g. `demand`, `competition`, `tariff`, `monetary`). Omit → all channels."
 _MEGATREND = "A megatrend node — a name/slug (resolved for you, e.g. `foundry`) or an int node id. CSV for several."
-_GICS = "GICS code prefix(es), CSV — sector `25` / industry-group `2550` / industry `255010` (from your knowledge)."
+_GICS = ("GICS classification, CSV. Each item is EITHER a code prefix — sector `25` / industry-group `2550` / "
+         "industry `255010` (from your knowledge) — OR a plain sector/industry WORD the server resolves: "
+         "`energy`,`materials`,`industrials`,`financials`,`technology`,`healthcare`,`utilities`,`real estate`, "
+         "or finer `banks`,`insurance`,`semiconductors`,`software`,`pharma`,`reits`,`autos`,`airlines`. "
+         "Prefer a word when unsure of the number (e.g. `banks` → 4010).")
 _NEWS_TYPE = "News CATEGORY (exact names only, e.g. `macro_economic`, `commodity_supply`, `earnings_results`)."
 _PID = "The portfolio's id (call list_portfolios first if the user says 'my portfolio' without a number)."
 
@@ -480,7 +484,8 @@ def brief(news_type: Annotated[Optional[str], _d(_NEWS_TYPE)] = None,
         macro_economic — there is NO 'monetary_policy').
       • `country` — an ISO-2 market. country='JP' → "how is Japan doing right now?".
       • `aspect` — an impact CHANNEL. aspect='tariff' → "everything moving via tariffs".
-      • `gics` — a GICS code prefix (sector 25 / industry-group 2550 / industry 255010), often × country.
+      • `gics` — GICS: a code prefix (sector 25 / industry-group 2550 / industry 255010) OR a plain word
+        the server resolves ('banks'→4010, 'energy'→10, 'semiconductors'→4530), often × country.
       • `megatrend` — a theme node id/slug. For a NAMED theme use `theme_summary` (it resolves free text);
         use `megatrend` here only when you already have the id or want to AND it with another scope.
     Combine (AND): news_type='commodity_supply'+country='JP' = commodity news in Japan; gics='2550'+
@@ -1689,7 +1694,6 @@ def screen_stocks(megatrend: Annotated[Optional[str], _d(_MEGATREND)] = None,
 @mcp.tool(title="Screen Dividends", annotations=_RO)
 def screen_dividends(country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
                      gics: Annotated[Optional[str], _d(_GICS)] = None,
-                     sector: Annotated[Optional[str], _d("A sector NAME (alternative scope to `gics`).")] = None,
                      min_yield: Annotated[Optional[float], _d("Min dividend yield in PERCENT (3 = 3%).")] = None,
                      max_yield: Annotated[Optional[float], _d("Max yield % — guards against trap-tier yields.")] = None,
                      min_streak_years: Annotated[Optional[int], _d("Min no-cut streak years (bounded 0–10).")] = None,
@@ -1702,8 +1706,8 @@ def screen_dividends(country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
     ("retail names with high dividend", "dividend aristocrats in the US", "Thai high-yield stocks"). Ranks
     the DIVIDEND-PAYING universe (all payers, NOT just news-covered) and — the whole point — hands you the
     RAW pieces to tell a real income name from a YIELD TRAP, so YOU judge (don't trust a headline yield).
-      • Scope (≥1 REQUIRED): `country` (csv ISO-2), `gics` (csv prefixes, e.g. '2550' retail), `sector`
-        (csv, the plain sector name). Combine freely.
+      • Scope (≥1 REQUIRED): `country` (csv ISO-2) and/or `gics` (csv — a code prefix like '2550' retail,
+        OR a plain word like 'banks'/'energy' the server resolves to GICS). Combine freely.
       • `order_by` = `yield` (default) | `streak` (reliability — longest clean run in our window) | `cagr`
         (fastest dividend growth). Filters: `min_yield`/`max_yield` (PERCENT, e.g. 3 = 3%; max guards against
         traps), `min_streak_years` (≤10, see below), `min_cagr` (%), `min/max_market_cap_usd`.
@@ -1719,9 +1723,9 @@ def screen_dividends(country: Annotated[Optional[str], _d(_COUNTRY_CSV)] = None,
     recent `last_cut_year` + negative `ttm_div_yoy_pct` + high payout + bad `news` = TRAP; high yield from a
     price drop + intact/growing dividend + long streak = possible VALUE. Read the payload's `_guide`.
     `limit` default 15 (max 50)."""
-    if not (country or gics or sector):
-        return {"error": "screen_dividends needs a scope: country, gics, or sector."}
-    params = {"country": country, "gics": gics, "sector": sector,
+    if not (country or gics):
+        return {"error": "screen_dividends needs a scope: country and/or gics (gics accepts a code prefix like 4010 or a word like 'banks')."}
+    params = {"country": country, "gics": gics,
               "min_yield": min_yield, "max_yield": max_yield,
               "min_streak_years": min_streak_years, "min_cagr": min_cagr,
               "min_market_cap_usd": min_market_cap_usd, "max_market_cap_usd": max_market_cap_usd,
