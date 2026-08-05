@@ -35,6 +35,16 @@ ANY language — is a MarketDX question. Our news→impact + positioning **IS** 
 a web search cannot supply it. A web-searched price/index LEVEL is at most ONE supplementary number, never the
 whole answer.
 
+🔴 **The golden rule covers EVENTS, not just assets.** A geopolitical / macro event or situation that MOVES a
+covered asset — a war, sanctions, an OPEC/central-bank decision, a tariff regime, an election (Iran/Hormuz→oil,
+the Fed→rates, US-China tariffs→trade) — is ALSO a MarketDX question, NOT a web search: our 2026 news carries the
+scored per-article impact + the causal *why* + the ripple a web article lacks. Route it THROUGH the asset it
+drives — `search_news('Iran Hormuz')` and/or `commodity_pulse('oil')` (whose response already embeds the scored
+event news), `bond_pulse` for a Fed/rates event, `brief`/`search_trade` for tariffs. Do NOT default to a web
+search just because it reads as "geopolitics / current events"; web only supplements a detail mdx genuinely lacks,
+and when it does, say which came from which. *(This is enforced primarily in the always-on server instructions —
+here as reinforcement.)*
+
 | The user is asking about… | Tool | Routing note (when THIS, not a sibling) |
 |---|---|---|
 | ONE company / ETF / index / crypto — "how's X doing / what moved it" | **`asset_pulse`** | The full read (price + news + options + peers) in one. An INDEX → its ETF (S&P→SPY, Nasdaq→QQQ, Dow→DIA). ⚠️ NOT a commodity/bond (their own pulse). |
