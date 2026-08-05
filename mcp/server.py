@@ -754,10 +754,13 @@ def relationships(ticker: Annotated[str, _dt(_TICKER)],
     """Competitors + peers of a company (news-derived relationship graph). `limit` caps EACH list
     (default 15, max 50). Each side carries `total`/`count`/`note` — a big `total` (peers often run to
     hundreds) means you're seeing a TOP slice; say so rather than implying it's the complete set."""
-    ref = mdx().stock(ticker)
+    cli = mdx()
+    ref = cli.stock(ticker)
     n = _lim(limit, default=15)
+    # peers = the accurate CORE-based axes (peers?grouped=1, what the website shows), NOT the flat all-membership
+    # list (which a secondary megatrend tag contaminates — CPALL → Visa/Mastercard).
     return {"competitors": _paged(ref.competitors(limit=n), key="items"),
-            "peers": _paged(ref.peers(limit=n), key="items")}
+            "peers": _grouped_peers(cli, ticker, n)}
 
 @mcp.tool(title="List Megatrends", annotations=_RO)
 def list_themes(query: Annotated[Optional[str], _d("Optional free-text filter over the megatrend taxonomy; omit → the browsable tree.")] = None) -> list:
@@ -1080,6 +1083,23 @@ def _slim_relations(rows, n=5):
     """Keep just enough of a competitor/peer to judge sector-overlap (name/symbol/exchange/country)."""
     return [{k: c[k] for k in _REL_KEEP if c.get(k) is not None} for c in (rows or [])[:n]]
 
+def _grouped_peers(cli, ticker, n=6):
+    """The ACCURATE peers the website shows — `peers?grouped=1` (CORE-based axes: leaders / home / trending),
+    so a company's SECONDARY megatrend tag can't drag in unrelated names (CPALL no longer returns Visa/MA).
+    Flattened + dedup'd into one list. The plain `ref.peers()` uses ALL memberships and gets contaminated."""
+    try:
+        g = cli._get(f"/v1/stocks/{ticker}/peers", {"grouped": 1}).data or {}
+        groups = g.get("groups", {}) or {}
+        seen, out = set(), []
+        for axis in ("leaders", "home", "trending"):
+            for x in (groups.get(axis) or []):
+                sym = x.get("symbol") or x.get("ticker")
+                if sym and sym not in seen:
+                    seen.add(sym); out.append(x)
+        return out[:n]
+    except Exception:
+        return []
+
 def _brief_slim(b):
     """Keep a brief's breadth SUBSTANCE (pulse summary + winners/losers + top_stories) for a multi-angle
     bundle; drop the heavy chart-series + aspect_heatmap + top_entities/top_assets (get the full brief via
@@ -1153,8 +1173,9 @@ def asset_pulse(ticker: Annotated[str, _dt(_TICKER + " ⚠️ a COMPANY/ETF/inde
     def _relations():
         try:
             ref = cli.stock(ticker)
+            # peers = the accurate CORE axes (grouped=1) — a secondary megatrend tag can't drag in noise.
             return {"competitors": _slim_relations(_ser(ref.competitors(limit=5).to_list())),
-                    "peers": _slim_relations(_ser(ref.peers(limit=5).to_list()))}
+                    "peers": _slim_relations(_grouped_peers(cli, ticker, 6))}
         except Exception as e:
             return {"error": str(e), "competitors": [], "peers": []}
     def _price():
@@ -1349,28 +1370,24 @@ def theme_pulse(q: Annotated[str, _dq("The SECTOR / INDUSTRY / THEME name ONLY �
     ctry = [c.strip().upper() for c in country.split(",") if c.strip()] if country else None
 
     def _resolve(concept):
-        # concept → {megatrend?, gics?, etf?} via the node resolver + one deepseek classify.
+        # concept → {megatrend?, gics?, etf?}. GICS comes from the SHARED find_gics resolver (NOT a private
+        # keyword map — that mis-mapped "homebuilders"→Banks); the deepseek call is now ETF-only.
         mt = _to_node(concept)
         megatrend = mt if isinstance(mt, int) else None
-        gics = etf = None
+        codes = _resolve_gics_codes(concept)
+        gics = codes[0] if codes else None
+        etf = None
         try:
             r = _deepseek(
-                "Map a market concept to standard classifications. Return JSON "
-                '{"gics": <best-matching GICS sector/industry code as a digit string, or null>, '
-                '"etf": <the ONE best ticker from the provided covered list, or null>}. '
-                "gics = the standard GICS code (e.g. semiconductors->'453010', energy->'10', banks->'4010', "
-                "software->'451030'); null if the concept is NOT a GICS sector/industry (a single commodity "
-                "like gold, a cross-sector trend like AI, a country). etf = the ticker whose theme matches the "
-                "concept; null if none fits well. A country/region market IS a valid concept for etf even "
-                "though it has no gics (China->MCHI, Hong Kong->EWH, Taiwan->EWT, Thailand->THD, Japan->EWJ). "
-                "Prefer the PLAIN, unleveraged, broad fund; pick a LEVERAGED (2x/3x/bull/bear, e.g. YINN/SOXL/"
-                "SPXL/TQQQ) or a narrow sub-slice (China A-Shares->ASHR, China internet/tech->KWEB, "
-                "China large-cap->FXI) ONLY if the concept explicitly asks for leverage / A-shares / mainland / "
-                "internet / large-cap. Bare 'China'/'Chinese stocks'/'China market' -> MCHI.",
+                "Pick the ONE best broad tradable ETF for a market concept from the provided covered list. "
+                'Return JSON {"etf": <ticker from the list, or null if none fits>}. A country/region market IS '
+                "a valid concept (China->MCHI, Hong Kong->EWH, Taiwan->EWT, Thailand->THD, Japan->EWJ). Prefer "
+                "the PLAIN, unleveraged, broad fund; pick a LEVERAGED (2x/3x/bull/bear, e.g. YINN/SOXL/SPXL/"
+                "TQQQ) or a narrow sub-slice (China A-Shares->ASHR, China internet/tech->KWEB, China large-cap->"
+                "FXI) ONLY if the concept explicitly asks for leverage / A-shares / mainland / internet / "
+                "large-cap. Bare 'China'/'Chinese stocks'/'China market' -> MCHI.",
                 f"Concept: {concept}\nCovered ETFs: " + ", ".join(f"{k}={v}" for k, v in _COVERED_ETFS.items()),
                 0.0)
-            g = str(r.get("gics") or "").strip()
-            gics = g if (g.isdigit() and 2 <= len(g) <= 8) else None
             etf = r.get("etf") if r.get("etf") in _COVERED_ETFS else None
         except Exception:
             pass
@@ -1874,37 +1891,40 @@ def _gics_out(code: str) -> dict:
     n = _gics_tax()["by_code"][code]
     return {"code": n["code"], "name": n["name"], "level": n["level"]}
 
+# The ONE shared concept→GICS resolver. find_gics AND theme_pulse both call this — no tool rolls its own
+# keyword→sector map (theme_pulse used to run a private deepseek classify that mis-mapped "homebuilders"→Banks).
+def _resolve_gics_codes(term: str) -> list:
+    """A sector/industry concept → GICS code(s). Gazetteer-first (deterministic exact/tight-substring), then a
+    deepseek tier-drill (sector→group→industry→sub) for the rest. Returns codes in taxonomy order, dedup'd."""
+    g = _gics_gaz(term)
+    if g:
+        return g
+    sectors = [n for n in _gics_tax()["nodes"] if n["level"] == "sector"]
+    m1 = _gics_match(term, sectors)
+    c2 = [k for s in m1 for k in _gics_children(s)]
+    m2 = set(_gics_match(term, c2))
+    c3 = [k for gr in m2 for k in _gics_children(gr)]
+    m3 = set(_gics_match(term, c3)) if c3 else set()
+    c4 = [k for ind in m3 for k in _gics_children(ind)]
+    m4 = set(_gics_match(term, c4)) if c4 else set()
+    nodes: list = []
+    for s in m1:
+        nodes += _gics_solve(s, {2: set(m2), 3: set(m3), 4: set(m4)})
+    return list(dict.fromkeys(nodes))
+
 @mcp.tool(name="find_gics", title="Find GICS Sector", annotations=_RO)
-def find_gics(terms: Annotated[List[str], _d("One or more INDUSTRY/SECTOR terms (retail, airlines, banks, pharma) to map to GICS code candidates — YOU pick from the returned `{code,name,level}` candidates.")]) -> dict:
+def find_gics(q: Annotated[str, _dq("An INDUSTRY/SECTOR term (retail, airlines, banks, semiconductors, pharma) to map to GICS code candidates — YOU pick from the returned `{code,name,level}`.")]) -> dict:
     """🔴 The SECTOR/INDUSTRY counterpart of `find_megatrend` — map an established-industry concept
     ('retail', 'airlines', 'banks', 'semiconductors', 'utilities', 'pharma') to its GICS node(s). Use this
     when a note is about an INDUSTRY (not an emerging trend → that's `find_megatrend`, not a single company
-    → that's `find_stock`). Returns {term:[{code,name,level},...]} CANDIDATES for YOU to pick (may be
-    several: 'retail' legitimately spans Consumer-Discretionary + Staples; 'bank' spans commercial vs
-    investment). Reuse the picked `code`(s) as `gics` in `write_note` / as a `gics` filter — don't guess a
-    number. 🔑 The `gics` arg of `brief` / `screen_stocks` / `screen_dividends` is a CODE and REJECTS a name —
-    so when a request scopes by a sector NAME ("European banks", "Thai high-yield tech"), call find_gics FIRST
-    to get the code, THEN pass it. A concept that is NOT an industry (a metric like 'P/E', a company, a pure
-    trend) → [] — correct, don't force it. Gazetteer-first (deterministic), deepseek tier-drill (sector→sub)."""
-    sectors = [n for n in _gics_tax()["nodes"] if n["level"] == "sector"]
-    result: dict = {}
-    for term in terms:
-        g = _gics_gaz(term)
-        if g:
-            result[term] = [_gics_out(c) for c in g]
-            continue
-        m1 = _gics_match(term, sectors)
-        c2 = [k for s in m1 for k in _gics_children(s)]
-        m2 = set(_gics_match(term, c2))
-        c3 = [k for gr in m2 for k in _gics_children(gr)]
-        m3 = set(_gics_match(term, c3)) if c3 else set()
-        c4 = [k for ind in m3 for k in _gics_children(ind)]
-        m4 = set(_gics_match(term, c4)) if c4 else set()
-        nodes: list = []
-        for s in m1:
-            nodes += _gics_solve(s, {2: set(m2), 3: set(m3), 4: set(m4)})
-        result[term] = [_gics_out(c) for c in dict.fromkeys(nodes)]
-    return result
+    → that's `find_stock`). Returns `candidates` `[{code,name,level},…]` for YOU to pick (may be several:
+    'retail' legitimately spans Consumer-Discretionary + Staples; 'bank' spans commercial vs investment).
+    Reuse the picked `code`(s) as `gics` in `write_note` / as a `gics` filter — don't guess a number. 🔑 The
+    `gics` arg of `brief` / `screen_stocks` / `screen_dividends` is a CODE and REJECTS a name — so when a
+    request scopes by a sector NAME ("European banks", "Thai high-yield tech"), call find_gics FIRST to get the
+    code, THEN pass it. A concept that is NOT an industry (a metric, a company, a pure trend) → empty — correct,
+    don't force it. Gazetteer-first (deterministic), deepseek tier-drill (sector→sub)."""
+    return {"query": q, "candidates": [_gics_out(c) for c in _resolve_gics_codes(q)]}
 
 # ── Trade & Customs (UN Comtrade) — international merchandise + services trade flows ─────────────────
 # find_hs is FREE (our HS/EBOPS reference); the query tools are BYOK (the user's own Comtrade key, metered
