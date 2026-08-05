@@ -1534,10 +1534,19 @@ def commodity_pulse(q: Annotated[str, _dq("A COMMODITY concept, in ENGLISH — t
             return {"articles": _slim_articles(cli._get(f"/v1/stocks/{t}/news", params).data.get("results", []), 6)}
         except Exception as e:
             return {"error": str(e), "articles": []}
+    def _pos():  # embed the futures-positioning summary (deterministic — so the model gets it without a 2nd call)
+        try:
+            d = cli._get("/v1/positioning", {"asset": t}).data
+            if not d or d.get("__notfound"):
+                return None
+            return {"score": d.get("positioning_score"), "crowding": (d.get("crowding") or {}).get("state"),
+                    "read": d.get("read")}
+        except Exception:
+            return None
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=2) as ex:
-        fp, fi = ex.submit(_price), ex.submit(_impact)
-        p, impact = fp.result(), fi.result()
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        fp, fi, fpo = ex.submit(_price), ex.submit(_impact), ex.submit(_pos)
+        p, impact, pos = fp.result(), fi.result(), fpo.result()
     kw = {k: {x: v[x] for x in ("change_pct", "change_bps") if x in v}
           for k, v in (p.get("windows") or {}).items() if k in ("1w", "1mo", "3mo", "1y", "ytd")}
     price = {"last_close": p.get("last_close"), "metric_kind": p.get("metric_kind"), "windows": kw,
@@ -1554,9 +1563,12 @@ def commodity_pulse(q: Annotated[str, _dq("A COMMODITY concept, in ENGLISH — t
     return {
         "ticker": t, "name": comms[0].get("name") or p.get("name"), "region": p.get("region"),
         "currency": p.get("currency"), "description": p.get("description"),
-        "price": price, "impact": impact, "variants": variants,
+        "price": price, "impact": impact, "positioning": pos, "variants": variants,
         "_guide": ("Lead with the PRICE level + trend (quote the `*_read` labels). Explain the WHY from "
-                   "`impact` — supply/demand, geopolitics, inventories. If `variants` exist (onshore vs "
+                   "`impact` — supply/demand, geopolitics, inventories. 🎯 The embedded `positioning` block is "
+                   "the FUTURES crowd's stance (crowded = a contrarian RISK; whether the good news is already "
+                   "priced-in) — weave its plain `read` into the answer; for the full breakdown call the "
+                   "`positioning` tool. If `variants` exist (onshore vs "
                    "offshore, e.g. LME vs Shanghai; USD vs CNY/MYR), COMPARE them — an onshore-offshore "
                    "divergence is the insight (different currency → convert before comparing levels). A "
                    "commodity has NO options / PE / competitors — do not mention or flag them as missing. "
@@ -1568,6 +1580,21 @@ def commodity_pulse(q: Annotated[str, _dq("A COMMODITY concept, in ENGLISH — t
                    "the flow substrate news+price can't (e.g. 'global import demand +X%, China −2 quarters, "
                    "Chile exports +5y CAGR 14%'). BYOK — relay the connect CTA if no key."),
     }
+
+# FX / rates / index concepts → the exact COT-mapped ticker (the /v1/stocks resolver is unreliable for these:
+# "Japanese yen" → an ETF FXY.US, "Mexican peso" → the wrong cross-pair MXNAUD). Commodities resolve fine there.
+_POS_ALIAS = {
+    "euro": "EURUSD.FOREX", "eur": "EURUSD.FOREX", "japanese yen": "JPYUSD.FOREX", "yen": "JPYUSD.FOREX",
+    "british pound": "GBPUSD.FOREX", "pound": "GBPUSD.FOREX", "sterling": "GBPUSD.FOREX",
+    "swiss franc": "CHFUSD.FOREX", "franc": "CHFUSD.FOREX", "australian dollar": "AUDUSD.FOREX", "aussie": "AUDUSD.FOREX",
+    "canadian dollar": "CADUSD.FOREX", "loonie": "CADUSD.FOREX", "mexican peso": "MXNUSD.FOREX", "peso": "MXNUSD.FOREX",
+    "brazilian real": "BRLUSD.FOREX", "real": "BRLUSD.FOREX",
+    "us 2y": "US-2Y.GB", "us 5y": "US-5Y.GB", "us 10y": "US-10Y.GB", "us 30y": "US-30Y.GB",
+    "2 year treasury": "US-2Y.GB", "10 year treasury": "US-10Y.GB", "30 year treasury": "US-30Y.GB",
+    "us 10 year treasury": "US-10Y.GB", "treasuries": "US-10Y.GB", "sofr": "SOFR.MM", "fed funds": "EFFR.MM", "effr": "EFFR.MM",
+    "s&p 500": "SPY.US", "s&p": "SPY.US", "sp500": "SPY.US", "spx": "SPY.US", "nasdaq": "QQQ.US", "nasdaq 100": "QQQ.US",
+    "dow": "DIA.US", "dow jones": "DIA.US", "russell": "IWM.US", "russell 2000": "IWM.US",
+}
 
 @mcp.tool(title="Futures Positioning (COT)", annotations=_RO)
 def positioning(asset: Annotated[str, _dq(
@@ -1590,8 +1617,13 @@ def positioning(asset: Annotated[str, _dq(
     futures positioning doesn't apply and use options_sentiment / the news read instead."""
     cli = mdx()
     a = asset.strip()
-    ticker = a if "." in a else (
-        (cli._get("/v1/stocks", {"q": a, "limit": 5}).data.get("matches") or [{}])[0].get("ticker") or a)
+    ticker = _POS_ALIAS.get(a.lower()) or (a if "." in a else None)
+    if ticker is None:  # commodity concept → resolve, preferring a COT-covered class (USD-FX / .COMM / .GB / .MM)
+        ms = cli._get("/v1/stocks", {"q": a, "limit": 8}).data.get("matches") or []
+        ms.sort(key=lambda m: (0 if (m.get("ticker") or "").endswith("USD.FOREX")
+                               else 1 if (m.get("ticker") or "").endswith((".COMM", ".GB", ".MM"))
+                               else 2 if (m.get("ticker") or "").endswith(".FOREX") else 3))
+        ticker = (ms[0].get("ticker") if ms else a) or a
     return cli._get("/v1/positioning", {"asset": ticker}).data
 
 @mcp.tool(title="Positioning Extremes (COT)", annotations=_RO)
