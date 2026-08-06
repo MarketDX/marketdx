@@ -1690,28 +1690,35 @@ def financials(tickers: Annotated[str, _d("1–5 comma-separated MarketDX ticker
                                                      "are currency-neutral anyway. A multi-company compare defaults to USD.")] = None,
                years: Annotated[Optional[int], _d("Years of history (default 5). Fewer = cheaper; more = deeper trend.")] = None,
                fields: Annotated[Optional[str], _d(
-                   "OPTIONAL comma-separated canonical line-item keys to pull as multi-year series ON TOP of the "
-                   "summary — use when the user asks about SPECIFIC figures (e.g. 'compare capex & R&D', "
-                   "'depreciation trend', 'debt maturity'). Map the user's wording — IN ANY LANGUAGE and plain "
-                   "everyday phrasing ('ต้นทุน', '減価償却', 'how much they owe') — to these keys yourself. "
-                   "RECALL-FIRST: if a phrase is ambiguous, include ALL plausible candidates (over-fetching is "
-                   "harmless) — e.g. 'cost/ต้นทุน'→'cost_of_revenue,operating_expense'; 'debt/หนี้'→"
-                   "'total_debt,long_term_debt,current_debt'; decompose ratios into base keys (quick ratio→"
-                   "'current_assets,inventory,current_liabilities'). Keys: revenue, cost_of_revenue, gross_profit, "
-                   "operating_expense, operating_income, rnd, sga, depreciation_amortization, interest_expense, tax, "
-                   "pretax_income, net_income, ebitda, eps_diluted, total_assets, current_assets, cash, inventory, "
-                   "receivables, accounts_payable, net_ppe, goodwill, intangibles, total_liabilities, "
-                   "current_liabilities, current_debt, long_term_debt, total_debt, total_equity, retained_earnings, "
-                   "deferred_revenue, shares_outstanding, stock_comp, operating_cash_flow, investing_cash_flow, "
-                   "financing_cash_flow, free_cash_flow, capex, dividends_paid, buybacks. Anything unrecognized or "
-                   "not reported comes back in `unavailable_fields` — say so plainly, never substitute a different "
-                   "figure. Omit `fields` for a broad 'how are they doing' read.")] = None,
-               full: Annotated[bool, _d("False (default) = a COMPACT summary per company (revenue+growth, margins, "
-                                        "ratios ROE/ROA/current/quick, debt, FCF, and auto-detected `signals`). ⚠️ For "
-                                        "SPECIFIC figures (capex, depreciation, R&D, debt split…) DON'T use full — pass "
-                                        "`fields` instead (compact + exact series). True = the ENTIRE raw statement set / "
-                                        "SEC-EDGAR native XBRL dump — LARGE, for a single-company forensic dive ONLY, not "
-                                        "for a compare and not for reading a few line items.")] = False) -> dict:
+                   "OPTIONAL comma-separated canonical line-item keys → each returned as a multi-year series ON TOP of "
+                   "the summary. Use for SPECIFIC figures ('compare capex & R&D', 'debt maturity'). YOU map the user's "
+                   "wording — ANY language, layperson, UK terms, abbreviations ('ต้นทุน', '減価償却', 'debtors', 'COGS') "
+                   "— to these ENGLISH keys (the server matches English only + resolves synonyms/plurals/&-and). "
+                   "RECALL-FIRST — you may send an ARRAY of candidates; extras are HARMLESS and a near-miss is echoed, "
+                   "so when unsure include ALL plausible keys: 'cost/ต้นทุน'→'cost_of_revenue,operating_expense'; "
+                   "'debt/หนี้'→'total_debt,long_term_debt,current_debt'; decompose ratios (quick ratio→"
+                   "'current_assets,inventory,current_liabilities'). Ratios/valuation/per-share (margin, ROE, P/E, "
+                   "yield) are NOT line items — compute them yourself from the base keys. KEYS — general: revenue, "
+                   "cost_of_revenue, gross_profit, operating_expense, sga, rnd, operating_income, ebit, ebitda, "
+                   "interest_expense, interest_income, pretax_income, tax, net_income, eps_diluted, dividend_per_share, "
+                   "total_assets, current_assets, cash, inventory, receivables, net_ppe, goodwill, intangibles, "
+                   "total_liabilities, current_liabilities, accounts_payable, current_debt, long_term_debt, total_debt, "
+                   "net_debt, total_equity, retained_earnings, shares_outstanding, working_capital, deferred_revenue, "
+                   "operating_cash_flow, investing_cash_flow, financing_cash_flow, free_cash_flow, capex, "
+                   "depreciation_amortization, stock_comp, dividends_paid, buybacks, debt_issuance, debt_repayment; "
+                   "BANK: net_interest_income, non_interest_income, credit_loss_provision, deposits, gross_loans, "
+                   "net_loans, loan_loss_allowance; INSURANCE: premiums_earned, net_premiums_written, "
+                   "policyholder_benefits, net_investment_income, future_policy_benefits, deferred_acquisition_costs. "
+                   "Unrecognized/not-reported → `unavailable_fields`; state absences plainly, never substitute.")] = None,
+               statement: Annotated[Optional[str], _d(
+                   "OPTIONAL — 'income' | 'balance' | 'cashflow'. Returns that WHOLE statement (all its line items) per "
+                   "company. Use for 'show me the balance sheet / income statement'. One word, no per-field listing.")] = None,
+               full: Annotated[bool, _d("True = the ENTIRE raw 3-statement set (all line items, self-labeled) for a "
+                                        "single-company forensic dive. ⚠️ For SPECIFIC figures use `fields`; for one whole "
+                                        "statement use `statement`; both are far more compact. Default False = the "
+                                        "COMPACT summary (revenue+growth, margins, ROE/ROA/current/quick, debt, FCF, "
+                                        "signals). GRANULARITY LADDER — pick the smallest: (nothing)=summary · "
+                                        "fields=specific lines · statement=one whole statement · full=everything.")] = False) -> dict:
     """⭐ Company FINANCIAL STATEMENTS — income / balance / cash-flow + auto-detected abnormality SIGNALS.
     Read ONE company in depth or COMPARE up to 5 at once (revenue, growth, margins, FCF…). Data is a clean,
     current, normalized financial-data feed (uniform across EVERY industry — banks, autos-with-captive-finance,
@@ -1729,10 +1736,12 @@ def financials(tickers: Annotated[str, _d("1–5 comma-separated MarketDX ticker
     a specific-`fields` pull, or `full` statements, NOT as a second call right after asset_pulse."""
     tks = [t.strip() for t in tickers.split(",") if t.strip()]
     params: dict = {"ticker": ",".join(tks)}
-    if not full:
+    stmt = statement.strip().lower() if statement and statement.strip().lower() in ("income", "balance", "cashflow") else None
+    # summary (compact) unless a raw read is requested (full = all 3 statements, or statement = one whole statement)
+    if not full and not stmt:
         params["summary"] = "1"
-    else:
-        params["source"] = "edgar"   # deep read → official SEC-filing note-level (US); non-US falls back to the standard feed
+    if stmt:
+        params["statement"] = stmt
     if fields and fields.strip():
         params["fields"] = ",".join(f.strip() for f in fields.split(",") if f.strip())
     if period and period.strip().lower().startswith("q"):
