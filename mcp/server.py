@@ -89,6 +89,16 @@ _INSTRUCTIONS = (
     "already PRICED INTO positioning. `positioning_extremes` scans WHERE positioning is most stretched across "
     "all markets. Pair it with commodity_pulse / bond_pulse (news + positioning). A single STOCK has no futures "
     "positioning → its lens is OPTIONS (options_sentiment). Narrate the PLAIN reads for a beginner. "
+    "💰 FUNDAMENTALS (company financial statements): `financials(tickers)` reads or COMPARES up to 5 companies' "
+    "income/balance/cash-flow — revenue, growth, margins, FCF, and (US filers) EDGAR note-level quality-of-"
+    "earnings (deferred revenue, stock comp, tax). Use it for an explicit financials / งบการเงิน ask, a "
+    "fundamentals COMPARE ('which of these is more profitable', 'compare Apple vs TSMC vs Samsung'), or "
+    "`full`/`period=quarterly` depth. Cross-currency compares convert to USD automatically (margins/growth are "
+    "currency-neutral). EQUITY ONLY — an ETF/commodity/bond/crypto has no company financials. 🔴 But a plain "
+    "'how is <stock> doing / น่าลงทุนไหม' does NOT need a separate financials call: `asset_pulse` on a stock "
+    "ALREADY embeds the fundamentals summary (the `fundamentals` block) — read that; reach for `financials` "
+    "only when they want a dedicated compare, quarterly, or full statements. Resolve NAMES → tickers with "
+    "find_stock first. Narrate the PLAIN read for a beginner; translate any raw XBRL tag into everyday words. "
     "🧠 ANALYTICAL MINDSET — when the user asks you to ASSESS or read an OUTLOOK ('how's X', 'แนวโน้ม', "
     "'น่าสนใจไหม', 'should I worry', 'is it cheap') rather than a bare price/number: asset_pulse/theme_pulse "
     "is the CORE read, but it is NOT the whole answer. Before you conclude, ASK YOURSELF what OFF-INSTRUMENT "
@@ -688,7 +698,7 @@ def find_stock(q: Annotated[Optional[str], _dq("Free-text to resolve to ONE exac
     """Resolve ANY free-text — a company NAME, a ticker (full or prefix), an alias, a phrase, or a
     non-English name — to the EXACT MarketDX `ticker`. 🔴 Use this BEFORE asset_pulse / stock_impact
     whenever you're not 100% sure of the exact ticker — ESPECIALLY for NON-US companies: MarketDX uses
-    its OWN exchange suffixes (Korea = `.KO` NOT Yahoo's `.KS`; Taiwan = `.TW`; etc.) so GUESSING a
+    its OWN exchange suffixes (Korea = `.KO`, not the common `.KS`; Taiwan = `.TW`; etc.) so GUESSING a
     foreign ticker usually 404s. Also resolves commodities (gold→`GOLD`), crypto (`BTC`), and off-coverage
     PRIVATE companies (openai→`oc:52`). Matching = lexical first (symbol/prefix/alias/name), then a
     SEMANTIC fallback so a phrase ('chip maker') or another language still resolves. Returns matches with
@@ -1204,20 +1214,45 @@ def asset_pulse(ticker: Annotated[str, _dt(_TICKER + " ⚠️ a COMPANY/ETF/inde
             return {"note": f"no price history: {e}"}
         except Exception as e:  # endpoint not shipped yet / lookup failed → degrade, don't kill the bundle
             return {"note": f"price unavailable: {e}"}
+    def _fin():  # embed the fundamentals summary (deterministic — so the model gets financials without a
+        try:  # 2nd call). EQUITY ONLY: an ETF/crypto/index/commodity has no company financials → None (expected).
+            d = cli._get("/v1/financials", {"ticker": ticker, "summary": "1"}).data
+            cos = (d or {}).get("companies") or []
+            c = cos[0] if cos else None
+            if not c or not c.get("ok"):
+                return None
+            out = {k: c.get(k) for k in ("revenue", "revenue_growth_yoy", "net_margin", "gross_margin",
+                    "operating_margin", "net_income", "net_income_growth_yoy", "free_cash_flow",
+                    "operating_cash_flow", "total_assets", "currency", "as_of", "source", "read")}
+            sg = c.get("signals")   # abnormality/pattern flags (trend/outlier/contradiction) — the "เอ๊ะ"
+            if sg and sg.get("count"):
+                out["signals"] = {"headline": sg.get("headline"), "top": (sg.get("signals") or [])[:4], "count": sg.get("count")}
+            return out
+        except Exception:
+            return None
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=4) as ex:
-        fi, fo, fr, fp = ex.submit(_impact), ex.submit(_options), ex.submit(_relations), ex.submit(_price)
-        impact, options, relations, price = fi.result(), fo.result(), fr.result(), fp.result()
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        fi, fo, fr, fp, ff = ex.submit(_impact), ex.submit(_options), ex.submit(_relations), ex.submit(_price), ex.submit(_fin)
+        impact, options, relations, price, fundamentals = fi.result(), fo.result(), fr.result(), fp.result(), ff.result()
     return {
         "ticker": ticker, "window": window or "recent",
         "price": price, "impact": impact, "options": options, "relationships": relations,
+        "fundamentals": fundamentals,
         "_guide": ("Synthesize a MULTI-LENS read — do NOT answer from one lens. `price` = the LEVEL + how "
                    "it's moving (windowed changes, how far below the 52w peak = `drawdown_from_52w_high_pct`, "
                    "is today's vol high vs its OWN year = `realized_vol_percentile_1y`, accumulation vs "
                    "distribution = `up_down_volume_ratio_1mo`); `impact` = what the news did (+ why); "
                    "`options` = how the options market is positioned; `relationships` = is the move "
-                   "SECTOR-WIDE (peers/rivals moving too) or IDIOSYNCRATIC? Lead with where the lenses AGREE "
-                   "or DIVERGE (divergence is the insight — e.g. strong news but price −14% from the peak). "
+                   "SECTOR-WIDE (peers/rivals moving too) or IDIOSYNCRATIC? 💰 `fundamentals` (EQUITY only — "
+                   "null for an ETF/index/crypto is EXPECTED, don't flag it) = the company's compact financial "
+                   "health (revenue + YoY growth, margins, free cash flow); QUOTE its `read`, and tie quality/"
+                   "valuation to the price+news picture (the sharp insight is often a DIVERGENCE — strong price "
+                   "but shrinking margins, or a selloff despite growing FCF). `fundamentals.signals` = "
+                   "auto-detected abnormality/pattern flags (multi-year trends, outlier jumps, accounting "
+                   "CONTRADICTIONS like receivables outpacing revenue) — LEAD with `signals.headline` if present "
+                   "and narrate the top flags in plain words (they're high-recall — judge which actually matter). "
+                   "It's already here — do NOT make a separate `financials` call unless the user wants a deep/compare or full statements. "
+                   "Lead with where the lenses AGREE or DIVERGE (divergence is the insight — e.g. strong news but price −14% from the peak). "
                    "QUOTE price `*_read` labels directly (pre-computed, don't re-derive). 🔴 EXPLAIN "
                    "`options` FOR A NON-EXPERT (follow the options payload's own `_guide.audience`) — "
                    "translate EVERY options term (put/call, IV, gamma, skew, max-pain, O/S) into plain "
@@ -1642,6 +1677,73 @@ def positioning_extremes(
     if limit:
         p["limit"] = limit
     return mdx()._get("/v1/positioning/extremes", p).data
+
+@mcp.tool(title="Financials", annotations=_RO)
+def financials(tickers: Annotated[str, _d("1–5 comma-separated MarketDX tickers of COMMON STOCKS to read/compare "
+                                          "financial statements for ('AAPL.US', or 'AAPL.US,MSFT.US,2330.TW'). Resolve "
+                                          "NAMES → tickers with find_stock first ('Apple'→AAPL.US); a bare symbol "
+                                          "(AAPL) also works. NOT for ETF/commodity/bond/crypto — no company financials.")],
+               period: Annotated[Optional[str], _d("`annual` (default) or `quarterly` (latest quarters; YoY = same "
+                                                   "quarter last year).")] = None,
+               currency: Annotated[Optional[str], _d("Convert ABSOLUTE totals to this currency (e.g. USD) at each "
+                                                     "period's date so cross-currency companies compare — margins/growth "
+                                                     "are currency-neutral anyway. A multi-company compare defaults to USD.")] = None,
+               years: Annotated[Optional[int], _d("Years of history (default 5). Fewer = cheaper; more = deeper trend.")] = None,
+               fields: Annotated[Optional[str], _d(
+                   "OPTIONAL comma-separated canonical line-item keys to pull as multi-year series ON TOP of the "
+                   "summary — use when the user asks about SPECIFIC figures (e.g. 'compare capex & R&D', "
+                   "'depreciation trend', 'debt maturity'). Map the user's wording — IN ANY LANGUAGE and plain "
+                   "everyday phrasing ('ต้นทุน', '減価償却', 'how much they owe') — to these keys yourself. "
+                   "RECALL-FIRST: if a phrase is ambiguous, include ALL plausible candidates (over-fetching is "
+                   "harmless) — e.g. 'cost/ต้นทุน'→'cost_of_revenue,operating_expense'; 'debt/หนี้'→"
+                   "'total_debt,long_term_debt,current_debt'; decompose ratios into base keys (quick ratio→"
+                   "'current_assets,inventory,current_liabilities'). Keys: revenue, cost_of_revenue, gross_profit, "
+                   "operating_expense, operating_income, rnd, sga, depreciation_amortization, interest_expense, tax, "
+                   "pretax_income, net_income, ebitda, eps_diluted, total_assets, current_assets, cash, inventory, "
+                   "receivables, accounts_payable, net_ppe, goodwill, intangibles, total_liabilities, "
+                   "current_liabilities, current_debt, long_term_debt, total_debt, total_equity, retained_earnings, "
+                   "deferred_revenue, shares_outstanding, stock_comp, operating_cash_flow, investing_cash_flow, "
+                   "financing_cash_flow, free_cash_flow, capex, dividends_paid, buybacks. Anything unrecognized or "
+                   "not reported comes back in `unavailable_fields` — say so plainly, never substitute a different "
+                   "figure. Omit `fields` for a broad 'how are they doing' read.")] = None,
+               full: Annotated[bool, _d("False (default) = a COMPACT summary per company (revenue+growth, margins, "
+                                        "ratios ROE/ROA/current/quick, debt, FCF, and auto-detected `signals`). ⚠️ For "
+                                        "SPECIFIC figures (capex, depreciation, R&D, debt split…) DON'T use full — pass "
+                                        "`fields` instead (compact + exact series). True = the ENTIRE raw statement set / "
+                                        "SEC-EDGAR native XBRL dump — LARGE, for a single-company forensic dive ONLY, not "
+                                        "for a compare and not for reading a few line items.")] = False) -> dict:
+    """⭐ Company FINANCIAL STATEMENTS — income / balance / cash-flow + auto-detected abnormality SIGNALS.
+    Read ONE company in depth or COMPARE up to 5 at once (revenue, growth, margins, FCF…). Data is a clean,
+    current, normalized financial-data feed (uniform across EVERY industry — banks, autos-with-captive-finance,
+    insurance, REITs); `full=true` adds official-filing note-level quality-of-earnings for US companies. 🌐 Cross-currency compares (US$ vs NT$ vs ¥) are handled —
+    pass `currency=USD` (auto for a multi-company compare); absolute totals convert at each period's DATE,
+    margins/growth are currency-neutral. `period=quarterly` for the latest quarters. 🗣 The summary carries a
+    plain `read` — narrate margins/growth/FCF in EVERYDAY words for a beginner; for `full`, translate EDGAR's
+    native XBRL tags (NetIncomeLoss, RevenueFromContractWithCustomer…) into plain language. Facts, not advice.
+    >5 companies → it asks you to send fewer (split into ≤5 calls and merge); a non-equity (ETF/commodity/bond)
+    or unlisted name → that entry returns `ok:false` (say financials don't apply, don't fabricate). 📊 For a
+    SPECIFIC-figure ask ('compare capex & depreciation', 'debt maturity', 'ต้นทุนกับกำไร 5 ปี') pass `fields`
+    (recall-first: map any-language/plain wording → canonical keys, over-include when ambiguous, decompose
+    ratios) → each company gets a `requested` series block + any `unavailable_fields` (state absences plainly).
+    🔴 `asset_pulse` on a stock ALREADY embeds this summary — call `financials` only for a DEDICATED read/compare,
+    a specific-`fields` pull, or `full` statements, NOT as a second call right after asset_pulse."""
+    tks = [t.strip() for t in tickers.split(",") if t.strip()]
+    params: dict = {"ticker": ",".join(tks)}
+    if not full:
+        params["summary"] = "1"
+    else:
+        params["source"] = "edgar"   # deep read → official SEC-filing note-level (US); non-US falls back to the standard feed
+    if fields and fields.strip():
+        params["fields"] = ",".join(f.strip() for f in fields.split(",") if f.strip())
+    if period and period.strip().lower().startswith("q"):
+        params["period"] = "quarterly"
+    if years:
+        params["years"] = years
+    if currency:
+        params["currency"] = currency.strip().upper()
+    elif len(tks) > 1:
+        params["currency"] = "USD"  # a compare → a common currency by default
+    return mdx()._get("/v1/financials", params).data
 
 _CURVE_TENORS = ("3M", "2Y", "5Y", "10Y", "30Y")
 
