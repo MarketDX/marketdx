@@ -287,3 +287,38 @@ regime + the MECHANISM it implies (facts, not advice); tie to the user's holding
 `commodity_pulse`. RATES / the curve / "will rates rise" / "fed funds now" → **`bond_pulse`** (it owns rates +
 embeds the CPI/jobs/fed-funds `macro_drivers`). Cross-country structural (consumption/debt/demographics) → **World
 Bank** (§5), not FRED. Data is latest-revised, ~1 release behind — say "as of &lt;date&gt;".
+
+## 8. Financials lens (financials) — the numbers that live in the statements
+
+`financials` = a normalized 3-statement feed (income · balance · cashflow) across EVERY industry + computed
+ratios (margins, ROE/ROA, current/quick, debt/equity, interest-coverage, FCF) + abnormality **signals**, in one
+call. Up to 5 tickers for a cross-company compare (`currency=USD` converts absolute totals at each period's date;
+ratios/growth are currency-neutral either way).
+
+**🔑 Statement-quantity policy (a general routing rule, NOT a per-metric list):** if the number asked-for LIVES
+IN the financial statements — any REALIZED figure: revenue, a margin, capex, debt/cash, dividends paid,
+**buybacks / shares repurchased**, R&D, inventory, equity… — get it from `financials`; don't answer from news
+alone. News = the ANNOUNCEMENT / forward guidance; the statements = what was ACTUALLY done. For "how much did
+&lt;company&gt; &lt;verb&gt;" where the verb maps to a statement line (bought back stock, paid dividends, spent on
+capex, owes) do **BOTH**: `financials` for the realized figure **+** `search_news`/`stock_impact` for the
+announcement & context, then reconcile (an announced buyback *ceiling* ≠ the amount *executed to date*).
+
+**One dial = `fields` (digest-FIRST):** don't agonize over modes.
+- **leave `fields` EMPTY → the digest** (headline + margins + ROE/ROA + current/quick + debt/equity + FCF +
+  capital-return + signals). It's small, always-valid, and **the right default for MOST asks** — "compare revenue /
+  ROE / margins / how healthy". Prefer it: unless the pull is genuinely large (many companies × many years) or you
+  need a line the digest lacks, digest is safer AND gives extra context for free. **ROE, revenue, margins are IN
+  the digest** — do NOT reach for `fields` to get them.
+- **`fields=a,b` (specific line items)** → only when the number isn't in the digest (inventory, receivables, R&D)
+  or you need a MULTI-YEAR series of specific lines. Recall-first: over-include candidate English snake_case names
+  (a near-miss is harmless + echoed). Unknown/foreign-shape names return in `unavailable_fields` with
+  `available_fields` + sometimes a `resolved_via_rule` proxy (non-US `buybacks`→`net_stock_issuance`) — use it, say which.
+- **`fields=income|balance|cashflow`** → that whole statement · **`fields=all`** → every reported line (large).
+
+**`period` = time (maps to each company's FISCAL year):** `5`/`5y` (last N, default) · `2022` (a fiscal year) ·
+`2022-2023` (range) · `2020,2022` (list) · `5q` (last N quarters) · `2024Q2` (one quarter).
+
+**Limits — RELAY them plainly if the user asks beyond (the payload states them in `limits`):** ≤5 companies/call ·
+≤20 specific fields/call · **history ~4–5 years** (an older specific year → `period_unavailable`; say the data
+doesn't reach that far, don't infer zero). A yield/rate/commodity/crypto has no statements (absence expected).
+It embeds into `asset_pulse` for a company — if you already pulled the pulse, the fundamentals may already be there.

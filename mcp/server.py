@@ -879,7 +879,10 @@ def _resolve_agent(agent: Optional[str], ctx: Optional[Context]) -> Optional[str
 
 @mcp.tool(title="Save Note", annotations=_WRITE)
 def write_note(subject: Annotated[str, _d("Short title / subject line of the note.")],
-               body: Annotated[str, _d("The note's full text — the distilled answer/observation/thesis to persist.")],
+               body: Annotated[str, _d("The note's full text in MARKDOWN — the distilled answer/observation/thesis to "
+                   "persist. PRESERVE the structure of your answer: any numeric / tabular data goes in a markdown TABLE "
+                   "(pipe syntax `| col | col |`), NEVER flattened into a paragraph of numbers; use headings (##) for "
+                   "sections and bullet lists for points. If you showed the user a table, the note keeps that table.")],
                summary: Annotated[Optional[str], _d("One-line summary (shown when the note is collapsed).")] = None,
                note_type: Annotated[Optional[str], _d("`reference` (concept/understanding) | `tracking` (dated market read) | `thesis` | `decision`.")] = None,
                category: Annotated[Optional[str], _d("Optional free-text category.")] = None,
@@ -896,10 +899,17 @@ def write_note(subject: Annotated[str, _d("Short title / subject line of the not
     flow: FIRST give the user your complete answer as usual, THEN — as the final step of the turn — call
     `write_note` once to keep it.
 
+    🔴 IF YOUR ANSWER CONTAINED A TABLE / NUMERIC COMPARISON, keep it as a MARKDOWN table in `body` — lead with
+    the table, do NOT re-narrate the numbers into prose. Saving a figures answer as a wall of prose is the #1
+    note-quality failure; preserving structure OUTRANKS "distilling into a paragraph". (The figures are extracted
+    from these markdown tables later for charts — so a clean table with clear headers is what makes that possible.)
+
     CONTENT:
       • `subject` — a short title you compose (≤200 chars).
-      • `body` — the substance to keep: your full answer, or a clean self-contained distillation (you are
-        RE-WRITING it here, so it need not be byte-identical to what you showed — make it stand alone).
+      • `body` — the substance to keep, in MARKDOWN. Make it stand alone, but PRESERVE the structure you showed:
+        every TABLE stays a markdown table (pipe syntax), headings stay headings. "Distill" = trim wording, NOT
+        collapse a table into a sentence. If the answer led with a table, the body leads with the same table.
+        Use clear ABSOLUTE column headers (`FY2025`, not `Latest`/`FY-1`) so the figures stay unambiguous.
       • `summary` — a 1–2 sentence gist for scanning later.
       • `note_type` — one of `thesis` / `reference` / `snapshot` / `decision` / `watchlist`.
       • `category` — a free bucket, e.g. `research` / `portfolio` / `idea`.
@@ -1679,75 +1689,62 @@ def positioning_extremes(
     return mdx()._get("/v1/positioning/extremes", p).data
 
 @mcp.tool(title="Financials", annotations=_RO)
-def financials(tickers: Annotated[str, _d("1–5 comma-separated MarketDX tickers of COMMON STOCKS to read/compare "
+def financials(tickers: Annotated[Union[str, List[str]], _d("1–5 comma-separated MarketDX tickers of COMMON STOCKS to read/compare "
                                           "financial statements for ('AAPL.US', or 'AAPL.US,MSFT.US,2330.TW'). Resolve "
                                           "NAMES → tickers with find_stock first ('Apple'→AAPL.US); a bare symbol "
                                           "(AAPL) also works. NOT for ETF/commodity/bond/crypto — no company financials.")],
-               period: Annotated[Optional[str], _d("`annual` (default) or `quarterly` (latest quarters; YoY = same "
-                                                   "quarter last year).")] = None,
+               period: Annotated[Optional[str], _d(
+                   "OPTIONAL time selector, mapped to each company's FISCAL year. Forms: '5' or '5y' = last 5 years "
+                   "(default 5) · '2022' = that fiscal year · '2022-2023' = a range · '2020,2022' = specific years · "
+                   "'5q' = last 5 quarters · '2024Q2' = one quarter · 'quarterly' = latest quarters. History reaches "
+                   "~4–5 years back — an older specific year may be unavailable (the server says so).")] = None,
+               fields: Annotated[Optional[Union[str, List[str]]], _d(
+                   "OPTIONAL — the SINGLE granularity dial. LEAVE EMPTY for the DIGEST (headline + ratios "
+                   "ROE/ROA/margins/debt/current/quick + capital-return dividends/buybacks + abnormality signals) — "
+                   "this is the safe default and already answers most compares (revenue, ROE, margins, health). Set it "
+                   "ONLY when you need something the digest lacks:\n"
+                   "  • comma-separated LINE ITEMS → those as multi-year series (e.g. 'capex,rnd'). YOU map the user's "
+                   "wording (ANY language/layperson/abbrev — 'ต้นทุน','減価償却','COGS') to these ENGLISH keys; RECALL-"
+                   "FIRST, over-include candidates (harmless, near-miss echoed): 'cost'→'cost_of_revenue,operating_expense'. "
+                   "Ratios/per-share (margin, ROE, P/E) are NOT line items — they're in the digest or you compute them. "
+                   "KEYS: revenue, cost_of_revenue, gross_profit, operating_expense, sga, rnd, operating_income, ebit, "
+                   "ebitda, interest_expense, pretax_income, tax, net_income, total_assets, current_assets, cash, "
+                   "inventory, receivables, net_ppe, goodwill, intangibles, total_liabilities, current_liabilities, "
+                   "accounts_payable, current_debt, long_term_debt, total_debt, net_debt, total_equity, "
+                   "retained_earnings, shares_outstanding, deferred_revenue, operating_cash_flow, free_cash_flow, capex, "
+                   "depreciation_amortization, stock_comp, dividends_paid, buybacks, net_stock_issuance, debt_issuance, "
+                   "debt_repayment; BANK: net_interest_income, non_interest_income, credit_loss_provision, deposits, "
+                   "gross_loans, net_loans; INSURANCE: premiums_earned, policyholder_benefits, net_investment_income.\n"
+                   "  • 'income' | 'balance' | 'cashflow' → that WHOLE statement.\n"
+                   "  • 'all' → every reported line (a forensic dive; large).\n"
+                   "Unreported line → `unavailable_fields` (+ `available_fields` and sometimes a `resolved_via_rule` "
+                   "proxy — use it and say which); state absences plainly, never fabricate.")] = None,
                currency: Annotated[Optional[str], _d("Convert ABSOLUTE totals to this currency (e.g. USD) at each "
                                                      "period's date so cross-currency companies compare — margins/growth "
-                                                     "are currency-neutral anyway. A multi-company compare defaults to USD.")] = None,
-               years: Annotated[Optional[int], _d("Years of history (default 5). Fewer = cheaper; more = deeper trend.")] = None,
-               fields: Annotated[Optional[str], _d(
-                   "OPTIONAL comma-separated canonical line-item keys → each returned as a multi-year series ON TOP of "
-                   "the summary. Use for SPECIFIC figures ('compare capex & R&D', 'debt maturity'). YOU map the user's "
-                   "wording — ANY language, layperson, UK terms, abbreviations ('ต้นทุน', '減価償却', 'debtors', 'COGS') "
-                   "— to these ENGLISH keys (the server matches English only + resolves synonyms/plurals/&-and). "
-                   "RECALL-FIRST — you may send an ARRAY of candidates; extras are HARMLESS and a near-miss is echoed, "
-                   "so when unsure include ALL plausible keys: 'cost/ต้นทุน'→'cost_of_revenue,operating_expense'; "
-                   "'debt/หนี้'→'total_debt,long_term_debt,current_debt'; decompose ratios (quick ratio→"
-                   "'current_assets,inventory,current_liabilities'). Ratios/valuation/per-share (margin, ROE, P/E, "
-                   "yield) are NOT line items — compute them yourself from the base keys. KEYS — general: revenue, "
-                   "cost_of_revenue, gross_profit, operating_expense, sga, rnd, operating_income, ebit, ebitda, "
-                   "interest_expense, interest_income, pretax_income, tax, net_income, eps_diluted, dividend_per_share, "
-                   "total_assets, current_assets, cash, inventory, receivables, net_ppe, goodwill, intangibles, "
-                   "total_liabilities, current_liabilities, accounts_payable, current_debt, long_term_debt, total_debt, "
-                   "net_debt, total_equity, retained_earnings, shares_outstanding, working_capital, deferred_revenue, "
-                   "operating_cash_flow, investing_cash_flow, financing_cash_flow, free_cash_flow, capex, "
-                   "depreciation_amortization, stock_comp, dividends_paid, buybacks, debt_issuance, debt_repayment; "
-                   "BANK: net_interest_income, non_interest_income, credit_loss_provision, deposits, gross_loans, "
-                   "net_loans, loan_loss_allowance; INSURANCE: premiums_earned, net_premiums_written, "
-                   "policyholder_benefits, net_investment_income, future_policy_benefits, deferred_acquisition_costs. "
-                   "Unrecognized/not-reported → `unavailable_fields`; state absences plainly, never substitute.")] = None,
-               statement: Annotated[Optional[str], _d(
-                   "OPTIONAL — 'income' | 'balance' | 'cashflow'. Returns that WHOLE statement (all its line items) per "
-                   "company. Use for 'show me the balance sheet / income statement'. One word, no per-field listing.")] = None,
-               full: Annotated[bool, _d("True = the ENTIRE raw 3-statement set (all line items, self-labeled) for a "
-                                        "single-company forensic dive. ⚠️ For SPECIFIC figures use `fields`; for one whole "
-                                        "statement use `statement`; both are far more compact. Default False = the "
-                                        "COMPACT summary (revenue+growth, margins, ROE/ROA/current/quick, debt, FCF, "
-                                        "signals). GRANULARITY LADDER — pick the smallest: (nothing)=summary · "
-                                        "fields=specific lines · statement=one whole statement · full=everything.")] = False) -> dict:
+                                                     "are currency-neutral anyway. A multi-company compare defaults to USD.")] = None) -> dict:
     """⭐ Company FINANCIAL STATEMENTS — income / balance / cash-flow + auto-detected abnormality SIGNALS.
-    Read ONE company in depth or COMPARE up to 5 at once (revenue, growth, margins, FCF…). Data is a clean,
-    current, normalized financial-data feed (uniform across EVERY industry — banks, autos-with-captive-finance,
-    insurance, REITs); `full=true` adds official-filing note-level quality-of-earnings for US companies. 🌐 Cross-currency compares (US$ vs NT$ vs ¥) are handled —
-    pass `currency=USD` (auto for a multi-company compare); absolute totals convert at each period's DATE,
-    margins/growth are currency-neutral. `period=quarterly` for the latest quarters. 🗣 The summary carries a
-    plain `read` — narrate margins/growth/FCF in EVERYDAY words for a beginner; for `full`, translate EDGAR's
-    native XBRL tags (NetIncomeLoss, RevenueFromContractWithCustomer…) into plain language. Facts, not advice.
-    >5 companies → it asks you to send fewer (split into ≤5 calls and merge); a non-equity (ETF/commodity/bond)
-    or unlisted name → that entry returns `ok:false` (say financials don't apply, don't fabricate). 📊 For a
-    SPECIFIC-figure ask ('compare capex & depreciation', 'debt maturity', 'ต้นทุนกับกำไร 5 ปี') pass `fields`
-    (recall-first: map any-language/plain wording → canonical keys, over-include when ambiguous, decompose
-    ratios) → each company gets a `requested` series block + any `unavailable_fields` (state absences plainly).
-    🔴 `asset_pulse` on a stock ALREADY embeds this summary — call `financials` only for a DEDICATED read/compare,
-    a specific-`fields` pull, or `full` statements, NOT as a second call right after asset_pulse."""
+    Read ONE company or COMPARE up to 5 (revenue, growth, margins, ROE, FCF…). Data is a clean, current, normalized
+    feed uniform across EVERY industry (banks, autos-with-captive-finance, insurance, REITs). 🎚 ONE dial = `fields`:
+    leave it EMPTY for the DIGEST (the safe, small default — headline + ratios + capital-return + signals; covers
+    most compares); set it only for specific line items, a whole statement ('income'|'balance'|'cashflow'), or 'all'.
+    ⏱ `period` picks the time window (5y / 2022 / 2022-2023 / 5q / 2024Q2), mapped to each company's fiscal year.
+    🌐 Cross-currency compares handled — `currency=USD` (auto for multi-company); totals convert at each period's DATE.
+    🗣 The digest carries a plain `read` — narrate margins/growth/FCF/ROE in everyday words. Facts, not advice.
+    📏 LIMITS (relay them if the user asks beyond): ≤5 companies/call · ≤20 specific fields/call · ~4–5 years history.
+    A non-equity (ETF/commodity/bond/crypto) or unlisted name → that entry is `ok:false` (say financials don't apply).
+    🔴 `asset_pulse` on a stock ALREADY embeds the digest — call `financials` only for a DEDICATED read/compare, a
+    specific-`fields`/statement pull, or `all`, NOT as a second call right after asset_pulse.
+    💡 Prefer the digest first: unless the data would be too big (many companies × many years) or you need a line the
+    digest lacks, the empty-`fields` digest is safer and often gives extra useful context for free."""
+    # accept both a comma-string and a JSON array for tickers/fields (LLMs reach for either) → normalize to string.
+    if isinstance(tickers, list): tickers = ",".join(str(t) for t in tickers)
+    if isinstance(fields, list): fields = ",".join(str(f) for f in fields)
     tks = [t.strip() for t in tickers.split(",") if t.strip()]
-    params: dict = {"ticker": ",".join(tks)}
-    stmt = statement.strip().lower() if statement and statement.strip().lower() in ("income", "balance", "cashflow") else None
-    # summary (compact) unless a raw read is requested (full = all 3 statements, or statement = one whole statement)
-    if not full and not stmt:
-        params["summary"] = "1"
-    if stmt:
-        params["statement"] = stmt
+    params: dict = {"tickers": ",".join(tks)}
+    if period and period.strip():
+        params["period"] = period.strip()
     if fields and fields.strip():
         params["fields"] = ",".join(f.strip() for f in fields.split(",") if f.strip())
-    if period and period.strip().lower().startswith("q"):
-        params["period"] = "quarterly"
-    if years:
-        params["years"] = years
     if currency:
         params["currency"] = currency.strip().upper()
     elif len(tks) > 1:

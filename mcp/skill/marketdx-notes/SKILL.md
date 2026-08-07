@@ -38,6 +38,14 @@ so only investment/economic knowledge lands.
 - Don't save the same thing twice in one conversation.
 
 ## How to SAVE  (`write_note`)
+- 🔴 **FORMAT the `body` as MARKDOWN — keep the structure of your answer, don't flatten it.** If you showed the
+  user a TABLE (comparisons, per-company figures, multi-year series, ratios), the note keeps that SAME markdown
+  table (pipe syntax `| A | B |`) — never turn a table into a paragraph of numbers (unreadable + loses the
+  alignment that carried the meaning). Use `##` headings for sections, bullets for points, tables for ANY
+  numeric/tabular data, with clear ABSOLUTE column headers (`FY2025`, not `Latest`/`FY-1`) so figures stay
+  unambiguous. The saved note should read as well as the answer you gave — same tables, same structure. A dense
+  wall-of-numbers prose note is a BUG. (The figures get extracted from these tables later for charts, so a clean
+  table with clear headers is what makes that work.)
 - 🔴 **ONE note per COHERENT topic — never cram.** A multi-topic "save everything" → call `write_note`
   once PER topic (a lithium / semiconductor / gold chat → THREE notes), because a crammed note gets tagged
   with only one topic's entities and the rest become unretrievable. A genuine comparison ("NVDA vs AMD") is
