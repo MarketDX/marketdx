@@ -58,6 +58,18 @@ Save a table answer → 2/5 (no-skill) saved the body as PROSE, losing the table
   absolute year. Verified: agents relay it, don't infer zero.
 - status: **ACCEPTED + communicated.**
 
+## Found in Phase 2 batch 1, 2026-08-07
+
+### 🔴 W6 — `bond_pulse` free-text query resolves to the WRONG country
+`bond_pulse({query:"US 10Y"})` → returns the **German (DE)** curve (`country: DE`), not the US curve. A client
+that doesn't notice gets German yields for a US question = silent wrong answer. (The test agent caught it and
+worked around via `find_stock → US-10Y.GB → asset_pulse`.)
+- root-cause: `routing-gap` — bond_pulse's free-text → curve resolver mis-picks the country (defaults to / fuzzy-
+  matches DE instead of US).
+- fix (PROPOSED, not built): route the query through the same resolver as `find_stock` (US 10Y → US-10Y.GB), or
+  require an explicit ISO country, or fix the default. Verify across countries (JP/GB/DE/US) after.
+- status: **OPEN.** severity MED-HIGH (silent wrong answer). workaround: `find_stock` then `asset_pulse`.
+
 ## Method notes (baked into README)
 - 📋 M1 — **agent self-reports are unreliable**; verify the DB row / actual payload (W4 was caught only this way).
 - 📋 M2 — **harness contamination**: we once told the agent to "state a ratio" then measured ratios. Keep prompts
