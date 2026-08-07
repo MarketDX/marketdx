@@ -87,7 +87,20 @@ worked around via `find_stock → US-10Y.GB → asset_pulse`.)
 
 ## Found in Phase 2 batch 2, 2026-08-07
 
-### 🟡 W7 — data-quality anomalies surfaced for AIG-class insurers
+### 🟢 W7 — data-quality anomalies surfaced for AIG-class insurers (goodwill/intangibles FIXED)
+FIX shipped (news-api rev 00267-hcw): the `goodwill == intangibles` duplication is CORRECTED deterministically.
+Registry split (`intangibles.bases=[OtherIntangibleAssets]` + new canonical `goodwill_and_intangibles`) + a new
+`fin_reconcile` module (FIX-only, `reconcile_data_shape`) with rule **F1**: when a filer reports only the
+combined line and other-intangibles ≈ 0, `intangibles` is OMITTED (not published equal to goodwill) with a
+transparent `_data_fixes` note; when other-intangibles > 0 it's derived as combined − goodwill. Verified on AIG:
+intangibles now absent (was 3435M == goodwill). A registry AUDIT found the R1-class systematically → F2
+(operating_expense incl COGS via TotalExpenses), F3 (cash incl short-term investments), F4 (equity incl minority
+interest) are same-pattern candidates for (ข) real-data validation. The REMAINING AIG anomalies
+(loss_adj==policyholder, EPS sign-flip) are upstream Yahoo, NOT fixable — and a capable client flags them (proven).
+NOTE: `fin_reconcile` is FIX-ONLY by design — no "might be wrong" FLAGs (a capable LLM catches those; a false
+alarm is worse than none). Only deterministic corrections the client can't make itself.
+
+### (superseded) W7 original —
 The feed passes through upstream anomalies: `loss_adjustment_expense == policyholder_benefits` byte-for-byte
 (a KNOWN Yahoo concept-collapse — confirmed earlier this session, not ours) AND `goodwill == intangibles`
 identical every year + an EPS basic/diluted sign flip (FY2024 basic +2.35 vs diluted −2.17). A good client flags
