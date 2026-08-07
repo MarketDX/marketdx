@@ -1752,6 +1752,19 @@ def financials(tickers: Annotated[Union[str, List[str]], _d("1–5 comma-separat
     return mdx()._get("/v1/financials", params).data
 
 _CURVE_TENORS = ("3M", "2Y", "5Y", "10Y", "30Y")
+# country/bond words → ISO2, for pinning a yield-curve country from a free-text query (single tokens; matched
+# against the query's word set). Only unambiguous forms — bare 2-letter ISOs (it/de/…) omitted to avoid English
+# false-positives; `us`/`uk` kept (essential + safe in short bond queries).
+_COUNTRY_KW = {
+    "us": "US", "usa": "US", "treasury": "US", "treasuries": "US", "ust": "US", "tnote": "US",
+    "germany": "DE", "german": "DE", "bund": "DE",
+    "japan": "JP", "japanese": "JP", "jgb": "JP",
+    "uk": "GB", "gilt": "GB", "gilts": "GB", "britain": "GB", "british": "GB",
+    "france": "FR", "french": "FR", "oat": "FR",
+    "italy": "IT", "italian": "IT", "btp": "IT",
+    "china": "CN", "chinese": "CN", "korea": "KR", "korean": "KR",
+    "australia": "AU", "australian": "AU", "canada": "CA", "canadian": "CA",
+}
 
 @mcp.tool(title="Bond Pulse", annotations=_RO)
 def bond_pulse(q: Annotated[str, _dq("A COUNTRY ('US rates', 'US yield curve'), a TENOR ('US 10Y', 'JGB 2Y', "
@@ -1808,8 +1821,23 @@ def bond_pulse(q: Annotated[str, _dq("A COUNTRY ('US rates', 'US yield curve'), 
                            "is present it's the CFTC COT futures stance (invert-aware: long future = for LOWER "
                            "rates) — weave its plain `read` in. No options/PE.")}
 
-    # ── CURVE mode: pick the country (prefer a pure .GB bond's issuer) and pull the whole curve ──
-    iso = (bond or ms[0]).get("domicile") or (bond or ms[0]).get("country")
+    # ── CURVE mode: pick the country ROBUSTLY, then pull the whole curve. A spread instrument whose NAME embeds a
+    # country (e.g. `DE-US-10Y.SPREAD` = "Germany–US 10Y Spread") can top a country query and hijack this pick —
+    # so derive the ISO from an explicit country WORD in the query, else a straight .GB/.MM ticker's ISO PREFIX
+    # (skipping .SPREAD), and only then fall back to a non-spread match's domicile. ──
+    def _iso_prefix(m):  # 'US-10Y.GB' → 'US'; None for spreads / non-curve tickers
+        tk = m.get("ticker", "")
+        if ".SPREAD" in tk:
+            return None
+        head = tk.split("-", 1)[0].split(".", 1)[0]
+        return head.upper() if len(head) == 2 and head.isalpha() else None
+    qtoks = set(q.lower().replace("-", " ").replace("/", " ").split())
+    iso = next((c for kw, c in _COUNTRY_KW.items() if kw in qtoks), None)     # 1. a country word in the query
+    if not iso:
+        iso = next((p for m in ms if (p := _iso_prefix(m))), None)            # 2. a clean .GB/.MM ISO prefix
+    if not iso:                                                              # 3. a non-spread match's domicile
+        clean = next((m for m in ms if ".SPREAD" not in m.get("ticker", "")), ms[0])
+        iso = (clean.get("domicile") or clean.get("country") or "").upper()
     if not iso or len(iso) != 2:
         return {"error": f"couldn't pin a country from '{q}'. Try 'US yield curve' / 'Germany 10Y'.",
                 "matches": [{"ticker": m["ticker"], "name": m.get("name")} for m in ms[:5]]}

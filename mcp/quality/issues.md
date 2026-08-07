@@ -60,15 +60,28 @@ Save a table answer → 2/5 (no-skill) saved the body as PROSE, losing the table
 
 ## Found in Phase 2 batch 1, 2026-08-07
 
-### 🔴 W6 — `bond_pulse` free-text query resolves to the WRONG country
+### 🟢 W6 — `bond_pulse` free-text query resolves to the WRONG country (FIXED)
 `bond_pulse({query:"US 10Y"})` → returns the **German (DE)** curve (`country: DE`), not the US curve. A client
 that doesn't notice gets German yields for a US question = silent wrong answer. (The test agent caught it and
 worked around via `find_stock → US-10Y.GB → asset_pulse`.)
-- root-cause: `routing-gap` — bond_pulse's free-text → curve resolver mis-picks the country (defaults to / fuzzy-
-  matches DE instead of US).
-- fix (PROPOSED, not built): route the query through the same resolver as `find_stock` (US 10Y → US-10Y.GB), or
-  require an explicit ISO country, or fix the default. Verify across countries (JP/GB/DE/US) after.
-- status: **OPEN.** severity MED-HIGH (silent wrong answer). workaround: `find_stock` then `asset_pulse`.
+- root-cause (FOUND): `find_stock('US 10Y')` top match = **`DE-US-10Y.SPREAD`** ("Germany–US 10Y Spread",
+  domicile **DE**, score **1.0**) — its name contains the literal "US 10Y", so it out-scores `US-10Y.GB`
+  ("United States Government Bond 10Y", 0.95, no literal "US"). bond_pulse (server.py ~L1812) then does
+  `iso = (bond or ms[0]).domicile` → picks DE from that match → builds the German curve. Two layers:
+  (1) SEARCH — a SPREAD instrument whose name embeds a country hijacks a country query; (2) bond_pulse country-
+  pick doesn't filter `.SPREAD` or honor the query's country token, and reads `domicile` instead of the `.GB`
+  ticker prefix.
+- fix (PROPOSED, not built) — do the tractable bond_pulse-side guard: (a) EXCLUDE `.SPREAD` when picking the
+  curve country; (b) derive ISO from the `.GB` ticker PREFIX (`US-10Y.GB`→`US`), not `domicile`; (c) if the
+  query has a country token, prefer the `.GB` whose prefix matches. ⚠️ before finalizing, verify `US-10Y.GB` IS
+  in the `asset_class=bond` candidate list (if the search drops it entirely, the search side needs a fix too).
+- fix (SHIPPED, mcp rev 00121-4xj): `bond_pulse` curve-country now derives ISO by priority — (1) a country word
+  in the query (`_COUNTRY_KW`: us/germany/jgb/gilt/…), (2) a clean `.GB`/`.MM` ticker's ISO PREFIX (skipping
+  `.SPREAD`), (3) a non-spread match's domicile. Builds the curve from the ISO deterministically, so it works
+  even if `US-10Y.GB` isn't in the match list. Didn't touch search ranking (the spread still scores 1.0, but
+  it no longer drives the country).
+- verified: US 10Y → US ✅ (was DE) · US yield curve → US · Germany 10Y → DE · JGB 2Y → JP · SOFR → rate (no regression).
+- status: **🟢 FIXED + verified.**
 
 ## Method notes (baked into README)
 - 📋 M1 — **agent self-reports are unreliable**; verify the DB row / actual payload (W4 was caught only this way).
