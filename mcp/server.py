@@ -176,6 +176,10 @@ def _dq(desc: str):  # noqa: ANN201 — free-text concept/search field
     return Field(description=desc, validation_alias=AliasChoices(*_Q_ALIASES))
 def _dt(desc: str):  # noqa: ANN201 — exact-ticker field
     return Field(description=desc, validation_alias=AliasChoices(*_TICKER_ALIASES))
+# multi-ticker field: schema exposes canonical `tickers`, but ALSO accept the singular `ticker`/`symbol(s)` an LLM
+# reaches for on a single-company ask (measured: clients try `ticker=` first, hit an error, retry with `tickers`).
+def _dts(desc: str):  # noqa: ANN201
+    return Field(description=desc, validation_alias=AliasChoices("tickers", "ticker", "symbols", "symbol"))
 _TICKER = "A MarketDX ticker (resolve via find_stock if unsure — mdx uses its OWN suffixes: Korea `.KO`, " \
     "Taiwan `.TW`, commodities `.COMM`, bonds `<ISO2>-<TENOR>.GB`, rates `.MM`). US mega-caps: bare `AAPL`."
 _WINDOW = "News-recency window: `7d`/`30d`/`90d`/`180d`/`1y` or `mtd`/`qtd`/`ytd`. Omit → a sensible default. " \
@@ -1689,7 +1693,7 @@ def positioning_extremes(
     return mdx()._get("/v1/positioning/extremes", p).data
 
 @mcp.tool(title="Financials", annotations=_RO)
-def financials(tickers: Annotated[Union[str, List[str]], _d("1–5 comma-separated MarketDX tickers of COMMON STOCKS to read/compare "
+def financials(tickers: Annotated[Union[str, List[str]], _dts("1–5 comma-separated MarketDX tickers of COMMON STOCKS to read/compare "
                                           "financial statements for ('AAPL.US', or 'AAPL.US,MSFT.US,2330.TW'). Resolve "
                                           "NAMES → tickers with find_stock first ('Apple'→AAPL.US); a bare symbol "
                                           "(AAPL) also works. NOT for ETF/commodity/bond/crypto — no company financials.")],
