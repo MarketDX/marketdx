@@ -313,6 +313,7 @@ announcement & context, then reconcile (an announced buyback *ceiling* ≠ the a
   or you need a MULTI-YEAR series of specific lines. Recall-first: over-include candidate English snake_case names
   (a near-miss is harmless + echoed). Unknown/foreign-shape names return in `unavailable_fields` with
   `available_fields` + sometimes a `resolved_via_rule` proxy (non-US `buybacks`→`net_stock_issuance`) — use it, say which.
+- **`_data_fixes`** (present only when the server CORRECTED a data-shape inconsistency) → those figures were NORMALIZED, with the before→after shown (e.g. `operating_expense: 177B → 70B` when the source lumped COGS into a single-step "total operating expenses"). **Trust the corrected value** — it's already comparable across companies; do NOT re-adjust it. If the user cross-checks against another source showing the PRE-fix number, cite the note to explain the difference.
 - **`fields=income|balance|cashflow`** → that whole statement · **`fields=all`** → every reported line (large).
 
 **`period` = time (maps to each company's FISCAL year):** `5`/`5y` (last N, default) · `2022` (a fiscal year) ·
