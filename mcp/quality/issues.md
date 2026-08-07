@@ -41,7 +41,9 @@ question, but `financials` only READS known tickers).
 - fix (PROPOSED, not built): `tool-desc` + `skill` negative gate — "financials READS supplied tickers; it does
   NOT discover/rank a universe; never guess tickers. For 'which/top companies by X' → news (events) / screener,
   then financials to read the shortlist." (Real capability = a metric screener; bigger, data-dependent.)
-- status: **OPEN.**
+- status: **🅿️ PARKED (TODO)** — a screener is coming soon (2026-08). When it lands: (1) add the metric
+  dimension(s) it supports (buyback/capex/…) so discovery is data-driven, (2) then add the routing gate above so
+  the client reaches for the screener instead of brute-forcing/guessing tickers into `financials`. Revisit then.
 
 ### 🟢 W4 — notes flattened a table into prose (+ dropped the machine copy)
 Save a table answer → 2/5 (no-skill) saved the body as PROSE, losing the table.
