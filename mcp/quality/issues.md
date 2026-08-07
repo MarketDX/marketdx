@@ -85,6 +85,20 @@ worked around via `find_stock → US-10Y.GB → asset_pulse`.)
 - verified: US 10Y → US ✅ (was DE) · US yield curve → US · Germany 10Y → DE · JGB 2Y → JP · SOFR → rate (no regression).
 - status: **🟢 FIXED + verified.**
 
+## Found in Phase 2 batch 2, 2026-08-07
+
+### 🟡 W7 — data-quality anomalies surfaced for AIG-class insurers
+The feed passes through upstream anomalies: `loss_adjustment_expense == policyholder_benefits` byte-for-byte
+(a KNOWN Yahoo concept-collapse — confirmed earlier this session, not ours) AND `goodwill == intangibles`
+identical every year + an EPS basic/diluted sign flip (FY2024 basic +2.35 vs diluted −2.17). A good client flags
+them (the G22 test agent did, treating them as data issues not business facts); a naive one might quote them.
+- root-cause: `data-bug` — mostly upstream (Yahoo). Open question: is `goodwill==intangibles` upstream or OUR
+  field mapping duplicating one source value into both canonical fields?
+- fix: TODO — verify the `goodwill`/`intangibles` mapping in the registry/extractor for insurers; if it's ours,
+  fix the alias; if upstream, accept + rely on client skepticism (which held).
+- status: **🅿️ investigate** (low-severity: the honest-client behavior is the mitigation; the field-dup is the
+  only possibly-ours part). All 10 batch-2 agents handled data honestly.
+
 ## Method notes (baked into README)
 - 📋 M1 — **agent self-reports are unreliable**; verify the DB row / actual payload (W4 was caught only this way).
 - 📋 M2 — **harness contamination**: we once told the agent to "state a ratio" then measured ratios. Keep prompts
