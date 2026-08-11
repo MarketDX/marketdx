@@ -1721,6 +1721,9 @@ def financials(tickers: Annotated[Union[str, List[str]], _dts("1–5 comma-separ
                    "gross_loans, net_loans; INSURANCE: premiums_earned, policyholder_benefits, net_investment_income.\n"
                    "  • 'income' | 'balance' | 'cashflow' → that WHOLE statement.\n"
                    "  • 'all' → every reported line (a forensic dive; large).\n"
+                   "  • a GRANULAR line NOT in the KEYS above (investment properties, construction in progress, "
+                   "held-to-maturity securities, accrued interest, accumulated OCI…) → resolve it with "
+                   "`find_fsconcept` FIRST, then pass the returned field_key here verbatim.\n"
                    "Unreported line → `unavailable_fields` (+ `available_fields` and sometimes a `resolved_via_rule` "
                    "proxy — use it and say which); state absences plainly, never fabricate.")] = None,
                currency: Annotated[Optional[str], _d("Convert ABSOLUTE totals to this currency (e.g. USD) at each "
@@ -1754,6 +1757,29 @@ def financials(tickers: Annotated[Union[str, List[str]], _dts("1–5 comma-separ
     elif len(tks) > 1:
         params["currency"] = "USD"  # a compare → a common currency by default
     return mdx()._get("/v1/financials", params).data
+
+@mcp.tool(name="find_fsconcept", title="Find Financial-Statement Field", annotations=_RO)
+def find_fsconcept(q: Annotated[str, _dq(
+        "An ENGLISH financial-statement LINE-ITEM or metric concept to resolve to the exact field_key for "
+        "`financials` — 'investment properties', 'held to maturity securities', 'construction in progress', "
+        "'accrued interest receivable', 'deferred tax liabilities', 'accumulated OCI', 'minority interest'. "
+        "🔴 ENGLISH ONLY: translate any language to its English accounting term FIRST (投資不動産→'investment "
+        "properties', ดอกเบี้ยค้างรับ→'accrued interest receivable', 保有満期証券→'held to maturity securities') — "
+        "cross-lingual matching DRIFTS to the wrong field. May send a couple of candidate phrasings.")],
+        statement: Annotated[Optional[str], _d(
+        "OPTIONAL — narrow to 'balance' | 'income' | 'cashflow' when you know which statement the line sits on.")] = None,
+        limit: Annotated[Optional[int], _d("Candidates (default 8, max 25).")] = None) -> dict:
+    """FREE resolver — a SPECIFIC financial-statement line-item / metric concept → the exact `field_key` to pass
+    to `financials(fields=…)`. Use this ONLY for a GRANULAR / uncommon line the common `financials` field keys
+    don't cover (investment properties, construction in progress, held-to-maturity / available-for-sale
+    securities, accrued interest, revaluation reserve, minority interest, accumulated OCI, the EPS variants…);
+    for COMMON items (revenue, margins, capex, debt, cash, EPS, dividends) call `financials` directly — no
+    round-trip. Returns ranked `candidates` {field_key, label, statement, parent, is_core, kind, curated, sim,
+    + a `definition` ONLY when the name isn't self-evident}. PICK by label/definition + statement (is_core=true
+    = the headline line; curated:true = an exact name/alias hit, high confidence). Then pass the chosen
+    field_key(s) VERBATIM to `financials(fields=…)`. Empty candidates → refine with a sharper English term and
+    call again; never guess a field_key."""
+    return mdx()._get("/v1/financials/find", {"q": q, "statement": statement, "limit": _lim(limit, default=8, ceiling=25)}).data
 
 _CURVE_TENORS = ("3M", "2Y", "5Y", "10Y", "30Y")
 # country/bond words → ISO2, for pinning a yield-curve country from a free-text query (single tokens; matched
@@ -1952,7 +1978,7 @@ def screen_stocks(megatrend: Annotated[Optional[str], _d(_MEGATREND)] = None,
                   min_impact: Annotated[Optional[int], _d("Min article importance, 1–5.")] = None,
                   min_relevance: Annotated[Optional[float], _d("Min centrality to its news, 0–1.")] = None,
                   min_market_cap_usd: Annotated[Optional[float], _d("Min market cap, USD.")] = None,
-                  since: Annotated[Optional[str], _d("Trailing window, e.g. `7d` ('this week'=7d, 'this month'=30d).")] = None,
+                  window: Annotated[Optional[str], _d(_WINDOW)] = None,
                   from_: Annotated[Optional[str], _d("Start date YYYY-MM-DD. ⚠️ per-stock impact scoring only exists from ~2026-07-03 (earlier → empty).")] = None,
                   to: Annotated[Optional[str], _d(_TO)] = None,
                   gate: Annotated[Optional[str], _d("megatrend scope only: `both` (default, strict member AND epicenter) | `membership` (looser).")] = None,
@@ -1975,9 +2001,10 @@ def screen_stocks(megatrend: Annotated[Optional[str], _d(_MEGATREND)] = None,
       • `direction` = `pos` → winners only · `neg` → losers/at-risk only · omit → all, each with its own
         net_direction. `aspect` = keep only a channel (demand/competition/capital/…).
       • Quality floors: `min_impact` (1–5 article-importance), `min_relevance` (0–1 centrality),
-        `min_market_cap_usd`, `since` ('7d'). `gate` (megatrend scope only) = `both` (default, strict:
-        member AND epicenter) | `membership` (looser, more leakage).
-      • TIME WINDOW: `since='7d'` = trailing N days ("this week"=7d, "this month"=30d). For a SPECIFIC past
+        `min_market_cap_usd`, `window` ('7d'/'30d'/'90d'/'1y'/'mtd'/'qtd'/'ytd'). `gate` (megatrend scope
+        only) = `both` (default, strict: member AND epicenter) | `membership` (looser, more leakage).
+      • TIME WINDOW: `window='7d'` = trailing recency ("this week"=7d, "this month"=30d) — SAME name/vocab
+        as brief/theme_pulse/search_news/news_feed/stock_impact. For a SPECIFIC past
         window use `from`/`to` (YYYY-MM-DD): "last week"→the two dates, "as of <date>"→`to`. ⚠️ per-stock
         IMPACT scoring only exists from ~2026-07-03 onward, so any window BEFORE early-July-2026 (a Q1/March
         query) returns EMPTY — say so plainly ("no impact data that far back"); do NOT present empty as
@@ -1998,7 +2025,7 @@ def screen_stocks(megatrend: Annotated[Optional[str], _d(_MEGATREND)] = None,
     params = {"megatrend": mt, "gics": gics, "country": country, "direction": direction,
               "aspect": aspect, "order_by": order_by, "min_impact": min_impact,
               "min_relevance": min_relevance, "min_market_cap_usd": min_market_cap_usd,
-              "since": since, "from": from_, "to": to,
+              "window": window, "from": from_, "to": to,
               "gate": gate, "limit": _lim(limit, default=10, ceiling=50)}
     rows = mdx()._get("/v1/stocks", params).data.get("stocks", [])
     keep = ("stock_id", "symbol", "ticker", "name", "country", "gic_code", "market_cap_usd", "impact", "fundamentals")
@@ -2192,6 +2219,23 @@ _GICS_ALIAS = {
     "utility": "utilities",
 }
 
+# Colloquial terms that span MULTIPLE GICS homes where the WORD doesn't match the right node names — the
+# gazetteer alone mis-lands. The 2018 GICS reshuffle left "internet" ONLY in 45102030 (IT · Internet
+# Services & Infrastructure = web-infra like VeriSign/GoDaddy), while the internet PLATFORM giants sit in
+# Broadline Retail (255030: Alibaba/Amazon/JD) and Interactive Media & Services (502030: Tencent/Meta/
+# Alphabet) — neither name contains "internet". So bare find_gics('internet') returned pure-IT and the
+# platform cohort vanished. These map straight to code lists (multi-candidate; the client picks).
+_GICS_MULTI = {
+    "internet": ["255030", "502030", "45102030"],
+    "internet company": ["255030", "502030"], "internet companies": ["255030", "502030"],
+    "internet platform": ["255030", "502030"], "internet platforms": ["255030", "502030"],
+    "internet giant": ["255030", "502030"], "internet giants": ["255030", "502030"],
+    "online platform": ["255030", "502030"], "online platforms": ["255030", "502030"],
+    "platform companies": ["255030", "502030"], "tech platforms": ["255030", "502030"],
+    "e-commerce": ["255030"], "ecommerce": ["255030"], "online retail": ["255030"],
+    "social media": ["502030"],
+}
+
 def _gics_rollup(code: str) -> str:
     """Broaden a specifically-named node to the highest ancestor that is the SAME concept as a family. Roll
     child→parent only when (a) no comma in the parent name (a comma = a list of DISTINCT sibling industries,
@@ -2224,7 +2268,10 @@ def _resolve_gics_codes(term: str) -> list:
     """A sector/industry concept → GICS code(s). Alias-normalise vocabulary → gazetteer (deterministic
     exact/tight-substring) + roll-up to the family group as an ADDED candidate → else a deepseek tier-drill
     (sector→group→industry→sub). Returns codes broad-first (shorter code first), dedup'd — YOU pick."""
-    term = _GICS_ALIAS.get(str(term).strip().lower(), term)
+    key = str(term).strip().lower()
+    if key in _GICS_MULTI:  # colloquial multi-home terms (internet/platform/e-commerce) — the word can't gazetteer-match
+        return _GICS_MULTI[key]
+    term = _GICS_ALIAS.get(key, term)
     g = _gics_gaz(term)
     if g:
         out: list = []
